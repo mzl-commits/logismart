@@ -1,0 +1,27 @@
+# Entorno Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Variables de entorno — NUNCA subir al repo
+.env
+
+# Base de datos local
+db.sqlite3
+
+# Archivos temporales
+*.tmp
+hola.txt
+
+# Distribución / empaquetado
+dist/
+build/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.swp

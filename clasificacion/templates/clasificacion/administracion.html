@@ -1,0 +1,79 @@
+{% extends 'clasificacion/base.html' %}
+{% block title %}Administración — LogiSmart{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center fade-in">
+    <div class="col">
+        <h2 class="fw-bold mb-1"><i class="bi bi-people me-2"></i>Panel de Administración</h2>
+        <p class="text-muted-custom mb-0">Gestión de Usuarios Operadores y Proveedores del sistema</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Panel Usuarios -->
+    <div class="col-lg-6 fade-in">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+                <span><i class="bi bi-person-badge me-2"></i>Usuarios (Operadores)</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead class="sticky-top bg-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Rol</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in usuarios %}
+                            <tr>
+                                <td class="text-muted-custom">{{ u.id_usuario }}</td>
+                                <td class="fw-medium">{{ u.nombre }}</td>
+                                <td><span class="badge" style="background:#1e293b;color:#94a3b8;">{{ u.rol }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted-custom py-4">No hay usuarios.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Proveedores -->
+    <div class="col-lg-6 fade-in fade-in-delay-1">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+                <span><i class="bi bi-building me-2"></i>Proveedores</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead class="sticky-top bg-dark">
+                            <tr>
+                                <th>RUC/ID</th>
+                                <th>Razón Social</th>
+                                <th>Contacto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in proveedores %}
+                            <tr>
+                                <td class="text-muted-custom">{{ p.id_proveedor }}</td>
+                                <td class="fw-medium">{{ p.razon_social }}</td>
+                                <td style="font-size:12px;">{{ p.contacto_nombre }}<br><span class="text-muted-custom">{{ p.contacto_telefono }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted-custom py-4">No hay proveedores.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

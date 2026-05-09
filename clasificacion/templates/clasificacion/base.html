@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Sistema Logístico{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #030712;
+            --bg-card: #0f172a;
+            --bg-card2: #111827;
+            --border: #1e293b;
+            --accent: #38bdf8;
+            --accent2: #818cf8;
+            --text: #e2e8f0;
+            --muted: #64748b;
+        }
+        * { box-sizing: border-box; }
+        body { background: var(--bg-base); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; }
+
+        /* ── Navbar ─────────────────────────────────────────────── */
+        .navbar {
+            height: 68px;
+            background: linear-gradient(135deg, #020617 0%, #0c1322 100%);
+            border-bottom: 1px solid #1e3a5f;
+            padding: 0 24px;
+        }
+        .navbar-brand {
+            font-size: 18px; font-weight: 700; color: var(--accent) !important;
+            display: flex; align-items: center; gap: 10px; letter-spacing: -.3px;
+        }
+        .navbar-brand .brand-icon {
+            width: 36px; height: 36px; background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+        }
+        .nav-link {
+            color: #94a3b8 !important; font-size: 13px; font-weight: 500;
+            padding: 6px 14px !important; border-radius: 8px; transition: all .2s;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .nav-link:hover { color: var(--text) !important; background: rgba(255,255,255,.06); }
+        .nav-link.active { color: var(--accent) !important; background: rgba(56,189,248,.1); }
+        .btn-nueva-caja {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: white !important; font-weight: 600; border: none;
+            padding: 7px 16px !important; border-radius: 8px;
+        }
+        .btn-nueva-caja:hover { opacity: .9; transform: translateY(-1px); }
+        .pending-badge {
+            background: #f59e0b; color: #111; font-size: 11px; font-weight: 700;
+            padding: 2px 7px; border-radius: 99px; min-width: 20px; text-align: center;
+        }
+
+        /* ── Cards ──────────────────────────────────────────────── */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            color: var(--text); border-radius: 14px;
+        }
+        .card-header {
+            background: transparent; border-bottom: 1px solid var(--border);
+            padding: 14px 20px; font-weight: 600; font-size: 14px;
+        }
+        .card-body { padding: 20px; }
+
+        /* ── Stat cards ─────────────────────────────────────────── */
+        .stat-card { border-radius: 16px; padding: 20px 22px; position: relative; overflow: hidden; }
+        .stat-card .stat-value { font-size: 36px; font-weight: 700; line-height: 1; }
+        .stat-card .stat-label { font-size: 12px; font-weight: 500; opacity: .7; margin-top: 4px; }
+        .stat-card .stat-icon { font-size: 42px; opacity: .15; position: absolute; right: 16px; bottom: 10px; }
+        .stat-blue   { background: linear-gradient(135deg, #1e3a5f, #1e40af22); border: 1px solid #1e3a5f; }
+        .stat-amber  { background: linear-gradient(135deg, #451a03, #d9770622); border: 1px solid #92400e; }
+        .stat-cyan   { background: linear-gradient(135deg, #0c4a6e, #0ea5e922); border: 1px solid #0369a1; }
+        .stat-green  { background: linear-gradient(135deg, #14532d, #16a34a22); border: 1px solid #166534; }
+
+        /* ── Tables ─────────────────────────────────────────────── */
+        .table {
+            --bs-table-bg: transparent; --bs-table-color: var(--text);
+            --bs-table-border-color: var(--border); --bs-table-hover-bg: rgba(255,255,255,.03);
+        }
+        .table thead th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); border-bottom: 1px solid var(--border); padding: 10px 12px; }
+        .table td { padding: 10px 12px; vertical-align: middle; border-color: var(--border); }
+
+        /* ── Badges ─────────────────────────────────────────────── */
+        .badge-pendiente  { background: #d97706; color: #fff; }
+        .badge-transito   { background: #2563eb; color: #fff; }
+        .badge-almacenada { background: #16a34a; color: #fff; }
+        .badge-despachada { background: #7c3aed; color: #fff; }
+        .badge-clasificada{ background: #0891b2; color: #fff; }
+
+        /* ── Buttons ────────────────────────────────────────────── */
+        .btn-primary  { background: #2563eb; border-color: #2563eb; }
+        .btn-success  { background: #16a34a; border-color: #16a34a; }
+        .btn-warning  { background: #d97706; border-color: #d97706; color: #fff; }
+        .btn { border-radius: 8px; font-weight: 500; font-size: 13px; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+        /* ── Modal / Toast ──────────────────────────────────────── */
+        .modal-content {
+            background: var(--bg-card); border: 1px solid var(--border);
+            color: var(--text); border-radius: 16px;
+        }
+        .modal-header { border-bottom: 1px solid var(--border); padding: 18px 22px; }
+        .modal-footer { border-top: 1px solid var(--border); }
+        .toast-container { z-index: 1100; }
+        .toast { background: #1e293b; color: var(--text); border: 1px solid var(--border); border-radius: 12px; }
+        .toast-header { background: var(--bg-card); color: var(--text); border-bottom: 1px solid var(--border); }
+
+        /* ── Forms ──────────────────────────────────────────────── */
+        .form-control, .form-select {
+            background: #0f172a; border: 1px solid var(--border); color: var(--text);
+            border-radius: 10px; font-size: 14px;
+        }
+        .form-control:focus, .form-select:focus {
+            background: #0f172a; border-color: var(--accent);
+            color: var(--text); box-shadow: 0 0 0 3px rgba(56,189,248,.15);
+        }
+        .form-control::placeholder { color: var(--muted); }
+        .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+
+        /* ── Misc ───────────────────────────────────────────────── */
+        .text-muted-custom { color: var(--muted); }
+        hr { border-color: var(--border); }
+        .progress { background: #1e293b; border-radius: 99px; height: 8px; }
+
+        /* ── Animations ─────────────────────────────────────────── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeInUp .35s ease both; }
+        .fade-in-delay-1 { animation-delay: .05s; }
+        .fade-in-delay-2 { animation-delay: .1s; }
+        .fade-in-delay-3 { animation-delay: .15s; }
+        .fade-in-delay-4 { animation-delay: .2s; }
+
+        @keyframes pulse-urgente {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.4); }
+            50%       { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
+        }
+        .urgente-pulse { animation: pulse-urgente 1.8s ease-in-out infinite; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
+<nav class="navbar navbar-expand-lg">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <div class="brand-icon">📦</div>
+            LogiSmart
+        </a>
+
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
+            <i class="bi bi-list text-light fs-4"></i>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarMenu">
+            <ul class="navbar-nav mx-auto gap-1">
+                <li class="nav-item">
+                    <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/almacen/" class="nav-link {% if request.path == '/almacen/' %}active{% endif %}">
+                        <i class="bi bi-grid-3x3-gap"></i> Almacén
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/despachos/" class="nav-link {% if request.path == '/despachos/' %}active{% endif %}">
+                        <i class="bi bi-truck"></i> Despachos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/configuracion/" class="nav-link {% if request.path == '/configuracion/' %}active{% endif %}">
+                        <i class="bi bi-robot"></i> Robot AGV
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/administracion/" class="nav-link {% if request.path == '/administracion/' %}active{% endif %}">
+                        <i class="bi bi-people"></i> Administración
+                    </a>
+                </li>
+            </ul>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/api/docs/" target="_blank" class="nav-link text-muted-custom" style="font-size: 13px;" title="Documentación API">
+                    <i class="bi bi-terminal"></i> API Docs
+                </a>
+                <div class="d-flex align-items-center gap-2 text-muted-custom" style="font-size:13px;">
+                    <i class="bi bi-hourglass-split"></i>
+                    <span id="nav-pending-count">—</span> pendientes
+                    <span id="nav-pending-badge" class="pending-badge d-none">0</span>
+                </div>
+                <a href="/nueva-caja/" class="nav-link btn-nueva-caja">
+                    <i class="bi bi-plus-lg"></i> Nueva Caja
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<main class="container-fluid py-4 px-4">
+    {% block content %}{% endblock %}
+</main>
+
+<!-- ── Toast ────────────────────────────────────────────────────────────────── -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="toastApp" class="toast" role="alert" data-bs-delay="4000">
+        <div class="toast-header">
+            <i class="bi bi-info-circle-fill me-2 text-info" id="toastIcon"></i>
+            <strong class="me-auto" id="toastTitulo">Sistema</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+        </div>
+        <div class="toast-body" id="toastMensaje"></div>
+    </div>
+</div>
+
+<!-- ── Modal Confirmación ──────────────────────────────────────────────────── -->
+<div class="modal fade" id="modalConfirmacion" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalConfTitle">Confirmar</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalConfBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="modalConfOk">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Modal Info ──────────────────────────────────────────────────────────── -->
+<div class="modal fade" id="modalInfo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalInfoTitle">Información</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="modalInfoBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <a id="modalInfoActionBtn" href="#" class="btn btn-primary d-none">Ver en mapa →</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Modal Selector de Usuario ──────────────────────────────────────────── -->
+<div class="modal fade" id="modalUsuario" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-person-circle me-2"></i>¿Quién realiza esta acción?</h5>
+            </div>
+            <div class="modal-body">
+                <div id="listaUsuarios" class="d-grid gap-2">
+                    <div class="text-center py-3"><div class="spinner-border text-info"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ── CSRF ──────────────────────────────────────────────────────────────────────
+function getCookie(name) {
+    if (!document.cookie) return null;
+    for (const c of document.cookie.split(';')) {
+        const [k, v] = c.trim().split('=');
+        if (k === name) return decodeURIComponent(v);
+    }
+    return null;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function mostrarToast(msg, tipo = 'info', titulo = 'Sistema') {
+    const icons = { success: 'bi-check-circle-fill text-success', danger: 'bi-x-circle-fill text-danger', info: 'bi-info-circle-fill text-info', warning: 'bi-exclamation-triangle-fill text-warning' };
+    document.getElementById('toastIcon').className = `bi ${icons[tipo] || icons.info} me-2`;
+    document.getElementById('toastTitulo').textContent = titulo;
+    document.getElementById('toastMensaje').textContent = msg;
+    bootstrap.Toast.getOrCreateInstance(document.getElementById('toastApp')).show();
+}
+
+// ── Modal Confirmación ────────────────────────────────────────────────────────
+function confirmarModal(titulo, msg, textBtn = 'Confirmar', cls = 'btn-primary') {
+    return new Promise(resolve => {
+        document.getElementById('modalConfTitle').textContent = titulo;
+        document.getElementById('modalConfBody').textContent = msg;
+        const btn = document.getElementById('modalConfOk');
+        btn.className = `btn ${cls}`;
+        btn.textContent = textBtn;
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfirmacion'));
+        const handler = () => { modal.hide(); resolve(true); btn.removeEventListener('click', handler); };
+        btn.addEventListener('click', handler);
+        document.getElementById('modalConfirmacion').addEventListener('hidden.bs.modal', () => resolve(false), { once: true });
+        modal.show();
+    });
+}
+
+// ── Modal Info ────────────────────────────────────────────────────────────────
+function mostrarModalInfo(titulo, html, actionUrl = null, actionLabel = null) {
+    document.getElementById('modalInfoTitle').textContent = titulo;
+    document.getElementById('modalInfoBody').innerHTML = html;
+    const actionBtn = document.getElementById('modalInfoActionBtn');
+    if (actionUrl) { actionBtn.href = actionUrl; actionBtn.textContent = actionLabel || 'Ir'; actionBtn.classList.remove('d-none'); }
+    else { actionBtn.classList.add('d-none'); }
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalInfo')).show();
+}
+
+// ── Spinner en botón ──────────────────────────────────────────────────────────
+function btnCargando(btn, loading) {
+    if (!btn) return;
+    if (loading) { btn.dataset.orig = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Procesando...`; }
+    else { btn.disabled = false; btn.innerHTML = btn.dataset.orig || btn.innerHTML; }
+}
+
+// ── Selector de usuario ───────────────────────────────────────────────────────
+let _usuarioActual = null;
+async function obtenerUsuarioActual() {
+    if (_usuarioActual) return _usuarioActual;
+    const res = await fetch('/api/usuarios/?page_size=100');
+    const data = await res.json();
+    const usuarios = Array.isArray(data) ? data : (data.results || []);
+    if (!usuarios.length) { _usuarioActual = 1; return 1; }
+    return new Promise(resolve => {
+        const lista = document.getElementById('listaUsuarios');
+        lista.innerHTML = usuarios.map(u => `
+            <button class="btn btn-outline-light text-start d-flex align-items-center gap-3" onclick="window._resolveUsuario(${u.id_usuario})">
+                <div style="width:36px;height:36px;background:#1e3a5f;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-person-fill text-info"></i>
+                </div>
+                <div><div class="fw-semibold">${u.nombre}</div><div class="text-muted-custom" style="font-size:11px;">${u.rol}</div></div>
+            </button>`).join('');
+        window._resolveUsuario = id => {
+            _usuarioActual = id;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalUsuario')).hide();
+            resolve(id);
+        };
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalUsuario')).show();
+    });
+}
+
+// ── Badge de pendientes en nav ────────────────────────────────────────────────
+async function actualizarBadgePendientes() {
+    try {
+        const res = await fetch('/api/cajas/?estado=pendiente&page_size=1');
+        const data = await res.json();
+        const count = data.count ?? 0;
+        document.getElementById('nav-pending-count').textContent = count;
+        const badge = document.getElementById('nav-pending-badge');
+        if (count > 0) { badge.textContent = count; badge.classList.remove('d-none'); }
+        else badge.classList.add('d-none');
+    } catch {}
+}
+document.addEventListener('DOMContentLoaded', () => { actualizarBadgePendientes(); setInterval(actualizarBadgePendientes, 20000); });
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

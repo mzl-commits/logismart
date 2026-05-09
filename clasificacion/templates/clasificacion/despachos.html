@@ -1,0 +1,186 @@
+{% extends 'clasificacion/base.html' %}
+{% block title %}Despachos — LogiSmart{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center fade-in">
+    <div class="col">
+        <h2 class="fw-bold mb-1"><i class="bi bi-truck me-2"></i>Gestión de Despachos</h2>
+        <p class="text-muted-custom mb-0">Registra la salida de cajas almacenadas hacia su destino final</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Panel Izquierdo: Cajas Almacenadas -->
+    <div class="col-lg-7 fade-in">
+        <div class="card h-100">
+            <div class="card-header fw-semibold"><i class="bi bi-box-seam me-2"></i>Cajas Listas para Despacho</div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead class="sticky-top bg-dark">
+                            <tr>
+                                <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
+                                <th>Caja</th>
+                                <th>Peso</th>
+                                <th>Ubicación</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-almacenadas">
+                            {% for caja in cajas_almacenadas %}
+                            <tr>
+                                <td>
+                                    <input class="form-check-input caja-checkbox" type="checkbox" value="{{ caja.id }}" data-peso="{{ caja.peso_kg }}">
+                                </td>
+                                <td>
+                                    <div class="fw-medium">{{ caja.producto }}</div>
+                                    <div style="font-size:11px;color:var(--muted);">{{ caja.id }} · {{ caja.categoria }}</div>
+                                </td>
+                                <td>{{ caja.peso_kg }} kg</td>
+                                <td><span class="badge badge-almacenada">{{ caja.id_ubicacion }}</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted-custom py-5">
+                                    <i class="bi bi-inbox fs-2 d-block mb-2 opacity-25"></i>No hay cajas en el almacén.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer d-flex justify-content-between align-items-center">
+                <span style="font-size: 13px;" class="text-muted-custom">Seleccionadas: <strong id="lbl-count" class="text-white">0</strong> (<span id="lbl-peso">0.00</span> kg)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Derecho: Formulario de Despacho -->
+    <div class="col-lg-5 fade-in fade-in-delay-1">
+        <div class="card mb-4">
+            <div class="card-header fw-semibold"><i class="bi bi-send-check me-2"></i>Registrar Salida</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Usuario Responsable</label>
+                    <select class="form-select" id="des-usuario">
+                        <option value="">-- Seleccionar Operador --</option>
+                        {% for u in usuarios %}
+                        <option value="{{ u.id_usuario }}">{{ u.nombre }} ({{ u.rol }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Placa del Transporte</label>
+                    <select class="form-select" id="des-placa">
+                        <option value="">-- Seleccionar Vehículo --</option>
+                        {% for v in vehiculos %}
+                        <option value="{{ v.placa }}">{{ v.placa }} - {{ v.marca }} (Capacidad: {{ v.capacidad_kg }}kg)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">Destino Final</label>
+                    <select class="form-select" id="des-destino">
+                        <option value="">-- Seleccionar Destino --</option>
+                        {% for d in destinos %}
+                        <option value="{{ d.nombre }}">{{ d.nombre }} ({{ d.direccion }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button class="btn btn-success w-100 fw-semibold py-2" id="btn-despachar" onclick="despacharSeleccion(this)" disabled>
+                    <i class="bi bi-truck me-2"></i>Confirmar Despacho
+                </button>
+            </div>
+        </div>
+
+        <!-- Historial Reciente de Despachos -->
+        <div class="card">
+            <div class="card-header fw-semibold"><i class="bi bi-clock-history me-2"></i>Últimas Salidas</div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush" style="max-height: 250px; overflow-y: auto;">
+                    {% for des in historial_despachos %}
+                    <li class="list-group-item bg-transparent" style="border-color: var(--border);">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-semibold text-success"><i class="bi bi-box me-1"></i>{{ des.id_caja_id }}</div>
+                                <div style="font-size: 12px; color: var(--muted);">🚚 {{ des.transporte_placa }} → {{ des.destino }}</div>
+                            </div>
+                            <div class="text-end">
+                                <div style="font-size: 11px;" class="text-muted-custom">{{ des.fecha_salida|date:"d/m/Y H:i" }}</div>
+                                <div style="font-size: 11px;"><i class="bi bi-person me-1"></i>{{ des.id_usuario_despacho.nombre }}</div>
+                            </div>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item bg-transparent text-center text-muted-custom py-3 border-0">Aún no hay despachos registrados.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateSelection() {
+    const checks = document.querySelectorAll('.caja-checkbox:checked');
+    let totalPeso = 0;
+    checks.forEach(c => totalPeso += parseFloat(c.dataset.peso));
+    
+    document.getElementById('lbl-count').textContent = checks.length;
+    document.getElementById('lbl-peso').textContent = totalPeso.toFixed(2);
+    document.getElementById('btn-despachar').disabled = checks.length === 0;
+}
+
+function toggleAll(source) {
+    const checkboxes = document.querySelectorAll('.caja-checkbox');
+    checkboxes.forEach(cb => cb.checked = source.checked);
+    updateSelection();
+}
+
+document.querySelectorAll('.caja-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateSelection);
+});
+
+async function despacharSeleccion(btn) {
+    const usuarioId = document.getElementById('des-usuario').value;
+    const placa = document.getElementById('des-placa').value.trim();
+    const destino = document.getElementById('des-destino').value.trim();
+    const seleccionadas = Array.from(document.querySelectorAll('.caja-checkbox:checked')).map(c => c.value);
+
+    if (!usuarioId) return mostrarToast('Selecciona un usuario responsable.', 'warning');
+    if (!placa) return mostrarToast('Ingresa la placa del transporte.', 'warning');
+    if (!destino) return mostrarToast('Ingresa el destino final.', 'warning');
+    if (seleccionadas.length === 0) return mostrarToast('Selecciona al menos una caja.', 'warning');
+
+    btnCargando(btn, true);
+    let errores = 0;
+
+    for (const cajaId of seleccionadas) {
+        try {
+            const res = await fetch(`/api/cajas/${cajaId}/confirmar_despacho/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({
+                    id_usuario: usuarioId,
+                    transporte_placa: placa,
+                    destino: destino
+                })
+            });
+            if (!res.ok) errores++;
+        } catch {
+            errores++;
+        }
+    }
+
+    if (errores === 0) {
+        mostrarToast('Despacho registrado correctamente.', 'success');
+        setTimeout(() => location.reload(), 1000);
+    } else {
+        mostrarToast(`Se completó con ${errores} errores.`, 'warning');
+        setTimeout(() => location.reload(), 1500);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,505 @@
+{% extends 'clasificacion/base.html' %}
+{% block title %}Dashboard — LogiSmart{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Filter chips ─────────────────────────────────────── */
+.chip { padding:5px 14px; border-radius:99px; font-size:12px; font-weight:600; cursor:pointer;
+        border:1px solid var(--border); background:var(--bg-card); color:var(--muted); transition:all .2s; }
+.chip:hover { border-color:#475569; color:var(--text); }
+.chip.active { background:rgba(56,189,248,.15); border-color:var(--accent); color:var(--accent); }
+.chip-cat.active { background:rgba(129,140,248,.15); border-color:var(--accent2); color:var(--accent2); }
+
+/* ── Stats cards ──────────────────────────────────────── */
+.stat-card { border-radius:14px; padding:18px 20px; position:relative; overflow:hidden; }
+.stat-card .stat-val { font-size:34px; font-weight:700; line-height:1; }
+.stat-card .stat-lbl { font-size:11px; font-weight:500; opacity:.65; margin-top:3px; }
+.stat-card .stat-ico { font-size:38px; opacity:.12; position:absolute; right:14px; bottom:8px; }
+.s-blue  { background:linear-gradient(135deg,#1e3a5f,#1e40af22); border:1px solid #1e3a5f; }
+.s-amber { background:linear-gradient(135deg,#451a03,#d9770622); border:1px solid #92400e; }
+.s-cyan  { background:linear-gradient(135deg,#0c4a6e,#0ea5e922); border:1px solid #0369a1; }
+.s-green { background:linear-gradient(135deg,#14532d,#16a34a22); border:1px solid #166534; }
+
+/* ── Ocupación bar ────────────────────────────────────── */
+.occ-bar { height:7px; background:#1e293b; border-radius:99px; overflow:hidden; }
+.occ-fill { height:100%; border-radius:99px; transition:width .6s ease; background:linear-gradient(90deg,#16a34a,#059669); }
+.occ-fill.alta    { background:linear-gradient(90deg,#d97706,#b45309); }
+.occ-fill.critica { background:linear-gradient(90deg,#dc2626,#b91c1c); }
+
+/* ── Tabla cajas activas ──────────────────────────────── */
+.table thead th { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); padding:10px 12px; }
+.table td { padding:9px 12px; vertical-align:middle; }
+.sugerida-pill { background:rgba(56,189,248,.12); color:var(--accent); font-size:11px; font-weight:600;
+                 padding:3px 8px; border-radius:6px; border:1px solid rgba(56,189,248,.25); }
+.no-sugerida { color:var(--muted); font-size:12px; }
+
+/* ── Timeline historial ───────────────────────────────── */
+.timeline { position:relative; padding-left:24px; }
+.timeline::before { content:''; position:absolute; left:7px; top:0; bottom:0; width:2px; background:var(--border); }
+.tl-item { position:relative; margin-bottom:14px; }
+.tl-dot { position:absolute; left:-20px; top:3px; width:10px; height:10px; border-radius:50%;
+           background:var(--border); border:2px solid var(--bg-card); }
+.tl-dot.almacenada { background:#16a34a; }
+.tl-dot.en_transito { background:#2563eb; }
+.tl-dot.despachada { background:#7c3aed; }
+.tl-dot.pendiente { background:#d97706; }
+.tl-caja { font-size:13px; font-weight:600; color:var(--text); }
+.tl-estados { font-size:12px; color:var(--muted); }
+.tl-hora { font-size:11px; color:#475569; }
+
+/* ── Modal nueva categoría ────────────────────────────── */
+.cat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); gap:8px; }
+.cat-chip-preview { background:var(--bg-card2); border:1px solid var(--border); border-radius:10px;
+                    padding:8px 6px; text-align:center; font-size:12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="row mb-4 align-items-center fade-in">
+    <div class="col">
+        <h2 class="fw-bold mb-1"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h2>
+        <p class="text-muted-custom mb-0">Cajas activas · Almacén · Historial</p>
+    </div>
+    <div class="col-auto">
+        <a href="/nueva-caja/" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i>Nueva caja</a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3 fade-in"><div class="stat-card s-blue"><div class="stat-val">{{ total_cajas }}</div><div class="stat-lbl">Total cajas</div><div class="stat-ico"><i class="bi bi-box-seam"></i></div></div></div>
+    <div class="col-6 col-lg-3 fade-in fade-in-delay-1"><div class="stat-card s-amber"><div class="stat-val text-warning">{{ cajas_pendientes }}</div><div class="stat-lbl">Pendientes</div><div class="stat-ico"><i class="bi bi-hourglass-split"></i></div></div></div>
+    <div class="col-6 col-lg-3 fade-in fade-in-delay-2"><div class="stat-card s-cyan"><div class="stat-val" style="color:#38bdf8">{{ cajas_transito }}</div><div class="stat-lbl">En tránsito</div><div class="stat-ico"><i class="bi bi-truck"></i></div></div></div>
+    <div class="col-6 col-lg-3 fade-in fade-in-delay-3"><div class="stat-card s-green"><div class="stat-val text-success">{{ cajas_almacenadas }}</div><div class="stat-lbl">Almacenadas</div><div class="stat-ico"><i class="bi bi-check-circle"></i></div></div></div>
+</div>
+
+<!-- Ocupación -->
+<div class="card mb-4 fade-in">
+    <div class="card-body py-3">
+        <div class="d-flex justify-content-between mb-2">
+            <span class="fw-semibold" style="font-size:13px;"><i class="bi bi-building me-2"></i>Ocupación del almacén</span>
+            <span style="font-size:13px;"><span class="text-danger fw-semibold">{{ ubicaciones_ocupadas }}</span><span class="text-muted-custom"> / {{ total_ubicaciones }}</span> · <strong>{{ pct_ocupacion }}%</strong></span>
+        </div>
+        <div class="occ-bar"><div class="occ-fill {% if pct_ocupacion >= 90 %}critica{% elif pct_ocupacion >= 70 %}alta{% endif %}" style="width:{{ pct_ocupacion }}%"></div></div>
+        <div class="d-flex justify-content-between mt-1" style="font-size:11px;color:var(--muted);">
+            <span>{{ ubicaciones_libres }} libres</span>
+            <span>{% if pct_ocupacion >= 90 %}⚠️ Crítico{% elif pct_ocupacion >= 70 %}Capacidad alta{% else %}Normal{% endif %}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla + Historial -->
+<div class="row g-4 fade-in fade-in-delay-1">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-semibold"><i class="bi bi-box-seam me-2"></i>Cajas activas</span>
+                    <a href="/nueva-caja/" class="btn btn-sm btn-success"><i class="bi bi-plus-lg me-1"></i>Agregar</a>
+                </div>
+                <!-- Filtros estado -->
+                <div class="d-flex gap-1 flex-wrap mb-2">
+                    <span class="chip active" data-tipo="estado" data-val="all" onclick="setFiltro(this,'estado')">Todas</span>
+                    <span class="chip" data-tipo="estado" data-val="pendiente" onclick="setFiltro(this,'estado')">Pendiente</span>
+                    <span class="chip" data-tipo="estado" data-val="en_transito" onclick="setFiltro(this,'estado')">En tránsito</span>
+                    <span class="chip" data-tipo="estado" data-val="almacenada" onclick="setFiltro(this,'estado')">Almacenada</span>
+                </div>
+                <!-- Filtros categoría -->
+                <div class="d-flex gap-1 flex-wrap align-items-center">
+                    <span class="chip chip-cat active" data-tipo="cat" data-val="all" onclick="setFiltro(this,'cat')">Todas cat.</span>
+                    {% for cat in categorias %}
+                    <span class="chip chip-cat" data-tipo="cat" data-val="{{ cat.slug }}" onclick="setFiltro(this,'cat')">{{ cat.icono }} {{ cat.nombre }}</span>
+                    {% endfor %}
+                    <button class="btn btn-sm" style="background:rgba(129,140,248,.1);color:var(--accent2);border:1px dashed var(--accent2);font-size:11px;padding:3px 10px;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevaCat')).show()">
+                        <i class="bi bi-plus"></i> Nueva cat.
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-3">Producto</th>
+                                <th>Categoría</th>
+                                <th>Peso</th>
+                                <th>Prioridad</th>
+                                <th>Estado</th>
+                                <th>Ubi. sugerida</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-body">
+                        {% for caja in cajas_activas %}
+                        <tr data-estado="{{ caja.estado }}" data-cat="{{ caja.categoria }}">
+                            <td class="ps-3">
+                                <div class="fw-medium">{{ caja.producto }}{% if caja.es_fragil %} <span title="Frágil">🔷</span>{% endif %}</div>
+                                <div style="font-size:11px;color:var(--muted);">{{ caja.id }}</div>
+                            </td>
+                            <td style="font-size:12px;">{{ caja.categoria }}</td>
+                            <td style="font-size:13px;">{{ caja.peso_kg }} kg</td>
+                            <td>
+                                <span class="badge {% if caja.prioridad == 'urgente' %}badge-despachada urgente-pulse{% elif caja.prioridad == 'alta' %}badge-almacenada{% elif caja.prioridad == 'media' %}badge-transito{% else %}bg-secondary{% endif %}">
+                                    {{ caja.prioridad }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if caja.estado == 'pendiente' %}<span class="badge badge-pendiente">pendiente</span>
+                                {% elif caja.estado == 'en_transito' %}<span class="badge badge-transito">en tránsito</span>
+                                {% elif caja.estado == 'almacenada' %}<span class="badge badge-almacenada">almacenada</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if caja.estado == 'pendiente' %}
+                                    <span class="sugerida-pill" id="rec-{{ caja.id }}">—</span>
+                                {% elif caja.id_ubicacion %}
+                                    <span style="font-size:12px;color:var(--muted);">{{ caja.id_ubicacion }}</span>
+                                {% else %}
+                                    <span class="no-sugerida">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if caja.estado == 'pendiente' %}
+                                    <button class="btn btn-sm btn-warning" id="btn-proc-{{ caja.id }}" onclick="procesarCaja('{{ caja.id }}', this)">
+                                        <i class="bi bi-play-fill"></i>
+                                    </button>
+                                {% elif caja.estado == 'en_transito' %}
+                                    <button class="btn btn-sm btn-success" id="btn-alm-{{ caja.id }}" onclick="confirmarAlmacenada('{{ caja.id }}', this)">
+                                        <i class="bi bi-check-lg"></i> Entregar
+                                    </button>
+                                {% elif caja.estado == 'almacenada' %}
+                                    <button class="btn btn-sm btn-outline-secondary" id="btn-des-{{ caja.id }}" onclick="confirmarDespacho('{{ caja.id }}', this)">
+                                        <i class="bi bi-truck"></i>
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center text-muted-custom py-5">
+                            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-25"></i>No hay cajas activas.
+                        </td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Timeline historial -->
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header fw-semibold"><i class="bi bi-clock-history me-2"></i>Historial</div>
+            <div class="card-body" style="overflow-y:auto;max-height:520px;">
+                <div class="timeline">
+                    {% for log in historial_reciente %}
+                    <div class="tl-item">
+                        <div class="tl-dot {{ log.estado_nuevo }}"></div>
+                        <div class="tl-caja">{{ log.id_caja.id }}</div>
+                        <div class="tl-estados">
+                            {{ log.estado_anterior }}
+                            <i class="bi bi-arrow-right mx-1" style="font-size:10px;"></i>
+                            {% if log.estado_nuevo == 'almacenada' %}<span class="badge badge-almacenada">{{ log.estado_nuevo }}</span>
+                            {% elif log.estado_nuevo == 'en_transito' %}<span class="badge badge-transito">{{ log.estado_nuevo }}</span>
+                            {% elif log.estado_nuevo == 'despachada' %}<span class="badge badge-despachada">{{ log.estado_nuevo }}</span>
+                            {% else %}<span class="badge badge-pendiente">{{ log.estado_nuevo }}</span>
+                            {% endif %}
+                            {% if log.id_usuario %}<span class="text-muted-custom" style="font-size:11px;"> · {{ log.id_usuario.nombre }}</span>{% endif %}
+                        </div>
+                        <div class="tl-hora">{{ log.fecha_cambio|date:"d/m H:i" }}</div>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted-custom">Sin movimientos.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de Flujo de Cajas -->
+<div class="row mt-4 fade-in fade-in-delay-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header fw-semibold"><i class="bi bi-graph-up me-2"></i>Flujo de Cajas (Últimos 7 días)</div>
+            <div class="card-body">
+                <canvas id="flujoChart" style="max-height: 250px;"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Despacho Dashboard -->
+<div class="modal fade" id="modalDespacho" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-truck me-2"></i>Despachar Caja <span id="md-caja-id"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Placa del Transporte</label>
+                    <select class="form-select" id="md-placa">
+                        <option value="">-- Seleccionar Vehículo --</option>
+                        {% for v in vehiculos %}
+                        <option value="{{ v.placa }}">{{ v.placa }} - {{ v.marca }} (Capacidad: {{ v.capacidad_kg }}kg)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Destino Final</label>
+                    <select class="form-select" id="md-destino">
+                        <option value="">-- Seleccionar Destino --</option>
+                        {% for d in destinos %}
+                        <option value="{{ d.nombre }}">{{ d.nombre }} ({{ d.direccion }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" id="btn-md-despachar" onclick="ejecutarDespacho()">Despachar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal nueva categoría -->
+<div class="modal fade" id="modalNuevaCat" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-tag me-2"></i>Nueva categoría</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-3">
+                        <label class="form-label">Icono</label>
+                        <input type="text" id="nc-icono" class="form-control text-center fs-4" maxlength="4" placeholder="📦" oninput="actualizarPreview()">
+                    </div>
+                    <div class="col-9">
+                        <label class="form-label">Nombre (display)</label>
+                        <input type="text" id="nc-nombre" class="form-control" placeholder="Ej. Electrónica" oninput="actualizarPreview()">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Slug (valor en BD, solo minúsculas)</label>
+                        <input type="text" id="nc-slug" class="form-control" placeholder="ej. electronica" pattern="[a-z0-9_]+">
+                        <div class="form-text">Solo letras minúsculas, números y guión bajo.</div>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Descripción <span class="text-muted-custom">(opcional)</span></label>
+                        <input type="text" id="nc-desc" class="form-control" placeholder="Breve descripción">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Vista previa</label>
+                        <div id="nc-preview" class="cat-chip-preview d-inline-flex align-items-center gap-2 px-3 py-2">
+                            <span id="nc-prev-icon">📦</span>
+                            <span id="nc-prev-nombre">Nueva categoría</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarCategoria(this)">
+                    <i class="bi bi-check-lg me-1"></i>Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Inicializar Gráfico de Flujo de Cajas
+    const ctx = document.getElementById('flujoChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels_json|safe }},
+            datasets: [
+                {
+                    label: 'Cajas Ingresadas',
+                    data: {{ chart_ingresos_json|safe }},
+                    borderColor: '#38bdf8',
+                    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                },
+                {
+                    label: 'Cajas Despachadas',
+                    data: {{ chart_salidas_json|safe }},
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#94a3b8' } }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } },
+                x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
+            }
+        }
+    });
+
+    const RECS = {{ recomendaciones_json|safe }};
+
+// ── Doble filtro: estado + categoría ─────────────────────────────────────────
+let filtros = { estado: 'all', cat: 'all' };
+
+function setFiltro(chip, tipo) {
+    document.querySelectorAll(`.chip[data-tipo="${tipo}"]`).forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    filtros[tipo] = chip.dataset.val;
+    aplicarFiltros();
+}
+
+function aplicarFiltros() {
+    document.querySelectorAll('#tabla-body tr[data-estado]').forEach(row => {
+        const okEstado = filtros.estado === 'all' || row.dataset.estado === filtros.estado;
+        const okCat    = filtros.cat === 'all'    || row.dataset.cat    === filtros.cat;
+        row.style.display = (okEstado && okCat) ? '' : 'none';
+    });
+}
+
+// ── Sugerida column — mostrar desde contexto Python ──────────────────────────
+// (Ya viene del servidor, no necesita fetch adicional)
+// Tabla de recomendaciones del server embebida en JS para lookups
+const RECS = {
+    {% for caja_id, rec in recomendaciones.items %}
+    "{{ caja_id }}": "{{ rec.nombre|default:'—' }}",
+    {% endfor %}
+};
+
+// ── Acciones ─────────────────────────────────────────────────────────────────
+async function procesarCaja(id, btn) {
+    const ok = await confirmarModal('Procesar caja', `¿Clasificar y enviar la caja ${id} al almacén?`, 'Procesar', 'btn-warning');
+    if (!ok) return;
+    const uid = await obtenerUsuarioActual();
+    btnCargando(btn, true);
+    const res = await fetch(`/api/cajas/${id}/procesar/`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({ id_usuario: uid }),
+    });
+    const d = await res.json();
+    if (res.ok) { mostrarToast(`Caja ${id} enviada al almacén ✓`, 'success'); setTimeout(() => location.reload(), 1000); }
+    else { mostrarToast(d.error || 'Error', 'danger'); btnCargando(btn, false); }
+}
+
+async function confirmarAlmacenada(id, btn) {
+    const ok = await confirmarModal('Confirmar entrega', `¿La caja ${id} fue colocada en su estante?`, 'Confirmar', 'btn-success');
+    if (!ok) return;
+    const uid = await obtenerUsuarioActual();
+    btnCargando(btn, true);
+    const res = await fetch(`/api/cajas/${id}/confirmar_almacenada/`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({ id_usuario: uid }),
+    });
+    const d = await res.json();
+    if (res.ok) { mostrarToast(`Caja ${id} almacenada ✓`, 'success'); setTimeout(() => location.reload(), 1000); }
+    else { mostrarToast(d.detalle || d.error || 'Error', 'danger'); btnCargando(btn, false); }
+}
+
+let cajaParaDespachar = null;
+let btnParaDespachar = null;
+
+function confirmarDespacho(id, btn) {
+    cajaParaDespachar = id;
+    btnParaDespachar = btn;
+    document.getElementById('md-caja-id').textContent = id;
+    document.getElementById('md-placa').value = '';
+    document.getElementById('md-destino').value = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDespacho')).show();
+}
+
+async function ejecutarDespacho() {
+    const id = cajaParaDespachar;
+    const btn = btnParaDespachar;
+    const placa = document.getElementById('md-placa').value;
+    const destino = document.getElementById('md-destino').value;
+
+    if (!placa) return mostrarToast('Selecciona la placa del transporte', 'warning');
+    if (!destino) return mostrarToast('Selecciona el destino', 'warning');
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDespacho')).hide();
+    const uid = await obtenerUsuarioActual();
+    btnCargando(btn, true);
+    
+    const res = await fetch(`/api/cajas/${id}/confirmar_despacho/`, {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({ 
+            id_usuario: uid,
+            transporte_placa: placa,
+            destino: destino
+        }),
+    });
+    const d = await res.json();
+    if (res.ok) { mostrarToast(`Caja ${id} despachada ✓`, 'success'); setTimeout(() => location.reload(), 1000); }
+    else { mostrarToast(d.detalle || d.error || 'Error', 'danger'); btnCargando(btn, false); }
+}
+
+// ── Rellenar columna Sugerida desde RECS ─────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    for (const [id, nombre] of Object.entries(RECS)) {
+        const el = document.getElementById(`rec-${id}`);
+        if (el && nombre && nombre !== '—' && nombre !== 'None') el.textContent = nombre;
+        else if (el) { el.textContent = 'Sin espacio'; el.style.opacity = '.5'; }
+    }
+});
+
+function actualizarPreview() {
+    document.getElementById('nc-prev-icon').textContent  = document.getElementById('nc-icono').value  || '📦';
+    document.getElementById('nc-prev-nombre').textContent = document.getElementById('nc-nombre').value || 'Nueva categoría';
+    // Auto-sugerir slug
+    const nombre = document.getElementById('nc-nombre').value;
+    const slugField = document.getElementById('nc-slug');
+    if (!slugField.dataset.touched) {
+        slugField.value = nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    }
+}
+document.getElementById('nc-slug').addEventListener('input', function() { this.dataset.touched = '1'; });
+
+async function guardarCategoria(btn) {
+    const slug   = document.getElementById('nc-slug').value.trim();
+    const nombre = document.getElementById('nc-nombre').value.trim();
+    const icono  = document.getElementById('nc-icono').value.trim() || '📦';
+    const desc   = document.getElementById('nc-desc').value.trim();
+
+    if (!slug || !nombre) { mostrarToast('Completa slug y nombre.', 'warning'); return; }
+    if (!/^[a-z0-9_]+$/.test(slug)) { mostrarToast('Slug solo puede tener minúsculas, números y _', 'warning'); return; }
+
+    btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/categorias/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ slug, nombre, icono, descripcion: desc }),
+        });
+        const d = await res.json();
+        if (res.ok) {
+            mostrarToast(`Categoría "${nombre}" creada ✓`, 'success');
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevaCat')).hide();
+            setTimeout(() => location.reload(), 800);
+        } else {
+            mostrarToast(Object.values(d).flat().join(', ') || 'Error', 'danger');
+        }
+    } catch { mostrarToast('Error de conexión', 'danger'); }
+    finally { btnCargando(btn, false); }
+}
+</script>
+{% endblock %}

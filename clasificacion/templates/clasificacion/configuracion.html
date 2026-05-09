@@ -1,0 +1,286 @@
+{% extends 'clasificacion/base.html' %}
+{% block title %}Configuración del Carro — LogiSmart{% endblock %}
+
+{% block extra_css %}
+<style>
+.dim-input-group { display:flex; align-items:center; gap:8px; }
+.dim-sep { color:var(--muted); font-size:18px; font-weight:300; }
+.dim-box { background:var(--bg-card2); border:1px solid var(--border); border-radius:12px; padding:20px; text-align:center; }
+.dim-box .val { font-size:28px; font-weight:700; color:var(--accent); }
+.dim-box .lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+
+.capacity-bar-wrap { height:10px; background:#1e293b; border-radius:99px; overflow:hidden; margin-top:6px; }
+.capacity-bar-fill { height:100%; border-radius:99px; transition:width .6s ease; }
+.fill-green  { background:linear-gradient(90deg,#16a34a,#059669); }
+.fill-blue   { background:linear-gradient(90deg,#2563eb,#1d4ed8); }
+.fill-purple { background:linear-gradient(90deg,#7c3aed,#6d28d9); }
+
+.size-card { background:var(--bg-card2); border:1px solid var(--border); border-radius:14px; padding:20px; text-align:center; }
+.size-card .size-num { font-size:42px; font-weight:800; line-height:1; }
+.size-card .size-lbl { font-size:12px; color:var(--muted); margin-top:6px; }
+
+.breakdown-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+.breakdown-row:last-child { border-bottom:none; }
+.tamano-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.t-pequena { background:#16a34a; }
+.t-mediana { background:#2563eb; }
+.t-grande  { background:#7c3aed; }
+.t-indefinido { background:#475569; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center fade-in">
+    <div class="col">
+        <h2 class="fw-bold mb-1"><i class="bi bi-gear me-2"></i>Configuración del Carro</h2>
+        <p class="text-muted-custom mb-0">Dimensiones, peso máximo y análisis de capacidad de carga</p>
+    </div>
+    <div class="col-auto">
+        <button class="btn btn-success" id="btn-guardar" onclick="guardarConfig(this)">
+            <i class="bi bi-check-lg me-1"></i>Guardar cambios
+        </button>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ── Formulario ───────────────────────────────────────────── -->
+    <div class="col-lg-5 fade-in">
+        <div class="card">
+            <div class="card-header fw-semibold"><i class="bi bi-sliders me-2"></i>Parámetros</div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <label class="form-label">Nombre del carro</label>
+                    <input type="text" class="form-control" id="cfg-nombre" value="{{ config.nombre }}">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Dimensiones (cm) — Largo × Ancho × Alto</label>
+                    <div class="dim-input-group">
+                        <input type="number" step="0.1" min="1" class="form-control" id="cfg-largo" value="{{ config.largo_cm }}" placeholder="Largo" oninput="recalcular()">
+                        <span class="dim-sep">×</span>
+                        <input type="number" step="0.1" min="1" class="form-control" id="cfg-ancho" value="{{ config.ancho_cm }}" placeholder="Ancho" oninput="recalcular()">
+                        <span class="dim-sep">×</span>
+                        <input type="number" step="0.1" min="1" class="form-control" id="cfg-alto" value="{{ config.alto_cm }}" placeholder="Alto" oninput="recalcular()">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Peso máximo (kg)</label>
+                    <input type="number" step="0.5" min="1" class="form-control" id="cfg-peso" value="{{ config.peso_maximo_kg }}" oninput="recalcular()">
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Máximo de paradas por ruta</label>
+                    <input type="number" min="1" max="50" class="form-control" id="cfg-paradas" value="{{ config.max_paradas }}">
+                    <div class="form-text">Limita cuántas cajas puede llevar el carro por viaje.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Posición de base (X, Y)</label>
+                    <div class="d-flex gap-2">
+                        <input type="number" class="form-control" id="cfg-base-x" value="{{ config.pos_base_x }}" placeholder="X">
+                        <input type="number" class="form-control" id="cfg-base-y" value="{{ config.pos_base_y }}" placeholder="Y">
+                    </div>
+                    <div class="form-text">Coordenada donde el carro regresa después de entregar.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Notas</label>
+                    <textarea class="form-control" id="cfg-notas" rows="2">{{ config.notas }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Panel de capacidad ────────────────────────────────────── -->
+    <div class="col-lg-7 fade-in fade-in-delay-1">
+        <!-- Resumen visual de dimensiones -->
+        <div class="card mb-4">
+            <div class="card-header fw-semibold"><i class="bi bi-box me-2"></i>Capacidad calculada</div>
+            <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-4">
+                        <div class="dim-box">
+                            <div class="val" id="disp-largo">{{ config.largo_cm }}</div>
+                            <div class="lbl">Largo (cm)</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="dim-box">
+                            <div class="val" id="disp-ancho">{{ config.ancho_cm }}</div>
+                            <div class="lbl">Ancho (cm)</div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="dim-box">
+                            <div class="val" id="disp-alto">{{ config.alto_cm }}</div>
+                            <div class="lbl">Alto (cm)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span style="font-size:13px;font-weight:600;">Volumen total del carro</span>
+                    <span style="font-size:20px;font-weight:800;color:var(--accent);" id="disp-vol">{{ cart_vol }} cm³</span>
+                </div>
+                <hr>
+
+                <!-- Cajas que caben por tipo -->
+                <div class="row g-3 mb-3">
+                    <div class="col-4">
+                        <div class="size-card">
+                            <div class="size-num text-success" id="res-pequenas">{{ resumen.pequenas }}</div>
+                            <div class="size-lbl">📦 Pequeñas<br><span style="font-size:10px;">≤ 1,000 cm³</span></div>
+                            <div class="capacity-bar-wrap mt-2"><div class="capacity-bar-fill fill-green" id="bar-pequenas" style="width:100%"></div></div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="size-card">
+                            <div class="size-num" style="color:#60a5fa;" id="res-medianas">{{ resumen.medianas }}</div>
+                            <div class="size-lbl">🗃️ Medianas<br><span style="font-size:10px;">1,001 – 27,000 cm³</span></div>
+                            <div class="capacity-bar-wrap mt-2"><div class="capacity-bar-fill fill-blue" id="bar-medianas" style="width:100%"></div></div>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="size-card">
+                            <div class="size-num" style="color:#a78bfa;" id="res-grandes">{{ resumen.grandes }}</div>
+                            <div class="size-lbl">📫 Grandes<br><span style="font-size:10px;">> 27,000 cm³</span></div>
+                            <div class="capacity-bar-wrap mt-2"><div class="capacity-bar-fill fill-purple" id="bar-grandes" style="width:100%"></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-muted-custom" style="font-size:12px;">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Basado en la medida más pequeña de cada tipo. El límite real también depende del peso máximo ({{ config.peso_maximo_kg }} kg).
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de medidas -->
+        <div class="card fade-in fade-in-delay-2">
+            <div class="card-header fw-semibold"><i class="bi bi-table me-2"></i>Desglose por medida registrada</div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-3">Medida</th>
+                                <th>Dimensiones</th>
+                                <th>Volumen</th>
+                                <th>Tipo</th>
+                                <th>Caben (vol.)</th>
+                                <th>Barra</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for b in breakdown %}
+                        <tr>
+                            <td class="ps-3 fw-medium">{{ b.medida.nombre }}</td>
+                            <td style="font-size:12px;color:var(--muted);">{{ b.medida.largo }}×{{ b.medida.ancho }}×{{ b.medida.alto }}</td>
+                            <td style="font-size:12px;">{{ b.vol_cm3 }} cm³</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="tamano-dot t-{{ b.tamano }}"></div>
+                                    <span style="font-size:12px;">{{ b.tamano }}</span>
+                                </div>
+                            </td>
+                            <td class="fw-bold {% if b.caben_vol and b.caben_vol > 5 %}text-success{% elif b.caben_vol and b.caben_vol > 2 %}text-warning{% else %}text-danger{% endif %}">
+                                {% if b.caben_vol %}{{ b.caben_vol }}{% else %}—{% endif %}
+                            </td>
+                            <td style="min-width:80px;">
+                                {% if b.caben_vol %}
+                                <div class="capacity-bar-wrap" style="height:6px;">
+                                    <div class="capacity-bar-fill {% if b.tamano == 'pequena' %}fill-green{% elif b.tamano == 'mediana' %}fill-blue{% else %}fill-purple{% endif %}"
+                                         style="width:min(100%, {{ b.caben_vol|add:0 }}%)"></div>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted-custom py-4">No hay medidas registradas. <a href="/admin/clasificacion/medida/add/">Agregar →</a></td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Recalcular capacidad en tiempo real ───────────────────────────────────────
+// Datos de medidas del servidor
+const MEDIDAS = [
+    {% for b in breakdown %}
+    { nombre: "{{ b.medida.nombre }}", vol: {{ b.vol_cm3 }}, tamano: "{{ b.tamano }}" },
+    {% endfor %}
+];
+
+function recalcular() {
+    const l = parseFloat(document.getElementById('cfg-largo').value) || 0;
+    const a = parseFloat(document.getElementById('cfg-ancho').value) || 0;
+    const h = parseFloat(document.getElementById('cfg-alto').value) || 0;
+    const cartVol = l * a * h;
+
+    document.getElementById('disp-largo').textContent = l || '—';
+    document.getElementById('disp-ancho').textContent = a || '—';
+    document.getElementById('disp-alto').textContent  = h || '—';
+    document.getElementById('disp-vol').textContent = cartVol > 0 ? `${Math.round(cartVol).toLocaleString()} cm³` : '—';
+
+    // Recalcular cajas por tipo
+    const maxPorTipo = { pequena: 0, mediana: 0, grande: 0 };
+    for (const m of MEDIDAS) {
+        const n = m.vol > 0 ? Math.floor(cartVol / m.vol) : 0;
+        if (n > (maxPorTipo[m.tamano] ?? 0)) maxPorTipo[m.tamano] = n;
+    }
+
+    const maxTotal = Math.max(maxPorTipo.pequena, 1);
+    document.getElementById('res-pequenas').textContent = maxPorTipo.pequena || 0;
+    document.getElementById('res-medianas').textContent = maxPorTipo.mediana || 0;
+    document.getElementById('res-grandes').textContent  = maxPorTipo.grande  || 0;
+
+    document.getElementById('bar-pequenas').style.width = `${Math.min(100, (maxPorTipo.pequena / maxTotal) * 100)}%`;
+    document.getElementById('bar-medianas').style.width = `${Math.min(100, (maxPorTipo.mediana / maxTotal) * 100)}%`;
+    document.getElementById('bar-grandes').style.width  = `${Math.min(100, (maxPorTipo.grande  / maxTotal) * 100)}%`;
+}
+
+// ── Guardar configuración ─────────────────────────────────────────────────────
+async function guardarConfig(btn) {
+    const payload = {
+        nombre:         document.getElementById('cfg-nombre').value.trim(),
+        largo_cm:       parseFloat(document.getElementById('cfg-largo').value),
+        ancho_cm:       parseFloat(document.getElementById('cfg-ancho').value),
+        alto_cm:        parseFloat(document.getElementById('cfg-alto').value),
+        peso_maximo_kg: parseFloat(document.getElementById('cfg-peso').value),
+        max_paradas:    parseInt(document.getElementById('cfg-paradas').value),
+        pos_base_x:     parseInt(document.getElementById('cfg-base-x').value),
+        pos_base_y:     parseInt(document.getElementById('cfg-base-y').value),
+        notas:          document.getElementById('cfg-notas').value,
+    };
+
+    if (!payload.nombre || !payload.largo_cm || !payload.ancho_cm || !payload.alto_cm || !payload.peso_maximo_kg) {
+        mostrarToast('Completa todos los campos requeridos.', 'warning'); return;
+    }
+
+    btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/config-carro/actualizar/', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify(payload),
+        });
+        const d = await res.json();
+        if (res.ok) {
+            mostrarToast('Configuración guardada ✓', 'success');
+            recalcular();
+        } else {
+            mostrarToast(Object.values(d).flat().join(', ') || 'Error', 'danger');
+        }
+    } catch { mostrarToast('Error de conexión', 'danger'); }
+    finally { btnCargando(btn, false); }
+}
+
+document.addEventListener('DOMContentLoaded', recalcular);
+</script>
+{% endblock %}

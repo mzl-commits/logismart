@@ -1,0 +1,32 @@
+[2026-05-08 23:26:40,829] INFO clasificacion: Ubicación A1-N1 liberada.
+[2026-05-08 23:26:40,833] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-05-08 23:26:40,837] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-05-08 23:26:40,839] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-05-08 23:26:40,892] INFO clasificacion: Ubicación A1-N1 liberada.
+[2026-05-08 23:26:40,894] INFO clasificacion: Caja CAJA-DESP-001 despachada. Ubicación A1-N1 liberada.
+[2026-05-08 23:30:06,530] INFO clasificacion: Ubicación A3-N4 liberada.
+[2026-05-08 23:30:06,536] INFO clasificacion: Caja CAJ005¿7 despachada. Ubicación A3-N4 liberada.
+[2026-05-08 23:32:25,341] INFO clasificacion: Caja CAJ009 confirmada como almacenada.
+[2026-05-08 23:54:07,922] INFO clasificacion: Ubicación A1-N1 liberada.
+[2026-05-08 23:54:07,929] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-05-08 23:54:07,932] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-05-08 23:54:07,935] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-05-08 23:54:07,991] INFO clasificacion: Ubicación A1-N1 liberada.
+[2026-05-09 00:01:31,793] INFO clasificacion: Ubicación A3-N4 liberada.
+[2026-05-09 00:02:10,011] INFO clasificacion: Ubicación A1-N1 liberada.
+[2026-05-09 00:02:27,687] INFO clasificacion: Ubicación A1-N2 liberada.
+[2026-05-09 00:02:31,673] INFO clasificacion: Ubicación A2-N1 liberada.
+[2026-05-09 00:02:42,393] INFO clasificacion: Ubicación A4-N1 liberada.
+[2026-05-09 00:20:27,168] INFO clasificacion: Ubicación A1-N1 liberada.
+[2026-05-09 00:20:27,170] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-05-09 00:20:27,173] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-05-09 00:20:27,176] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-05-09 00:20:27,225] INFO clasificacion: Ubicación A1-N1 liberada.
+[2026-05-09 00:24:57,589] INFO clasificacion: Caja CAJ-20260509-001 almacenada en parada 0.
+[2026-05-09 00:25:01,523] INFO clasificacion: Caja CAJ-20260509-002 almacenada en parada 1.
+[2026-05-09 00:25:01,533] INFO clasificacion: Ruta multi-parada completada.
+[2026-05-09 00:35:21,036] INFO clasificacion: Ubicación A1-N1 liberada.
+[2026-05-09 00:35:21,042] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-05-09 00:35:21,046] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-05-09 00:35:21,048] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-05-09 00:35:21,101] INFO clasificacion: Ubicación A1-N1 liberada.

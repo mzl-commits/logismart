@@ -1,0 +1,361 @@
+{% extends 'clasificacion/base.html' %}
+{% block title %}Nueva Caja — LogiSmart{% endblock %}
+
+{% block extra_css %}
+<style>
+.cat-btn, .prio-btn {
+    border: 2px solid var(--border); background: var(--bg-card); color: var(--text);
+    border-radius: 12px; padding: 12px 10px; text-align: center; cursor: pointer;
+    transition: all .2s; user-select: none;
+}
+.cat-btn:hover  { border-color: var(--accent); background: rgba(56,189,248,.08); }
+.cat-btn.active { border-color: var(--accent); background: rgba(56,189,248,.15); color: var(--accent); }
+.cat-icon { font-size: 26px; display: block; margin-bottom: 4px; }
+.cat-label { font-size: 11px; font-weight: 600; }
+
+.prio-btn { display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
+.prio-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.prio-baja    { border-color: #475569; } .prio-baja.active    { border-color: #94a3b8; background: rgba(148,163,184,.1); }
+.prio-media   { border-color: #1d4ed8; } .prio-media.active   { border-color: #3b82f6; background: rgba(59,130,246,.12); }
+.prio-alta    { border-color: #c2410c; } .prio-alta.active    { border-color: #f97316; background: rgba(249,115,22,.12); }
+.prio-urgente { border-color: #991b1b; } .prio-urgente.active { border-color: #ef4444; background: rgba(239,68,68,.12); }
+
+.queue-item {
+    background: var(--bg-card2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+    animation: fadeInUp .25s ease both;
+}
+.queue-item .q-icon { font-size: 22px; }
+.queue-item .q-info { flex: 1; }
+.queue-item .q-name { font-weight: 600; font-size: 14px; }
+.queue-item .q-meta { font-size: 12px; color: var(--muted); }
+.toggle-fragil { width: 44px; height: 24px; background: #1e293b; border-radius: 99px; position: relative; cursor: pointer; transition: background .2s; border: 1px solid var(--border); }
+.toggle-fragil.on { background: #0ea5e9; }
+.toggle-fragil::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: left .2s; }
+.toggle-fragil.on::after { left: 22px; }
+.id-sugerido-chip { background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.3); color: var(--accent); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4 fade-in">
+    <div class="col">
+        <h2 class="fw-bold mb-1"><i class="bi bi-plus-circle me-2 text-success"></i>Registrar Cajas</h2>
+        <p class="text-muted-custom mb-0">Agrega cajas a la cola y luego envía el carro con ruta optimizada.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- ── Formulario ──────────────────────────────────────────── -->
+    <div class="col-lg-7 fade-in fade-in-delay-1">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-box me-2"></i>Datos de la caja</span>
+                <span id="id-sugerido-chip" class="id-sugerido-chip d-none" title="Click para usar este ID"></span>
+            </div>
+            <div class="card-body">
+                <form id="formCaja" novalidate>
+                    <!-- ID + Producto -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-5">
+                            <label class="form-label">ID de caja</label>
+                            <input type="text" class="form-control" id="campo-id" placeholder="CAJ-20260508-001" required>
+                        </div>
+                        <div class="col-sm-7">
+                            <label class="form-label">Producto / descripción</label>
+                            <input type="text" class="form-control" id="campo-producto" placeholder="Ej. Laptop Dell XPS 15" required>
+                        </div>
+                    </div>
+
+                    <!-- Categoría -->
+                    <div class="mb-4">
+                        <label class="form-label">Categoría</label>
+                        <div class="row g-2">
+                            {% for cat in categorias %}
+                            <div class="col-4 col-sm-2">
+                                <div class="cat-btn" data-val="{{ cat.slug }}" onclick="seleccionarCategoria(this)">
+                                    <span class="cat-icon">{{ cat.icono }}</span>
+                                    <span class="cat-label">{{ cat.nombre }}</span>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="electronica" onclick="seleccionarCategoria(this)"><span class="cat-icon">💻</span><span class="cat-label">Electrónica</span></div></div>
+                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="textil" onclick="seleccionarCategoria(this)"><span class="cat-icon">👕</span><span class="cat-label">Textil</span></div></div>
+                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="alimento" onclick="seleccionarCategoria(this)"><span class="cat-icon">🍎</span><span class="cat-label">Alimento</span></div></div>
+                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="herramienta" onclick="seleccionarCategoria(this)"><span class="cat-icon">🔧</span><span class="cat-label">Herramienta</span></div></div>
+                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="quimico" onclick="seleccionarCategoria(this)"><span class="cat-icon">⚗️</span><span class="cat-label">Químico</span></div></div>
+                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="otro" onclick="seleccionarCategoria(this)"><span class="cat-icon">📦</span><span class="cat-label">Otro</span></div></div>
+                            {% endfor %}
+                        </div>
+                        <input type="hidden" id="campo-categoria" required>
+                    </div>
+
+                    <!-- Prioridad -->
+                    <div class="mb-4">
+                        <label class="form-label">Prioridad</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <div class="prio-btn prio-baja" data-val="baja" onclick="seleccionarPrioridad(this)">
+                                <div class="prio-dot" style="background:#64748b"></div> Baja
+                            </div>
+                            <div class="prio-btn prio-media" data-val="media" onclick="seleccionarPrioridad(this)">
+                                <div class="prio-dot" style="background:#3b82f6"></div> Media
+                            </div>
+                            <div class="prio-btn prio-alta" data-val="alta" onclick="seleccionarPrioridad(this)">
+                                <div class="prio-dot" style="background:#f97316"></div> Alta
+                            </div>
+                            <div class="prio-btn prio-urgente" data-val="urgente" onclick="seleccionarPrioridad(this)">
+                                <div class="prio-dot" style="background:#ef4444"></div> Urgente
+                            </div>
+                        </div>
+                        <input type="hidden" id="campo-prioridad" required>
+                    </div>
+
+                    <!-- Peso + Frágil -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-4">
+                            <label class="form-label">Peso (kg)</label>
+                            <input type="number" step="0.1" min="0.1" class="form-control" id="campo-peso" placeholder="0.0" required>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label">Cantidad</label>
+                            <input type="number" min="1" class="form-control" id="campo-cantidad" value="1" required>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label d-block">¿Es frágil?</label>
+                            <div class="d-flex align-items-center gap-3 mt-2">
+                                <div class="toggle-fragil" id="toggle-fragil" onclick="toggleFragil(this)"></div>
+                                <span id="fragil-label" class="text-muted-custom">No</span>
+                            </div>
+                            <input type="hidden" id="campo-fragil" value="false">
+                        </div>
+                    </div>
+
+                    <!-- Proveedor + Medida -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-6">
+                            <label class="form-label">Proveedor</label>
+                            <select class="form-select" id="campo-proveedor" required>
+                                <option value="">Seleccionar proveedor...</option>
+                                {% for p in proveedores %}
+                                <option value="{{ p.id_proveedor }}">{{ p.nombre_empresa }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label">Medida / tamaño</label>
+                            <select class="form-select" id="campo-medida" required>
+                                <option value="">Seleccionar medida...</option>
+                                {% for m in medidas %}
+                                <option value="{{ m.id_medida }}">{{ m.nombre }} ({{ m.largo }}×{{ m.ancho }}×{{ m.alto }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success w-100 py-2" id="btn-agregar">
+                        <i class="bi bi-plus-lg me-2"></i>Agregar a la cola →
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Cola de cajas ─────────────────────────────────────────── -->
+    <div class="col-lg-5 fade-in fade-in-delay-2">
+        <div class="card h-100 d-flex flex-column">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-list-task me-2"></i>Cola de pendientes</span>
+                <span class="badge" style="background:#1e3a5f;color:#38bdf8;" id="badge-cola">0 cajas</span>
+            </div>
+            <div class="card-body flex-grow-1 d-flex flex-column">
+                <div id="lista-cola" class="d-flex flex-column gap-2 flex-grow-1">
+                    <div class="text-center py-5 text-muted-custom" id="cola-vacia">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
+                        La cola está vacía.<br>Agrega cajas para enviar el carro.
+                    </div>
+                </div>
+
+                <div class="mt-4 border-top border-secondary pt-3">
+                    <div class="mb-3">
+                        <label class="form-label">Operador</label>
+                        <select class="form-select" id="select-usuario-envio">
+                            <option value="">Seleccionar...</option>
+                            {% for u in usuarios %}
+                            <option value="{{ u.id_usuario }}">{{ u.nombre }} ({{ u.rol }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button class="btn btn-primary w-100 py-2" id="btn-enviar-carro" disabled onclick="enviarCarro(this)">
+                        <i class="bi bi-truck me-2"></i>Enviar carro con ruta optimizada
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let categoriaSeleccionada = null;
+let prioridadSeleccionada = 'media';
+let esFragil = false;
+let colaPendientes = [];
+
+// ── Cargar ID sugerido ────────────────────────────────────────────────────────
+async function cargarIdSugerido() {
+    try {
+        const res = await fetch('/api/cajas/sugerir_id/');
+        const data = await res.json();
+        const chip = document.getElementById('id-sugerido-chip');
+        chip.textContent = `💡 ${data.id_sugerido}`;
+        chip.classList.remove('d-none');
+        chip.onclick = () => { document.getElementById('campo-id').value = data.id_sugerido; };
+        document.getElementById('campo-id').placeholder = data.id_sugerido;
+    } catch {}
+}
+
+// ── Selección visual ──────────────────────────────────────────────────────────
+function seleccionarCategoria(el) {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    categoriaSeleccionada = el.dataset.val;
+    document.getElementById('campo-categoria').value = categoriaSeleccionada;
+}
+function seleccionarPrioridad(el) {
+    document.querySelectorAll('.prio-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    prioridadSeleccionada = el.dataset.val;
+    document.getElementById('campo-prioridad').value = prioridadSeleccionada;
+}
+function toggleFragil(el) {
+    esFragil = !esFragil;
+    el.classList.toggle('on', esFragil);
+    document.getElementById('fragil-label').textContent = esFragil ? 'Sí' : 'No';
+    document.getElementById('campo-fragil').value = esFragil;
+}
+
+// Selección por defecto
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelector('.prio-btn[data-val="media"]')?.click();
+    cargarIdSugerido();
+    cargarColaPendientes();
+});
+
+// ── Cargar cola de pendientes existentes ──────────────────────────────────────
+async function cargarColaPendientes() {
+    try {
+        const res = await fetch('/api/cajas/?estado=pendiente&page_size=200');
+        const data = await res.json();
+        const cajas = Array.isArray(data) ? data : (data.results || []);
+        colaPendientes = cajas;
+        renderizarCola();
+    } catch {}
+}
+
+function renderizarCola() {
+    const lista = document.getElementById('lista-cola');
+    const vacia = document.getElementById('cola-vacia');
+    const badge = document.getElementById('badge-cola');
+    const btnEnviar = document.getElementById('btn-enviar-carro');
+
+    badge.textContent = `${colaPendientes.length} caja${colaPendientes.length !== 1 ? 's' : ''}`;
+    btnEnviar.disabled = colaPendientes.length === 0;
+
+    const items = lista.querySelectorAll('.queue-item');
+    items.forEach(i => i.remove());
+
+    if (!colaPendientes.length) { vacia.style.display = ''; return; }
+    vacia.style.display = 'none';
+
+    const catIcons = { electronica:'💻', textil:'👕', alimento:'🍎', herramienta:'🔧', quimico:'⚗️', otro:'📦' };
+    colaPendientes.forEach(c => {
+        const div = document.createElement('div');
+        div.className = 'queue-item';
+        div.innerHTML = `
+            <div class="q-icon">${catIcons[c.categoria] || '📦'}</div>
+            <div class="q-info">
+                <div class="q-name">${c.producto}</div>
+                <div class="q-meta">${c.id} · ${c.peso_kg} kg · <span class="badge badge-${c.prioridad === 'urgente' ? 'despachada' : c.prioridad === 'alta' ? 'almacenada' : 'transito'}">${c.prioridad}</span></div>
+            </div>
+            ${c.es_fragil ? '<span title="Frágil" style="color:#38bdf8;">🔷</span>' : ''}
+        `;
+        lista.appendChild(div);
+    });
+}
+
+// ── Agregar caja ──────────────────────────────────────────────────────────────
+document.getElementById('formCaja').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('campo-id').value.trim();
+    const producto = document.getElementById('campo-producto').value.trim();
+    const categoria = document.getElementById('campo-categoria').value;
+    const prioridad = document.getElementById('campo-prioridad').value;
+    const peso = document.getElementById('campo-peso').value;
+    const cantidad = document.getElementById('campo-cantidad').value;
+    const fragil = document.getElementById('campo-fragil').value === 'true';
+    const proveedor = document.getElementById('campo-proveedor').value;
+    const medida = document.getElementById('campo-medida').value;
+
+    if (!id || !producto || !categoria || !prioridad || !peso || !proveedor || !medida) {
+        mostrarToast('Por favor completa todos los campos.', 'warning'); return;
+    }
+
+    const btn = document.getElementById('btn-agregar');
+    btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/cajas/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ id, producto, categoria, prioridad, peso_kg: peso, cantidad, es_fragil: fragil, id_medida: medida, id_proveedor: proveedor }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            mostrarToast(`Caja "${producto}" agregada a la cola ✓`, 'success');
+            e.target.reset();
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            document.querySelector('.prio-btn[data-val="media"]')?.click();
+            esFragil = false;
+            document.getElementById('toggle-fragil').classList.remove('on');
+            document.getElementById('fragil-label').textContent = 'No';
+            categoriaSeleccionada = null;
+            colaPendientes.push(data);
+            renderizarCola();
+            await cargarIdSugerido();
+        } else {
+            const errMsg = Object.values(data).flat().join(', ');
+            mostrarToast(errMsg || 'Error al agregar la caja', 'danger');
+        }
+    } catch { mostrarToast('Error de conexión', 'danger'); }
+    finally { btnCargando(btn, false); }
+});
+
+// ── Enviar carro ──────────────────────────────────────────────────────────────
+async function enviarCarro(btn) {
+    const usuarioId = document.getElementById('select-usuario-envio').value;
+    if (!usuarioId) { mostrarToast('Selecciona un operador antes de enviar.', 'warning'); return; }
+    const ok = await confirmarModal('Enviar carro', `¿Enviar el carro a recoger ${colaPendientes.length} caja(s) con ruta optimizada?`, 'Enviar', 'btn-primary');
+    if (!ok) return;
+    btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/cajas/procesar_lote/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ id_usuario: parseInt(usuarioId) }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            const paradas = (data.paradas || []).map((p, i) => `<li>${i+1}. <strong>${p.ubicacion_nombre}</strong> — ${p.producto}</li>`).join('');
+            mostrarModalInfo('🚗 Carro en camino', `
+                <p class="mb-3">${data.mensaje}. Ruta optimizada con <strong>${data.total_paradas} parada(s)</strong>.</p>
+                <ul class="list-unstyled">${paradas}</ul>
+                ${data.sin_ubicacion?.length ? `<div class="alert alert-warning mt-3">Sin ubicación: ${data.sin_ubicacion.join(', ')}</div>` : ''}
+            `, '/almacen/', '🗺️ Ver en mapa');
+            colaPendientes = [];
+            renderizarCola();
+        } else { mostrarToast(data.error || 'Error al procesar lote', 'danger'); }
+    } catch { mostrarToast('Error de conexión', 'danger'); }
+    finally { btnCargando(btn, false); }
+}
+</script>
+{% endblock %}

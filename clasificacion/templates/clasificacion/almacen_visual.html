@@ -1,0 +1,377 @@
+{% extends 'clasificacion/base.html' %}
+{% block title %}Almacén — LogiSmart{% endblock %}
+
+{% block extra_css %}
+<style>
+.almacen-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
+.mapa-panel { background: #020617; border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-height: 550px; overflow-x: auto; }
+.side-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; position: sticky; top: 20px; max-height: calc(100vh - 140px); display: flex; flex-direction: column; }
+
+/* Tabs */
+.side-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.side-tab { flex: 1; padding: 12px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all .2s; }
+.side-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+.side-tab-content { display: none; padding: 16px; overflow-y: auto; flex: 1; }
+.side-tab-content.active { display: block; }
+
+/* Celdas del mapa */
+.pasillo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+.pasillo-label { font-size: 13px; font-weight: 700; color: var(--accent); width: 24px; flex-shrink: 0; }
+.ubicaciones-row { display: flex; gap: 8px; flex-wrap: nowrap; }
+.ubicacion-cell {
+    width: 76px; min-height: 68px; border-radius: 10px; padding: 8px 6px; text-align: center;
+    cursor: pointer; transition: all .2s; border: 2px solid transparent; position: relative; flex-shrink: 0;
+    user-select: none;
+}
+.ubicacion-cell:hover { transform: scale(1.06); z-index: 2; }
+.cell-libre   { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
+.cell-ocupada { background: #1c1917; color: #a8a29e; border-color: #292524; }
+.cell-name    { font-size: 11px; font-weight: 700; line-height: 1.2; }
+.cell-status  { font-size: 10px; margin-top: 3px; opacity: .7; }
+
+/* Parada badge */
+.parada-badge {
+    position: absolute; top: -6px; right: -6px; width: 20px; height: 20px;
+    border-radius: 50%; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    background: #f59e0b; color: #111; border: 2px solid #030712;
+}
+.parada-badge.current { background: #22c55e; animation: pulse-badge .9s ease-in-out infinite; }
+.parada-badge.done { background: #475569; color: #94a3b8; }
+
+/* Ruta */
+.cell-ruta { border-color: #854d0e !important; box-shadow: inset 0 0 0 1px rgba(245,158,11,.3); }
+
+/* Carro actual */
+@keyframes pulse-carro {
+    0%   { box-shadow: 0 0 0 0 rgba(56,189,248,.6), inset 0 0 0 2px rgba(56,189,248,.8); }
+    70%  { box-shadow: 0 0 0 8px rgba(56,189,248,0), inset 0 0 0 2px rgba(56,189,248,.8); }
+    100% { box-shadow: 0 0 0 0 rgba(56,189,248,0), inset 0 0 0 2px rgba(56,189,248,.8); }
+}
+.cell-carro { border-color: #38bdf8 !important; animation: pulse-carro 1.4s ease-out infinite; }
+.carro-emoji { font-size: 18px; display: block; }
+
+@keyframes pulse-badge {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.15); }
+}
+
+/* Llegada */
+.llegada-card {
+    background: linear-gradient(135deg, #14532d, #166534);
+    border: 1px solid #16a34a; border-radius: 14px; padding: 20px; text-align: center;
+}
+.llegada-card .llegada-icon { font-size: 40px; margin-bottom: 8px; }
+.llegada-card h5 { color: #86efac; font-weight: 700; }
+
+/* Estado chips */
+.estado-chip { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+.chip-esperando { background:#1e293b; color:#94a3b8; }
+.chip-moviendo  { background:#1e3a5f; color:#7dd3fc; }
+.chip-llego     { background:#14532d; color:#86efac; }
+.chip-regresando { background:#4c1d95; color:#c4b5fd; }
+
+/* Paradas list */
+.parada-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
+.parada-num { width: 24px; height: 24px; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.parada-info { flex: 1; font-size: 13px; }
+.parada-sub  { font-size: 11px; color: var(--muted); }
+
+@media (max-width: 992px) { .almacen-layout { grid-template-columns: 1fr; } .side-panel { position: static; max-height: none; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="row mb-3 align-items-center fade-in">
+    <div class="col">
+        <h2 class="fw-bold mb-1"><i class="bi bi-grid-3x3-gap me-2"></i>Mapa del Almacén</h2>
+        <p class="text-muted-custom mb-0">Recorrido del carro en tiempo real · Confirma entregas directamente aquí</p>
+    </div>
+    <div class="col-auto d-flex gap-2">
+        <button class="btn btn-sm btn-outline-secondary" onclick="cargarTodo()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+        <button class="btn btn-sm btn-warning" id="btn-avanzar" onclick="avanzarCarro(this)"><i class="bi bi-skip-forward-fill"></i> Avanzar</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="resetCarro(this)"><i class="bi bi-x-circle"></i> Reset</button>
+    </div>
+</div>
+
+<!-- Leyenda -->
+<div class="d-flex flex-wrap gap-3 mb-3 fade-in fade-in-delay-1" style="font-size:12px;">
+    <span><span style="width:14px;height:14px;background:#064e3b;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:middle;"></span>Libre</span>
+    <span><span style="width:14px;height:14px;background:#1c1917;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:middle;"></span>Ocupada</span>
+    <span><span style="width:14px;height:14px;border:2px solid #38bdf8;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:middle;"></span>Carro</span>
+    <span><span style="width:14px;height:14px;background:#f59e0b;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;font-size:9px;text-align:center;line-height:14px;font-weight:700;color:#111;">N</span>Parada</span>
+    <span><span style="width:14px;height:14px;border:2px dashed #854d0e;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:middle;"></span>Ruta</span>
+</div>
+
+<!-- Layout principal -->
+<div class="almacen-layout fade-in fade-in-delay-2">
+    <!-- Mapa -->
+    <div class="mapa-panel">
+        <div id="contenedor-mapa">
+            <div class="text-center py-5 text-muted-custom">
+                <div class="spinner-border text-info mb-3" role="status"></div>
+                <p>Cargando almacén...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel lateral -->
+    <div class="side-panel">
+        <div class="side-tabs">
+            <div class="side-tab active" onclick="cambiarTab('carro', this)"><i class="bi bi-truck me-1"></i>Carro</div>
+            <div class="side-tab" onclick="cambiarTab('ubicacion', this)"><i class="bi bi-geo-alt me-1"></i>Ubicación</div>
+        </div>
+        <div id="tab-carro" class="side-tab-content active">
+            <p class="text-muted-custom text-center py-3">Cargando...</p>
+        </div>
+        <div id="tab-ubicacion" class="side-tab-content">
+            <p class="text-muted-custom text-center py-4">
+                <i class="bi bi-hand-index fs-3 d-block mb-2 opacity-50"></i>
+                Selecciona una celda del mapa para ver detalles.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let ubicacionesGlobal = [], cajasGlobal = [], carroGlobal = null;
+
+function normAPI(d) { return Array.isArray(d) ? d : (d.results || []); }
+
+async function cargarTodo() {
+    const [rU, rC, rCarro] = await Promise.all([
+        fetch('/api/ubicaciones/?page_size=500'),
+        fetch('/api/cajas/?page_size=500'),
+        fetch('/api/carro/'),
+    ]);
+    ubicacionesGlobal = normAPI(await rU.json());
+    cajasGlobal       = normAPI(await rC.json());
+    carroGlobal       = await rCarro.json();
+    renderMapa();
+    renderCarro();
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function enRuta(x, y)  { return carroGlobal?.ruta?.some(p => p.x === x && p.y === y) ?? false; }
+function esCarro(x, y) { return carroGlobal?.pos_x === x && carroGlobal?.pos_y === y; }
+function getParada(x, y) {
+    if (!carroGlobal?.paradas?.length) return null;
+    const idx = carroGlobal.paradas.findIndex(p => p.x === x && p.y === y);
+    if (idx === -1) return null;
+    return { numero: idx + 1, esCurrent: idx === carroGlobal.parada_actual, esHecha: idx < carroGlobal.parada_actual };
+}
+
+// ── Renderizar mapa (layout por pasillo) ──────────────────────────────────────
+function renderMapa() {
+    const cont = document.getElementById('contenedor-mapa');
+    if (!ubicacionesGlobal.length) { cont.innerHTML = `<div class="alert alert-warning">Sin ubicaciones.</div>`; return; }
+
+    const cajasByUbi = {};
+    cajasGlobal.forEach(c => { if (c.id_ubicacion) cajasByUbi[c.id_ubicacion] = c; });
+
+    const porPasillo = {};
+    ubicacionesGlobal.forEach(u => { (porPasillo[u.pasillo] ??= []).push(u); });
+
+    let html = '';
+    for (const pasillo of Object.keys(porPasillo).sort()) {
+        const ubis = porPasillo[pasillo].sort((a, b) => a.estante !== b.estante ? a.estante - b.estante : a.nivel - b.nivel);
+        html += `<div class="pasillo-row"><div class="pasillo-label">${pasillo}</div><div class="ubicaciones-row">`;
+        for (const u of ubis) {
+            const x = u.coord_x, y = u.coord_y;
+            const ocupada = u.estado_ocupacion;
+            const esCar   = esCarro(x, y);
+            const ruta    = enRuta(x, y);
+            const parada  = getParada(x, y);
+            let clases = `ubicacion-cell ${ocupada ? 'cell-ocupada' : 'cell-libre'}`;
+            if (esCar) clases += ' cell-carro';
+            else if (ruta) clases += ' cell-ruta';
+
+            const paradaBadge = parada ? `<div class="parada-badge ${parada.esCurrent ? 'current' : parada.esHecha ? 'done' : ''}">${parada.esHecha ? '✓' : parada.numero}</div>` : '';
+            const carroIndicator = esCar ? `<span class="carro-emoji">🚗</span>` : '';
+
+            html += `
+                <div class="${clases}" onclick="seleccionarUbicacion(${u.id_ubicacion})" title="${u.pasillo}${u.estante}-N${u.nivel}">
+                    ${paradaBadge}
+                    <div class="cell-name">${u.pasillo}${u.estante}<br>N${u.nivel}</div>
+                    ${carroIndicator}
+                </div>`;
+        }
+        html += `</div></div>`;
+    }
+    cont.innerHTML = html;
+}
+
+// ── Renderizar tab Carro ──────────────────────────────────────────────────────
+function renderCarro() {
+    const tab = document.getElementById('tab-carro');
+    if (!carroGlobal) { tab.innerHTML = `<p class="text-muted-custom text-center py-4">Sin datos del carro.</p>`; return; }
+
+    const estadoClass = { esperando: 'chip-esperando', moviendo: 'chip-moviendo', llego: 'chip-llego', regresando: 'chip-regresando' }[carroGlobal.estado] || 'chip-esperando';
+    const paradas = carroGlobal.paradas || [];
+    const paradaActual = carroGlobal.parada_actual ?? 0;
+    const llegó = carroGlobal.estado === 'llego' && paradas.length > 0;
+    const regresando = carroGlobal.estado === 'regresando';
+
+    let llegadaHtml = '';
+    if (llegó && paradas[paradaActual]) {
+        const p = paradas[paradaActual];
+        llegadaHtml = `
+            <div class="llegada-card mb-3">
+                <div class="llegada-icon">🎯</div>
+                <h5>¡Carro llegó!</h5>
+                <p class="mb-1" style="color:#86efac;font-weight:600;">${p.ubicacion_nombre}</p>
+                <p class="text-muted-custom mb-3" style="font-size:13px;">Parada ${paradaActual + 1}/${paradas.length} · 📦 ${p.producto}</p>
+                <button class="btn btn-success w-100 py-2 fw-semibold" id="btn-confirmar-parada" onclick="confirmarParada(this)">
+                    <i class="bi bi-check-circle-fill me-2"></i>Confirmar entrega
+                </button>
+            </div>`;
+    } else if (regresando) {
+        llegadaHtml = `
+            <div class="llegada-card mb-3" style="background: linear-gradient(135deg, #4c1d95, #3b0764); border-color: #7c3aed;">
+                <div class="llegada-icon">🏠</div>
+                <h5 style="color:#c4b5fd;">Regresando a base</h5>
+                <p class="text-muted-custom mb-0" style="font-size:13px;">Todas las entregas completadas.</p>
+            </div>`;
+    }
+
+    const paradasHtml = paradas.length ? `
+        <div class="mb-3">
+            <div class="text-muted-custom mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Ruta de ${paradas.length} parada(s)</div>
+            ${paradas.map((p, i) => `
+                <div class="parada-item">
+                    <div class="parada-num" style="background:${i === paradaActual ? '#16a34a' : i < paradaActual ? '#1e293b' : '#1e3a5f'};color:${i === paradaActual ? '#fff' : '#94a3b8'}">
+                        ${i < paradaActual ? '✓' : i + 1}
+                    </div>
+                    <div class="parada-info">
+                        <div class="${i === paradaActual ? 'fw-semibold' : i < paradaActual ? 'text-muted-custom' : ''}">${p.ubicacion_nombre}</div>
+                        <div class="parada-sub">${p.producto}</div>
+                    </div>
+                </div>`).join('')}
+        </div>` : '';
+
+    tab.innerHTML = `
+        ${llegadaHtml}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="fw-semibold" style="font-size:13px;"><i class="bi bi-truck me-2"></i>Carro automatizado</span>
+            <span class="estado-chip ${estadoClass}">${carroGlobal.estado}</span>
+        </div>
+        <div style="font-size:13px;" class="mb-3">
+            <div class="d-flex justify-content-between py-1 border-bottom" style="border-color:var(--border)!important;"><span class="text-muted-custom">Posición</span> <span>(${carroGlobal.pos_x}, ${carroGlobal.pos_y})</span></div>
+            <div class="d-flex justify-content-between py-1 border-bottom" style="border-color:var(--border)!important;"><span class="text-muted-custom">Destino</span> <span>(${carroGlobal.destino_x}, ${carroGlobal.destino_y})</span></div>
+            <div class="d-flex justify-content-between py-1"><span class="text-muted-custom">Pasos restantes</span> <span>${carroGlobal.ruta?.length ?? 0}</span></div>
+        </div>
+        ${paradasHtml}`;
+}
+
+// ── Tab selección de ubicación ────────────────────────────────────────────────
+function cambiarTab(id, el) {
+    document.querySelectorAll('.side-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.side-tab-content').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById(`tab-${id}`).classList.add('active');
+}
+
+function seleccionarUbicacion(id) {
+    const u = ubicacionesGlobal.find(u => u.id_ubicacion === id);
+    const c = cajasGlobal.find(c => c.id_ubicacion === id);
+    if (!u) return;
+
+    const tab = document.getElementById('tab-ubicacion');
+    const catIcon = { electronica:'💻', textil:'👕', alimento:'🍎', herramienta:'🔧', quimico:'⚗️', otro:'📦' };
+
+    tab.innerHTML = `
+        <div class="mb-3">
+            <div class="fw-bold" style="font-size:18px;color:var(--accent);">${u.pasillo}${u.estante}-N${u.nivel}</div>
+            <div class="d-flex gap-2 mt-1 flex-wrap">
+                <span class="badge" style="background:#1e293b;color:#94a3b8;">${u.tipo_estante}</span>
+                ${u.estado_ocupacion ? '<span class="badge" style="background:#7f1d1d;color:#fca5a5;">Ocupada</span>' : '<span class="badge" style="background:#14532d;color:#86efac;">Libre</span>'}
+                ${u.permite_fragil ? '<span class="badge" style="background:#0c4a6e;color:#7dd3fc;">Frágil OK</span>' : ''}
+                ${u.permite_quimico ? '<span class="badge" style="background:#451a03;color:#fcd34d;">Químico OK</span>' : ''}
+            </div>
+        </div>
+        <div style="font-size:13px;" class="mb-3">
+            <div class="d-flex justify-content-between py-1 border-bottom" style="border-color:var(--border)!important;"><span class="text-muted-custom">Capacidad</span><span>${u.capacidad_peso_kg} kg</span></div>
+            <div class="d-flex justify-content-between py-1 border-bottom" style="border-color:var(--border)!important;"><span class="text-muted-custom">Prioridad cat.</span><span>${u.prioridad_categoria}</span></div>
+            <div class="d-flex justify-content-between py-1"><span class="text-muted-custom">Coords</span><span>X:${u.coord_x} Y:${u.coord_y}</span></div>
+        </div>
+        ${c ? `
+            <div class="card" style="border-color:var(--border);">
+                <div class="card-body" style="padding:14px;">
+                    <div class="fw-semibold mb-1">${catIcon[c.categoria] || '📦'} ${c.producto}</div>
+                    <div class="text-muted-custom mb-2" style="font-size:12px;">${c.id} · ${c.peso_kg} kg ${c.es_fragil ? '· 🔷 Frágil' : ''}</div>
+                    <span class="badge badge-${c.estado === 'en_transito' ? 'transito' : c.estado === 'almacenada' ? 'almacenada' : 'pendiente'}">${c.estado}</span>
+                    ${c.estado === 'almacenada' ? `<div class="mt-2"><button class="btn btn-sm btn-outline-secondary w-100" onclick="confirmarDespachoDesdePanel('${c.id}', this)"><i class="bi bi-truck me-1"></i>Despachar</button></div>` : ''}
+                </div>
+            </div>` : `<div class="text-muted-custom text-center py-2" style="font-size:13px;"><i class="bi bi-check-circle me-1 text-success"></i>Ubicación libre</div>`}
+    `;
+
+    // Cambiar al tab ubicación
+    document.querySelectorAll('.side-tab')[1]?.click();
+}
+
+// ── Acciones del carro ────────────────────────────────────────────────────────
+async function avanzarCarro(btn) {
+    btnCargando(btn, true);
+    await fetch('/api/carro/avanzar/', { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } });
+    await cargarTodo();
+    btnCargando(btn, false);
+}
+
+async function resetCarro(btn) {
+    const ok = await confirmarModal('Reset del carro', '¿Reiniciar el carro al origen?', 'Reiniciar', 'btn-danger');
+    if (!ok) return;
+    btnCargando(btn, true);
+    await fetch('/api/carro/reset/', { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } });
+    await cargarTodo();
+    mostrarToast('Carro reiniciado.', 'info');
+    btnCargando(btn, false);
+}
+
+async function confirmarParada(btn) {
+    const usuario = await obtenerUsuarioActual();
+    btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/carro/confirmar_parada/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ id_usuario: usuario }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            if (data.finalizado) {
+                mostrarToast('¡Todas las entregas completadas! 🎉', 'success', 'Completado');
+            } else {
+                mostrarToast(`Entrega confirmada. Avanzando a parada ${data.parada_actual + 1}/${data.total_paradas}`, 'success');
+            }
+            await cargarTodo();
+        } else { mostrarToast(data.error || 'Error', 'danger'); btnCargando(btn, false); }
+    } catch { mostrarToast('Error de conexión', 'danger'); btnCargando(btn, false); }
+}
+
+async function confirmarDespachoDesdePanel(idCaja, btn) {
+    const ok = await confirmarModal('Despachar caja', `¿Despachar la caja ${idCaja}? Se liberará la ubicación.`, 'Despachar', 'btn-dark');
+    if (!ok) return;
+    const usuario = await obtenerUsuarioActual();
+    btnCargando(btn, true);
+    const res = await fetch(`/api/cajas/${idCaja}/confirmar_despacho/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+        body: JSON.stringify({ id_usuario: usuario }),
+    });
+    const data = await res.json();
+    if (res.ok) { mostrarToast(`Caja ${idCaja} despachada.`, 'success'); await cargarTodo(); }
+    else { mostrarToast(data.error || 'Error', 'danger'); btnCargando(btn, false); }
+}
+
+// ── Auto-refresh ──────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+    await cargarTodo();
+    setInterval(async () => {
+        await cargarTodo();
+        if (carroGlobal?.estado === 'moviendo') await avanzarCarro(null);
+    }, 1200);
+});
+</script>
+{% endblock %}
