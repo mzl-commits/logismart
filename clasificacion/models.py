@@ -249,19 +249,6 @@ class HistorialMovimientos(models.Model):
         return f"Log {self.id_log}: {self.estado_anterior} → {self.estado_nuevo}"
 
 
-class Despacho(models.Model):
-    id_despacho = models.AutoField(primary_key=True)
-    id_caja = models.ForeignKey(Caja, on_delete=models.CASCADE, db_column='id_caja')
-    id_usuario_despacho = models.ForeignKey(Usuario, on_delete=models.PROTECT, db_column='id_usuario_despacho')
-    destino = models.CharField(max_length=200)
-    transporte_placa = models.CharField(max_length=20)
-    fecha_salida = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'despacho'
-    
-    def __str__(self):
-        return f"Despacho {self.id_despacho} → {self.destino}"
 
 class EstadoCarro(models.Model):
     ESTADOS = [

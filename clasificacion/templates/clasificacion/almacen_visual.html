@@ -3,76 +3,79 @@
 
 {% block extra_css %}
 <style>
-.almacen-layout { display: grid; grid-template-columns: 1fr 340px; gap: 20px; }
-.mapa-panel { background: #020617; border: 1px solid var(--border); border-radius: 16px; padding: 20px; min-height: 550px; overflow-x: auto; }
-.side-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; position: sticky; top: 20px; max-height: calc(100vh - 140px); display: flex; flex-direction: column; }
+.almacen-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
+.mapa-panel { background: linear-gradient(145deg, #020617 0%, #0f172a 100%); border: 1px solid rgba(56,189,248,.1); border-radius: 20px; padding: 24px; min-height: 550px; overflow-x: auto; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+.side-panel { background: linear-gradient(180deg, var(--bg-card) 0%, #0c1222 100%); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; position: sticky; top: 20px; max-height: calc(100vh - 140px); display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(0,0,0,.2); }
 
 /* Tabs */
 .side-tabs { display: flex; border-bottom: 1px solid var(--border); }
-.side-tab { flex: 1; padding: 12px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all .2s; }
-.side-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
-.side-tab-content { display: none; padding: 16px; overflow-y: auto; flex: 1; }
+.side-tab { flex: 1; padding: 14px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all .25s; }
+.side-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: rgba(56,189,248,.04); }
+.side-tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,.02); }
+.side-tab-content { display: none; padding: 18px; overflow-y: auto; flex: 1; }
 .side-tab-content.active { display: block; }
 
 /* Celdas del mapa */
-.pasillo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-.pasillo-label { font-size: 13px; font-weight: 700; color: var(--accent); width: 24px; flex-shrink: 0; }
-.ubicaciones-row { display: flex; gap: 8px; flex-wrap: nowrap; }
+.pasillo-row { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.pasillo-label { font-size: 18px; font-weight: 800; color: var(--accent); width: 40px; flex-shrink: 0; text-shadow: 0 0 12px rgba(56,189,248,.4); padding-top: 20px; }
+.ubicaciones-row { display: flex; gap: 14px; flex-wrap: wrap; flex: 1; }
 .ubicacion-cell {
-    width: 76px; min-height: 68px; border-radius: 10px; padding: 8px 6px; text-align: center;
-    cursor: pointer; transition: all .2s; border: 2px solid transparent; position: relative; flex-shrink: 0;
-    user-select: none;
+    width: 100px; min-height: 85px; border-radius: 12px; padding: 14px 8px; text-align: center;
+    cursor: pointer; transition: all .25s cubic-bezier(.4,0,.2,1); border: 2px solid transparent; position: relative; flex-shrink: 0;
+    user-select: none; backdrop-filter: blur(4px); display: flex; flex-direction: column; justify-content: center; align-items: center;
 }
-.ubicacion-cell:hover { transform: scale(1.06); z-index: 2; }
-.cell-libre   { background: #064e3b; color: #a7f3d0; border-color: #065f46; }
-.cell-ocupada { background: #1c1917; color: #a8a29e; border-color: #292524; }
-.cell-name    { font-size: 11px; font-weight: 700; line-height: 1.2; }
-.cell-status  { font-size: 10px; margin-top: 3px; opacity: .7; }
+.ubicacion-cell:hover { transform: translateY(-4px) scale(1.05); z-index: 2; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+.cell-libre   { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); color: #a7f3d0; border-color: rgba(16,185,129,.5); }
+.cell-ocupada { background: linear-gradient(135deg, #1c1917 0%, #292524 100%); color: #f5f5f4; border-color: rgba(168,162,158,.3); }
+.cell-name    { font-size: 14px; font-weight: 800; line-height: 1.3; letter-spacing: .5px; margin-bottom: 4px; }
+.cell-status  { font-size: 12px; font-weight: 600; opacity: .9; text-transform: uppercase; }
 
 /* Parada badge */
 .parada-badge {
-    position: absolute; top: -6px; right: -6px; width: 20px; height: 20px;
+    position: absolute; top: -8px; right: -8px; width: 22px; height: 22px;
     border-radius: 50%; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-    background: #f59e0b; color: #111; border: 2px solid #030712;
+    background: linear-gradient(135deg, #f59e0b, #d97706); color: #111; border: 2px solid #030712;
+    box-shadow: 0 2px 8px rgba(245,158,11,.4);
 }
-.parada-badge.current { background: #22c55e; animation: pulse-badge .9s ease-in-out infinite; }
-.parada-badge.done { background: #475569; color: #94a3b8; }
+.parada-badge.current { background: linear-gradient(135deg, #22c55e, #16a34a); animation: pulse-badge .9s ease-in-out infinite; box-shadow: 0 2px 12px rgba(34,197,94,.5); }
+.parada-badge.done { background: #475569; color: #94a3b8; box-shadow: none; }
 
 /* Ruta */
-.cell-ruta { border-color: #854d0e !important; box-shadow: inset 0 0 0 1px rgba(245,158,11,.3); }
+.cell-ruta { border-color: rgba(245,158,11,.4) !important; box-shadow: inset 0 0 0 1px rgba(245,158,11,.2), 0 0 16px rgba(245,158,11,.1); }
 
 /* Carro actual */
 @keyframes pulse-carro {
     0%   { box-shadow: 0 0 0 0 rgba(56,189,248,.6), inset 0 0 0 2px rgba(56,189,248,.8); }
-    70%  { box-shadow: 0 0 0 8px rgba(56,189,248,0), inset 0 0 0 2px rgba(56,189,248,.8); }
+    70%  { box-shadow: 0 0 0 10px rgba(56,189,248,0), inset 0 0 0 2px rgba(56,189,248,.8); }
     100% { box-shadow: 0 0 0 0 rgba(56,189,248,0), inset 0 0 0 2px rgba(56,189,248,.8); }
 }
-.cell-carro { border-color: #38bdf8 !important; animation: pulse-carro 1.4s ease-out infinite; }
-.carro-emoji { font-size: 18px; display: block; }
+.cell-carro { border-color: #38bdf8 !important; animation: pulse-carro 1.4s ease-out infinite; background: linear-gradient(135deg, #0c4a6e, #0369a1) !important; }
+.carro-emoji { font-size: 20px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
 
 @keyframes pulse-badge {
     0%, 100% { transform: scale(1); }
-    50%       { transform: scale(1.15); }
+    50%       { transform: scale(1.18); }
 }
 
 /* Llegada */
 .llegada-card {
     background: linear-gradient(135deg, #14532d, #166534);
-    border: 1px solid #16a34a; border-radius: 14px; padding: 20px; text-align: center;
+    border: 1px solid rgba(22,163,74,.4); border-radius: 16px; padding: 22px; text-align: center;
+    box-shadow: 0 4px 20px rgba(22,163,74,.15);
 }
-.llegada-card .llegada-icon { font-size: 40px; margin-bottom: 8px; }
+.llegada-card .llegada-icon { font-size: 44px; margin-bottom: 10px; }
 .llegada-card h5 { color: #86efac; font-weight: 700; }
 
 /* Estado chips */
-.estado-chip { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; }
-.chip-esperando { background:#1e293b; color:#94a3b8; }
-.chip-moviendo  { background:#1e3a5f; color:#7dd3fc; }
-.chip-llego     { background:#14532d; color:#86efac; }
-.chip-regresando { background:#4c1d95; color:#c4b5fd; }
+.estado-chip { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+.chip-esperando { background: rgba(30,41,59,.8); color:#94a3b8; }
+.chip-moviendo  { background: rgba(30,58,95,.8); color:#7dd3fc; }
+.chip-llego     { background: rgba(20,83,45,.8); color:#86efac; }
+.chip-regresando { background: rgba(76,29,149,.8); color:#c4b5fd; }
 
 /* Paradas list */
-.parada-item { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
-.parada-num { width: 24px; height: 24px; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.parada-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.05); align-items: flex-start; }
+.parada-num { width: 26px; height: 26px; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .parada-info { flex: 1; font-size: 13px; }
 .parada-sub  { font-size: 11px; color: var(--muted); }
 
@@ -355,23 +358,59 @@ async function confirmarDespachoDesdePanel(idCaja, btn) {
     if (!ok) return;
     const usuario = await obtenerUsuarioActual();
     btnCargando(btn, true);
-    const res = await fetch(`/api/cajas/${idCaja}/confirmar_despacho/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-        body: JSON.stringify({ id_usuario: usuario }),
-    });
-    const data = await res.json();
-    if (res.ok) { mostrarToast(`Caja ${idCaja} despachada.`, 'success'); await cargarTodo(); }
-    else { mostrarToast(data.error || 'Error', 'danger'); btnCargando(btn, false); }
+    try {
+        const res = await fetch(`/api/cajas/${idCaja}/confirmar_despacho/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ id_usuario: usuario, destino: 'Despacho directo', transporte_placa: 'N/A' }),
+        });
+        const data = await res.json();
+        if (res.ok) { mostrarToast(`Caja ${idCaja} despachada.`, 'success'); await cargarTodo(); }
+        else { mostrarToast(data.detalle || data.error || 'Error al despachar', 'danger'); }
+    } catch(e) { mostrarToast('Error de conexión', 'danger'); }
+    finally { btnCargando(btn, false); }
 }
 
-// ── Auto-refresh ──────────────────────────────────────────────────────────────
+// ── Smart real-time polling (solo re-render si hay cambios) ───────────────────
+let lastCarroHash = '', lastUbisHash = '';
+function hashData(obj) { return JSON.stringify(obj).length + '_' + JSON.stringify(obj).slice(0, 200); }
+
 document.addEventListener('DOMContentLoaded', async () => {
     await cargarTodo();
+    lastCarroHash = hashData(carroGlobal);
+    lastUbisHash = hashData(ubicacionesGlobal);
+    
     setInterval(async () => {
-        await cargarTodo();
-        if (carroGlobal?.estado === 'moviendo') await avanzarCarro(null);
-    }, 1200);
+        try {
+            const [rU, rC, rCarro] = await Promise.all([
+                fetch('/api/ubicaciones/?page_size=500'),
+                fetch('/api/cajas/?page_size=500'),
+                fetch('/api/carro/'),
+            ]);
+            const newUbis = normAPI(await rU.json());
+            const newCajas = normAPI(await rC.json());
+            const newCarro = await rCarro.json();
+            
+            const newCarroHash = hashData(newCarro);
+            const newUbisHash = hashData(newUbis);
+            
+            // Solo re-renderizar si algo cambió
+            if (newCarroHash !== lastCarroHash || newUbisHash !== lastUbisHash) {
+                ubicacionesGlobal = newUbis;
+                cajasGlobal = newCajas;
+                carroGlobal = newCarro;
+                renderMapa();
+                renderCarro();
+                lastCarroHash = newCarroHash;
+                lastUbisHash = newUbisHash;
+            }
+            
+            // Auto-avanzar carro si está en movimiento
+            if (carroGlobal?.estado === 'moviendo') {
+                await fetch('/api/carro/avanzar/', { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } });
+            }
+        } catch(e) { /* silencio en polling */ }
+    }, 1500);
 });
 </script>
 {% endblock %}

@@ -5,7 +5,7 @@
 <div class="row mb-4 align-items-center fade-in">
     <div class="col">
         <h2 class="fw-bold mb-1"><i class="bi bi-people me-2"></i>Panel de Administración</h2>
-        <p class="text-muted-custom mb-0">Gestión de Usuarios Operadores y Proveedores del sistema</p>
+        <p class="text-muted-custom mb-0">Gestión de Usuarios, Proveedores y Datos Logísticos (Vehículos/Destinos)</p>
     </div>
 </div>
 
@@ -17,7 +17,7 @@
                 <span><i class="bi bi-person-badge me-2"></i>Usuarios (Operadores)</span>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                     <table class="table table-hover mb-0">
                         <thead class="sticky-top bg-dark">
                             <tr>
@@ -48,15 +48,17 @@
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
                 <span><i class="bi bi-building me-2"></i>Proveedores</span>
+                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalProveedor"><i class="bi bi-plus"></i> Nuevo</button>
             </div>
             <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
                     <table class="table table-hover mb-0">
                         <thead class="sticky-top bg-dark">
                             <tr>
                                 <th>RUC/ID</th>
                                 <th>Razón Social</th>
                                 <th>Contacto</th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -65,6 +67,9 @@
                                 <td class="text-muted-custom">{{ p.id_proveedor }}</td>
                                 <td class="fw-medium">{{ p.razon_social }}</td>
                                 <td style="font-size:12px;">{{ p.contacto_nombre }}<br><span class="text-muted-custom">{{ p.contacto_telefono }}</span></td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro('/api/proveedores/{{ p.id_proveedor }}/', 'Proveedor {{ p.razon_social }}')"><i class="bi bi-trash"></i></button>
+                                </td>
                             </tr>
                             {% empty %}
                             <tr><td colspan="3" class="text-center text-muted-custom py-4">No hay proveedores.</td></tr>
@@ -75,5 +80,251 @@
             </div>
         </div>
     </div>
+
+    <!-- Panel Vehículos -->
+    <div class="col-lg-6 fade-in fade-in-delay-2">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+                <span><i class="bi bi-truck me-2"></i>Flota de Vehículos</span>
+                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalVehiculo"><i class="bi bi-plus"></i> Nuevo</button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead class="sticky-top bg-dark">
+                            <tr>
+                                <th>Placa</th>
+                                <th>Marca / Modelo</th>
+                                <th>Capacidad</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for v in vehiculos %}
+                            <tr>
+                                <td class="fw-bold">{{ v.placa }}</td>
+                                <td>{{ v.marca }}</td>
+                                <td class="text-muted-custom">{{ v.capacidad_kg }} kg</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro('/api/vehiculos/{{ v.id_vehiculo }}/', 'Vehículo {{ v.placa }}')"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted-custom py-4">No hay vehículos registrados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Destinos -->
+    <div class="col-lg-6 fade-in fade-in-delay-3">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
+                <span><i class="bi bi-geo-alt me-2"></i>Sedes y Destinos</span>
+                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalDestino"><i class="bi bi-plus"></i> Nuevo</button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                    <table class="table table-hover mb-0">
+                        <thead class="sticky-top bg-dark">
+                            <tr>
+                                <th>Nombre / Sucursal</th>
+                                <th>Dirección</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in destinos %}
+                            <tr>
+                                <td class="fw-bold">{{ d.nombre }}</td>
+                                <td class="text-muted-custom" style="font-size:12px;">{{ d.direccion }}</td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro('/api/destinos/{{ d.id_destino }}/', 'Destino {{ d.nombre }}')"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="3" class="text-center text-muted-custom py-4">No hay destinos registrados.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Modal Nuevo Proveedor -->
+<div class="modal fade" id="modalProveedor" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-building me-2"></i>Registrar Proveedor</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">RUC / ID</label>
+                    <input type="text" class="form-control" id="p-ruc" placeholder="Ej. 20123456789">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Razón Social</label>
+                    <input type="text" class="form-control" id="p-razon" placeholder="Nombre de la empresa">
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Contacto (Nombre)</label>
+                        <input type="text" class="form-control" id="p-contacto" placeholder="Ej. Juan Pérez">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" id="p-tel" placeholder="Ej. 999 888 777">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="p-email" placeholder="Ej. contacto@empresa.com">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Dirección</label>
+                    <input type="text" class="form-control" id="p-dir" placeholder="Ej. Av. Principal 123">
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarProveedor(this)">Guardar Proveedor</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Vehículo -->
+<div class="modal fade" id="modalVehiculo" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-truck me-2"></i>Registrar Vehículo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Placa</label>
+                    <input type="text" class="form-control" id="v-placa" placeholder="Ej. ABC-123">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Marca / Descripción</label>
+                    <input type="text" class="form-control" id="v-marca" placeholder="Ej. Toyota Dyna">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Capacidad de Carga (kg)</label>
+                    <input type="number" class="form-control" id="v-capacidad" value="1000">
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarVehiculo(this)">Guardar Vehículo</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nuevo Destino -->
+<div class="modal fade" id="modalDestino" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-geo-alt me-2"></i>Registrar Destino</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Nombre o Identificador</label>
+                    <input type="text" class="form-control" id="d-nombre" placeholder="Ej. Sucursal Centro">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Dirección Exacta</label>
+                    <input type="text" class="form-control" id="d-direccion" placeholder="Ej. Av. Principal 123">
+                </div>
+            </div>
+            <div class="modal-footer border-top-0">
+                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button class="btn btn-success" onclick="guardarDestino(this)">Guardar Destino</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function guardarVehiculo(btn) {
+    const placa = document.getElementById('v-placa').value.trim();
+    const marca = document.getElementById('v-marca').value.trim();
+    const capacidad = document.getElementById('v-capacidad').value;
+    if (!placa) return mostrarToast('Debes ingresar la placa', 'warning');
+    
+    btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/vehiculos/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ placa, marca, capacidad_kg: capacidad })
+        });
+        if (res.ok) { location.reload(); }
+        else { const d=await res.json(); mostrarToast(JSON.stringify(d), 'danger'); }
+    } finally { btnCargando(btn, false); }
+}
+
+async function guardarDestino(btn) {
+    const nombre = document.getElementById('d-nombre').value.trim();
+    const direccion = document.getElementById('d-direccion').value.trim();
+    if (!nombre) return mostrarToast('Debes ingresar un nombre', 'warning');
+    
+    btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/destinos/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ nombre, direccion })
+        });
+        if (res.ok) { location.reload(); }
+        else { const d=await res.json(); mostrarToast(JSON.stringify(d), 'danger'); }
+    } finally { btnCargando(btn, false); }
+}
+
+async function eliminarRegistro(url, nombre) {
+    if (!confirm(`¿Estás seguro de eliminar el registro de ${nombre}?`)) return;
+    try {
+        const res = await fetch(url, { method: 'DELETE', headers: { 'X-CSRFToken': getCookie('csrftoken') }});
+        if (res.ok) { location.reload(); }
+        else { mostrarToast('No se pudo eliminar, es posible que esté en uso.', 'danger'); }
+    } finally { btnCargando(btn, false); }
+}
+
+async function guardarProveedor(btn) {
+    const data = {
+        id_proveedor: document.getElementById('p-ruc').value.trim(),
+        razon_social: document.getElementById('p-razon').value.trim(),
+        contacto_nombre: document.getElementById('p-contacto').value.trim(),
+        contacto_telefono: document.getElementById('p-tel').value.trim(),
+        contacto_email: document.getElementById('p-email').value.trim(),
+        direccion: document.getElementById('p-dir').value.trim()
+    };
+    if (!data.id_proveedor || !data.razon_social) return mostrarToast('RUC y Razón Social son requeridos', 'warning');
+    
+    btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/proveedores/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) { mostrarToast('Proveedor registrado ✓', 'success'); setTimeout(() => location.reload(), 1000); }
+        else { const d = await res.json(); mostrarToast(Object.values(d).flat().join(', ') || 'Error', 'danger'); }
+    } catch { mostrarToast('Error de red', 'danger'); }
+    finally { btnCargando(btn, false); }
+}
+</script>
 {% endblock %}

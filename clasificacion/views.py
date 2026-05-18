@@ -8,13 +8,29 @@ from rest_framework.response import Response
 
 from .models import (
     Caja, Ubicacion, Medida, Proveedor, Usuario,
-    HistorialMovimientos, Despacho, EstadoCarro, Categoria, ConfigCarro
+    HistorialMovimientos, Despacho, EstadoCarro, Categoria, ConfigCarro,
+    Vehiculo, Destino
 )
 from .serializers import (
     CajaSerializer, UbicacionSerializer, MedidaSerializer,
     ProveedorSerializer, UsuarioSerializer, HistorialSerializer,
-    DespachoSerializer, EstadoCarroSerializer, CategoriaSerializer, ConfigCarroSerializer
+    DespachoSerializer, EstadoCarroSerializer, CategoriaSerializer, ConfigCarroSerializer,
+    VehiculoSerializer, DestinoSerializer
 )
+
+class VehiculoViewSet(viewsets.ModelViewSet):
+    queryset = Vehiculo.objects.all()
+    serializer_class = VehiculoSerializer
+
+class DestinoViewSet(viewsets.ModelViewSet):
+    queryset = Destino.objects.all()
+    serializer_class = DestinoSerializer
+
+class ProveedorViewSet(viewsets.ModelViewSet):
+    queryset = Proveedor.objects.all()
+    serializer_class = ProveedorSerializer
+
+
 from .services import ClasificadorCajas, OptimizadorUbicaciones, ESP32Service
 from .services.ruta_service import RutaService
 
@@ -65,10 +81,14 @@ class CajaViewSet(viewsets.ModelViewSet):
         qs = Caja.objects.all().order_by('-hora_llegada')
         estado = self.request.query_params.get('estado')
         categoria = self.request.query_params.get('categoria')
+        search = self.request.query_params.get('search')
         if estado:
             qs = qs.filter(estado=estado)
         if categoria:
             qs = qs.filter(categoria=categoria)
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(Q(id__icontains=search) | Q(producto__icontains=search))
         return qs
 
     @action(detail=False, methods=['get'])
@@ -292,6 +312,7 @@ class CajaViewSet(viewsets.ModelViewSet):
 
         with transaction.atomic():
             caja.estado = 'despachada'
+            caja.id_ubicacion = None  # Liberar la referencia de la caja a la ubicación
             caja.save()
             if ubicacion_anterior:
                 OptimizadorUbicaciones.liberar_ubicacion(ubicacion_anterior)

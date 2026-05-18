@@ -126,6 +126,34 @@
         hr { border-color: var(--border); }
         .progress { background: #1e293b; border-radius: 99px; height: 8px; }
 
+        /* ── Global Search ──────────────────────────────────────── */
+        .search-wrapper { position: relative; }
+        .search-wrapper input {
+            background: #0f172a; border: 1px solid var(--border); color: var(--text);
+            border-radius: 10px; font-size: 13px; padding: 6px 12px 6px 32px; width: 200px;
+            transition: all .25s;
+        }
+        .search-wrapper input:focus { width: 280px; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,.12); outline: none; }
+        .search-wrapper input::placeholder { color: var(--muted); }
+        .search-wrapper .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
+        .search-results {
+            position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+            max-height: 320px; overflow-y: auto; z-index: 1050; display: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,.4);
+        }
+        .search-results.show { display: block; }
+        .search-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background .15s; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.04); }
+        .search-item:hover { background: rgba(56,189,248,.06); }
+        .search-item:last-child { border-bottom: none; }
+        .search-item .si-id { font-weight: 700; color: var(--accent); min-width: 100px; }
+        .search-item .si-prod { flex: 1; }
+        .search-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
+
+        /* ── Live indicator ─────────────────────────────────────── */
+        .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; animation: live-blink 1.5s ease-in-out infinite; }
+        @keyframes live-blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+
         /* ── Animations ─────────────────────────────────────────── */
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(12px); }
@@ -188,11 +216,17 @@
                 </li>
             </ul>
             <div class="d-flex align-items-center gap-3">
+                <!-- Buscador Global -->
+                <div class="search-wrapper">
+                    <i class="bi bi-search search-icon"></i>
+                    <input type="text" id="global-search" placeholder="Buscar caja..." autocomplete="off" oninput="buscarCajas(this.value)" onfocus="if(this.value.length>=2)document.getElementById('search-results').classList.add('show')" onblur="setTimeout(()=>document.getElementById('search-results').classList.remove('show'),200)">
+                    <div class="search-results" id="search-results"></div>
+                </div>
                 <a href="/api/docs/" target="_blank" class="nav-link text-muted-custom" style="font-size: 13px;" title="Documentación API">
                     <i class="bi bi-terminal"></i> API Docs
                 </a>
                 <div class="d-flex align-items-center gap-2 text-muted-custom" style="font-size:13px;">
-                    <i class="bi bi-hourglass-split"></i>
+                    <span class="live-dot"></span>
                     <span id="nav-pending-count">—</span> pendientes
                     <span id="nav-pending-badge" class="pending-badge d-none">0</span>
                 </div>
@@ -362,7 +396,38 @@ async function actualizarBadgePendientes() {
         else badge.classList.add('d-none');
     } catch {}
 }
-document.addEventListener('DOMContentLoaded', () => { actualizarBadgePendientes(); setInterval(actualizarBadgePendientes, 20000); });
+document.addEventListener('DOMContentLoaded', () => { actualizarBadgePendientes(); setInterval(actualizarBadgePendientes, 10000); });
+
+// ── Búsqueda global de cajas ──────────────────────────────────────────────────
+let searchTimer = null;
+async function buscarCajas(query) {
+    const box = document.getElementById('search-results');
+    if (query.length < 2) { box.classList.remove('show'); return; }
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/cajas/?search=${encodeURIComponent(query)}&page_size=10`);
+            const data = await res.json();
+            const items = data.results || data || [];
+            if (!items.length) {
+                box.innerHTML = '<div class="search-empty"><i class="bi bi-inbox me-2"></i>Sin resultados</div>';
+            } else {
+                const statusBadge = (e) => {
+                    const colors = { pendiente:'#f59e0b', en_transito:'#38bdf8', almacenada:'#22c55e', despachada:'#64748b' };
+                    return `<span class="badge" style="background:${colors[e]||'#475569'};font-size:10px;">${e}</span>`;
+                };
+                box.innerHTML = items.map(c => `
+                    <div class="search-item" onclick="window.location.href='/'">
+                        <span class="si-id">${c.id}</span>
+                        <span class="si-prod">${c.producto || '—'}</span>
+                        ${statusBadge(c.estado)}
+                    </div>
+                `).join('');
+            }
+            box.classList.add('show');
+        } catch { box.innerHTML = '<div class="search-empty">Error de búsqueda</div>'; box.classList.add('show'); }
+    }, 300);
+}
 </script>
 {% block extra_js %}{% endblock %}
 </body>

@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Caja, Ubicacion, HistorialMovimientos, Medida, Proveedor, Usuario, Categoria, ConfigCarro
+from .models import Caja, Ubicacion, HistorialMovimientos, Medida, Proveedor, Usuario, Categoria, ConfigCarro, Vehiculo, Destino
 from .services import ClasificadorCajas, OptimizadorUbicaciones
 
 
@@ -158,4 +158,6 @@ def administracion(request):
     return render(request, 'clasificacion/administracion.html', {
         'usuarios': Usuario.objects.all(),
         'proveedores': Proveedor.objects.all(),
+        'vehiculos': Vehiculo.objects.all(),
+        'destinos': Destino.objects.all(),
     })
