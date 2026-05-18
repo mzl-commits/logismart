@@ -30,177 +30,187 @@
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4 align-items-center fade-in">
-    <div class="col">
-        <h2 class="fw-bold mb-1"><i class="bi bi-gear me-2"></i>Configuración del Carro</h2>
-        <p class="text-muted-custom mb-0">Dimensiones, peso máximo y análisis de capacidad de carga</p>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 fade-in">
+    <div>
+        <h2 class="text-2xl font-bold mb-1 text-white"><i class="bi bi-gear me-2 text-sky-400"></i>Configuración del Carro</h2>
+        <p class="text-sm text-slate-400 mb-0">Dimensiones, peso máximo y análisis de capacidad de carga</p>
     </div>
-    <div class="col-auto">
-        <button class="btn btn-success" id="btn-guardar" onclick="guardarConfig(this)">
-            <i class="bi bi-check-lg me-1"></i>Guardar cambios
+    <div>
+        <button class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20" id="btn-guardar" onclick="guardarConfig(this)">
+            <i class="bi bi-check-lg"></i> Guardar cambios
         </button>
     </div>
 </div>
 
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 fade-in">
     <!-- ── Formulario ───────────────────────────────────────────── -->
-    <div class="col-lg-5 fade-in">
-        <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-sliders me-2"></i>Parámetros</div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <label class="form-label">Nombre del carro</label>
-                    <input type="text" class="form-control" id="cfg-nombre" value="{{ config.nombre }}">
+    <div class="lg:col-span-5">
+        <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center gap-2 bg-slate-900/30">
+                <i class="bi bi-sliders text-sky-400"></i> Parámetros
+            </div>
+            <div class="p-6">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Nombre del carro</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="cfg-nombre" value="{{ config.nombre }}">
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label">Dimensiones (cm) — Largo × Ancho × Alto</label>
-                    <div class="dim-input-group">
-                        <input type="number" step="0.1" min="1" class="form-control" id="cfg-largo" value="{{ config.largo_cm }}" placeholder="Largo" oninput="recalcular()">
-                        <span class="dim-sep">×</span>
-                        <input type="number" step="0.1" min="1" class="form-control" id="cfg-ancho" value="{{ config.ancho_cm }}" placeholder="Ancho" oninput="recalcular()">
-                        <span class="dim-sep">×</span>
-                        <input type="number" step="0.1" min="1" class="form-control" id="cfg-alto" value="{{ config.alto_cm }}" placeholder="Alto" oninput="recalcular()">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Dimensiones (cm) — Largo × Ancho × Alto</label>
+                    <div class="flex items-center gap-3">
+                        <input type="number" step="0.1" min="1" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-largo" value="{{ config.largo_cm }}" placeholder="L" oninput="recalcular()">
+                        <span class="text-slate-500">×</span>
+                        <input type="number" step="0.1" min="1" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-ancho" value="{{ config.ancho_cm }}" placeholder="A" oninput="recalcular()">
+                        <span class="text-slate-500">×</span>
+                        <input type="number" step="0.1" min="1" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-alto" value="{{ config.alto_cm }}" placeholder="H" oninput="recalcular()">
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label">Peso máximo (kg)</label>
-                    <input type="number" step="0.5" min="1" class="form-control" id="cfg-peso" value="{{ config.peso_maximo_kg }}" oninput="recalcular()">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Peso máximo (kg)</label>
+                    <input type="number" step="0.5" min="1" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 transition-all" id="cfg-peso" value="{{ config.peso_maximo_kg }}" oninput="recalcular()">
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label">Máximo de paradas por ruta</label>
-                    <input type="number" min="1" max="50" class="form-control" id="cfg-paradas" value="{{ config.max_paradas }}">
-                    <div class="form-text">Limita cuántas cajas puede llevar el carro por viaje.</div>
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Máximo de paradas por ruta</label>
+                    <input type="number" min="1" max="50" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 transition-all" id="cfg-paradas" value="{{ config.max_paradas }}">
+                    <div class="text-[11px] text-slate-500 mt-2">Limita cuántas cajas puede llevar el carro por viaje.</div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Posición de base (X, Y)</label>
-                    <div class="d-flex gap-2">
-                        <input type="number" class="form-control" id="cfg-base-x" value="{{ config.pos_base_x }}" placeholder="X">
-                        <input type="number" class="form-control" id="cfg-base-y" value="{{ config.pos_base_y }}" placeholder="Y">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Posición de base (X, Y)</label>
+                    <div class="flex gap-4">
+                        <input type="number" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-base-x" value="{{ config.pos_base_x }}" placeholder="X">
+                        <input type="number" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-base-y" value="{{ config.pos_base_y }}" placeholder="Y">
                     </div>
-                    <div class="form-text">Coordenada donde el carro regresa después de entregar.</div>
+                    <div class="text-[11px] text-slate-500 mt-2">Coordenada donde el carro regresa después de entregar.</div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Notas</label>
-                    <textarea class="form-control" id="cfg-notas" rows="2">{{ config.notas }}</textarea>
+                <div class="mb-2">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Notas</label>
+                    <textarea class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 transition-all resize-none" id="cfg-notas" rows="2">{{ config.notas }}</textarea>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- ── Panel de capacidad ────────────────────────────────────── -->
-    <div class="col-lg-7 fade-in fade-in-delay-1">
-        <!-- Resumen visual de dimensiones -->
-        <div class="card mb-4">
-            <div class="card-header fw-semibold"><i class="bi bi-box me-2"></i>Capacidad calculada</div>
-            <div class="card-body">
-                <div class="row g-3 mb-4">
-                    <div class="col-4">
-                        <div class="dim-box">
-                            <div class="val" id="disp-largo">{{ config.largo_cm }}</div>
-                            <div class="lbl">Largo (cm)</div>
-                        </div>
+    <div class="lg:col-span-7">
+        <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center gap-2 bg-slate-900/30">
+                <i class="bi bi-box text-sky-400"></i> Capacidad calculada
+            </div>
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
+                        <div class="text-2xl font-black text-white" id="disp-largo">{{ config.largo_cm }}</div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Largo (cm)</div>
                     </div>
-                    <div class="col-4">
-                        <div class="dim-box">
-                            <div class="val" id="disp-ancho">{{ config.ancho_cm }}</div>
-                            <div class="lbl">Ancho (cm)</div>
-                        </div>
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
+                        <div class="text-2xl font-black text-white" id="disp-ancho">{{ config.ancho_cm }}</div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Ancho (cm)</div>
                     </div>
-                    <div class="col-4">
-                        <div class="dim-box">
-                            <div class="val" id="disp-alto">{{ config.alto_cm }}</div>
-                            <div class="lbl">Alto (cm)</div>
-                        </div>
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
+                        <div class="text-2xl font-black text-white" id="disp-alto">{{ config.alto_cm }}</div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Alto (cm)</div>
                     </div>
                 </div>
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <span style="font-size:13px;font-weight:600;">Volumen total del carro</span>
-                    <span style="font-size:20px;font-weight:800;color:var(--accent);" id="disp-vol">{{ cart_vol }} cm³</span>
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+                    <span class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Volumen total del carro</span>
+                    <span class="text-2xl font-black text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]" id="disp-vol">{{ cart_vol }} cm³</span>
                 </div>
-                <hr>
+                
+                <div class="h-px bg-slate-800/60 w-full mb-6"></div>
 
-                <!-- Cajas que caben por tipo -->
-                <div class="row g-3 mb-3">
-                    <div class="col-4">
-                        <div class="size-card">
-                            <div class="size-num text-success" id="res-pequenas">{{ resumen.pequenas }}</div>
-                            <div class="size-lbl">📦 Pequeñas<br><span style="font-size:10px;">≤ 1,000 cm³</span></div>
-                            <div class="capacity-bar-wrap mt-2"><div class="capacity-bar-fill fill-green" id="bar-pequenas" style="width:100%"></div></div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col items-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="text-4xl font-black text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)] z-10" id="res-pequenas">{{ resumen.pequenas }}</div>
+                        <div class="text-center mt-2 z-10">
+                            <span class="text-sm font-bold text-slate-300">📦 Pequeñas</span><br>
+                            <span class="text-[10px] text-slate-500">≤ 1,000 cm³</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden z-10">
+                            <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" id="bar-pequenas" style="width:100%"></div>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <div class="size-card">
-                            <div class="size-num" style="color:#60a5fa;" id="res-medianas">{{ resumen.medianas }}</div>
-                            <div class="size-lbl">🗃️ Medianas<br><span style="font-size:10px;">1,001 – 27,000 cm³</span></div>
-                            <div class="capacity-bar-wrap mt-2"><div class="capacity-bar-fill fill-blue" id="bar-medianas" style="width:100%"></div></div>
+                    
+                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col items-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-sky-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="text-4xl font-black text-sky-400 drop-shadow-[0_0_12px_rgba(56,189,248,0.3)] z-10" id="res-medianas">{{ resumen.medianas }}</div>
+                        <div class="text-center mt-2 z-10">
+                            <span class="text-sm font-bold text-slate-300">🗃️ Medianas</span><br>
+                            <span class="text-[10px] text-slate-500">1,001 – 27,000 cm³</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden z-10">
+                            <div class="h-full bg-sky-500 rounded-full transition-all duration-500" id="bar-medianas" style="width:100%"></div>
                         </div>
                     </div>
-                    <div class="col-4">
-                        <div class="size-card">
-                            <div class="size-num" style="color:#a78bfa;" id="res-grandes">{{ resumen.grandes }}</div>
-                            <div class="size-lbl">📫 Grandes<br><span style="font-size:10px;">> 27,000 cm³</span></div>
-                            <div class="capacity-bar-wrap mt-2"><div class="capacity-bar-fill fill-purple" id="bar-grandes" style="width:100%"></div></div>
+                    
+                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col items-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="text-4xl font-black text-indigo-400 drop-shadow-[0_0_12px_rgba(99,102,241,0.3)] z-10" id="res-grandes">{{ resumen.grandes }}</div>
+                        <div class="text-center mt-2 z-10">
+                            <span class="text-sm font-bold text-slate-300">📫 Grandes</span><br>
+                            <span class="text-[10px] text-slate-500">> 27,000 cm³</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden z-10">
+                            <div class="h-full bg-indigo-500 rounded-full transition-all duration-500" id="bar-grandes" style="width:100%"></div>
                         </div>
                     </div>
                 </div>
-                <div class="text-muted-custom" style="font-size:12px;">
-                    <i class="bi bi-info-circle me-1"></i>
+                <div class="text-xs text-slate-500 mt-4 flex items-center gap-1.5">
+                    <i class="bi bi-info-circle"></i>
                     Basado en la medida más pequeña de cada tipo. El límite real también depende del peso máximo ({{ config.peso_maximo_kg }} kg).
                 </div>
             </div>
         </div>
 
         <!-- Tabla de medidas -->
-        <div class="card fade-in fade-in-delay-2">
-            <div class="card-header fw-semibold"><i class="bi bi-table me-2"></i>Desglose por medida registrada</div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table mb-0">
-                        <thead>
-                            <tr>
-                                <th class="ps-3">Medida</th>
-                                <th>Dimensiones</th>
-                                <th>Volumen</th>
-                                <th>Tipo</th>
-                                <th>Caben (vol.)</th>
-                                <th>Barra</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {% for b in breakdown %}
-                        <tr>
-                            <td class="ps-3 fw-medium">{{ b.medida.nombre }}</td>
-                            <td style="font-size:12px;color:var(--muted);">{{ b.medida.largo }}×{{ b.medida.ancho }}×{{ b.medida.alto }}</td>
-                            <td style="font-size:12px;">{{ b.vol_cm3 }} cm³</td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="tamano-dot t-{{ b.tamano }}"></div>
-                                    <span style="font-size:12px;">{{ b.tamano }}</span>
-                                </div>
-                            </td>
-                            <td class="fw-bold {% if b.caben_vol and b.caben_vol > 5 %}text-success{% elif b.caben_vol and b.caben_vol > 2 %}text-warning{% else %}text-danger{% endif %}">
-                                {% if b.caben_vol %}{{ b.caben_vol }}{% else %}—{% endif %}
-                            </td>
-                            <td style="min-width:80px;">
-                                {% if b.caben_vol %}
-                                <div class="capacity-bar-wrap" style="height:6px;">
-                                    <div class="capacity-bar-fill {% if b.tamano == 'pequena' %}fill-green{% elif b.tamano == 'mediana' %}fill-blue{% else %}fill-purple{% endif %}"
-                                         style="width:min(100%, {{ b.caben_vol|add:0 }}%)"></div>
-                                </div>
-                                {% endif %}
-                            </td>
+        <div class="bg-surface rounded-2xl border border-slate-800/60 p-0 overflow-hidden fade-in fade-d2 mt-6">
+            <div class="px-6 py-4 border-b border-slate-800/60 font-semibold flex items-center gap-2 text-white"><i class="bi bi-grid-3x3 text-sky-400"></i> Desglose por medida registrada</div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-800/60 bg-slate-900/30 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                            <th class="px-6 py-4">Medida</th>
+                            <th class="px-6 py-4">Dimensiones</th>
+                            <th class="px-6 py-4">Volumen</th>
+                            <th class="px-6 py-4">Tipo</th>
+                            <th class="px-6 py-4 text-center">Caben (vol.)</th>
+                            <th class="px-6 py-4">Barra</th>
                         </tr>
-                        {% empty %}
-                        <tr><td colspan="6" class="text-center text-muted-custom py-4">No hay medidas registradas. <a href="/admin/clasificacion/medida/add/">Agregar →</a></td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                    </thead>
+                    <tbody class="text-sm">
+                    {% for b in breakdown %}
+                    <tr class="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
+                        <td class="px-6 py-4 font-semibold text-white">{{ b.medida.nombre }}</td>
+                        <td class="px-6 py-4 text-xs text-slate-400">{{ b.medida.largo }}×{{ b.medida.ancho }}×{{ b.medida.alto }}</td>
+                        <td class="px-6 py-4 text-xs text-slate-300">{{ b.vol_cm3 }} cm³</td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full {% if b.tamano == 'pequena' %}bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]{% elif b.tamano == 'mediana' %}bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]{% else %}bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]{% endif %}"></div>
+                                <span class="text-xs text-slate-300 capitalize">{{ b.tamano }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-center font-bold {% if b.caben_vol and b.caben_vol > 5 %}text-emerald-400{% elif b.caben_vol and b.caben_vol > 2 %}text-amber-400{% else %}text-red-400{% endif %}">
+                            {% if b.caben_vol %}{{ b.caben_vol }}{% else %}—{% endif %}
+                        </td>
+                        <td class="px-6 py-4 w-32">
+                            {% if b.caben_vol %}
+                            <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full transition-all duration-500 {% if b.tamano == 'pequena' %}bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]{% elif b.tamano == 'mediana' %}bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]{% else %}bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]{% endif %}"
+                                     style="width:min(100%, {{ b.caben_vol|add:0 }}%)"></div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center text-slate-500 py-8">No hay medidas registradas. <a href="/admin/clasificacion/medida/add/" class="text-sky-400 hover:text-sky-300 underline underline-offset-2">Agregar →</a></td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

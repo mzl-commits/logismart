@@ -1,249 +1,170 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Sistema Logístico{% endblock %}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        base: '#030712',
+                        surface: '#0f172a',
+                        surface2: '#111827',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        :root {
-            --bg-base: #030712;
-            --bg-card: #0f172a;
-            --bg-card2: #111827;
-            --border: #1e293b;
-            --accent: #38bdf8;
-            --accent2: #818cf8;
-            --text: #e2e8f0;
-            --muted: #64748b;
-        }
-        * { box-sizing: border-box; }
-        body { background: var(--bg-base); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; }
+        /* Animations */
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        .fade-in { animation: fadeInUp .4s ease both; }
+        .fade-d1 { animation-delay:.06s } .fade-d2 { animation-delay:.12s } .fade-d3 { animation-delay:.18s } .fade-d4 { animation-delay:.24s }
+        @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .live-dot { animation: pulseDot 1.5s ease-in-out infinite; }
+        @keyframes pulseUrgente { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)} 50%{box-shadow:0 0 0 6px rgba(220,38,38,0)} }
+        .urgente-pulse { animation: pulseUrgente 1.8s ease-in-out infinite; }
 
-        /* ── Navbar ─────────────────────────────────────────────── */
-        .navbar {
-            height: 68px;
-            background: linear-gradient(135deg, #020617 0%, #0c1322 100%);
-            border-bottom: 1px solid #1e3a5f;
-            padding: 0 24px;
-        }
-        .navbar-brand {
-            font-size: 18px; font-weight: 700; color: var(--accent) !important;
-            display: flex; align-items: center; gap: 10px; letter-spacing: -.3px;
-        }
-        .navbar-brand .brand-icon {
-            width: 36px; height: 36px; background: linear-gradient(135deg, #0ea5e9, #6366f1);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-            font-size: 18px;
-        }
-        .nav-link {
-            color: #94a3b8 !important; font-size: 13px; font-weight: 500;
-            padding: 6px 14px !important; border-radius: 8px; transition: all .2s;
-            display: flex; align-items: center; gap: 6px;
-        }
-        .nav-link:hover { color: var(--text) !important; background: rgba(255,255,255,.06); }
-        .nav-link.active { color: var(--accent) !important; background: rgba(56,189,248,.1); }
-        .btn-nueva-caja {
-            background: linear-gradient(135deg, #16a34a, #15803d);
-            color: white !important; font-weight: 600; border: none;
-            padding: 7px 16px !important; border-radius: 8px;
-        }
-        .btn-nueva-caja:hover { opacity: .9; transform: translateY(-1px); }
-        .pending-badge {
-            background: #f59e0b; color: #111; font-size: 11px; font-weight: 700;
-            padding: 2px 7px; border-radius: 99px; min-width: 20px; text-align: center;
-        }
+        /* Essential Bootstrap structural classes for JS components */
+        .modal { display: none; position: fixed; top: 0; left: 0; z-index: 1055; width: 100%; height: 100%; outline: 0; overflow-x: hidden; overflow-y: auto; }
+        .modal-dialog { position: relative; margin: 1.75rem auto; pointer-events: none; max-width: 500px; }
+        .modal-dialog-centered { display: flex; align-items: center; min-height: calc(100% - 3.5rem); }
+        .modal-sm { max-width: 300px; }
+        .modal-lg { max-width: 800px; }
+        .modal-content { pointer-events: auto; width: 100%; }
+        .modal-backdrop { position: fixed; top: 0; left: 0; z-index: 1050; width: 100vw; height: 100vh; background-color: #000; }
+        .modal-backdrop.fade { opacity: 0; transition: opacity .15s linear; }
+        .modal-backdrop.show { opacity: 0.5; }
+        .fade { transition: opacity .15s linear; }
+        .fade:not(.show) { opacity: 0; }
+        
+        .toast-container { position: fixed; z-index: 1090; bottom: 0; right: 0; padding: 1rem; }
+        .toast { width: 350px; max-width: 100%; pointer-events: auto; background-clip: padding-box; border-radius: .25rem; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); }
+        .toast:not(.show) { display: none; }
 
-        /* ── Cards ──────────────────────────────────────────────── */
-        .card {
-            background: var(--bg-card); border: 1px solid var(--border);
-            color: var(--text); border-radius: 14px;
-        }
-        .card-header {
-            background: transparent; border-bottom: 1px solid var(--border);
-            padding: 14px 20px; font-weight: 600; font-size: 14px;
-        }
-        .card-body { padding: 20px; }
+        /* Bootstrap JS modal/toast overrides for dark theme */
+        .modal-backdrop { background: rgba(0,0,0,.6) !important; }
+        .modal-content { background: #0f172a !important; border: 1px solid #1e293b !important; color: #e2e8f0 !important; border-radius: 16px !important; }
+        .modal-header { border-bottom: 1px solid #1e293b !important; padding: 20px 24px !important; display: flex; align-items: center; justify-content: space-between; }
+        .modal-footer { border-top: 1px solid #1e293b !important; padding: 16px 24px !important; display: flex; justify-content: flex-end; gap: .5rem; }
+        .modal-body { padding: 20px 24px !important; }
+        .modal-title { font-weight: 700 !important; font-size: 16px !important; margin: 0; }
+        .btn-close { box-sizing: content-box; width: 1em; height: 1em; padding: .25em .25em; color: #000; background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat; border: 0; border-radius: .25rem; opacity: .5; }
+        .btn-close-white { filter: invert(1) grayscale(100%) brightness(200%); }
+        .toast-header { display: flex; align-items: center; padding: .5rem .75rem; border-bottom: 1px solid rgba(0,0,0,.05); border-top-left-radius: calc(.25rem - 1px); border-top-right-radius: calc(.25rem - 1px); }
+        .toast-body { padding: .75rem; }
 
-        /* ── Stat cards ─────────────────────────────────────────── */
-        .stat-card { border-radius: 16px; padding: 20px 22px; position: relative; overflow: hidden; }
-        .stat-card .stat-value { font-size: 36px; font-weight: 700; line-height: 1; }
-        .stat-card .stat-label { font-size: 12px; font-weight: 500; opacity: .7; margin-top: 4px; }
-        .stat-card .stat-icon { font-size: 42px; opacity: .15; position: absolute; right: 16px; bottom: 10px; }
-        .stat-blue   { background: linear-gradient(135deg, #1e3a5f, #1e40af22); border: 1px solid #1e3a5f; }
-        .stat-amber  { background: linear-gradient(135deg, #451a03, #d9770622); border: 1px solid #92400e; }
-        .stat-cyan   { background: linear-gradient(135deg, #0c4a6e, #0ea5e922); border: 1px solid #0369a1; }
-        .stat-green  { background: linear-gradient(135deg, #14532d, #16a34a22); border: 1px solid #166534; }
+        .toast { background: #1e293b !important; color: #e2e8f0 !important; border: 1px solid #334155 !important; border-radius: 12px !important; }
+        .toast-header { background: #0f172a !important; color: #e2e8f0 !important; border-bottom: 1px solid #1e293b !important; }
 
-        /* ── Tables ─────────────────────────────────────────────── */
-        .table {
-            --bs-table-bg: transparent; --bs-table-color: var(--text);
-            --bs-table-border-color: var(--border); --bs-table-hover-bg: rgba(255,255,255,.03);
-        }
-        .table thead th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); border-bottom: 1px solid var(--border); padding: 10px 12px; }
-        .table td { padding: 10px 12px; vertical-align: middle; border-color: var(--border); }
-
-        /* ── Badges ─────────────────────────────────────────────── */
-        .badge-pendiente  { background: #d97706; color: #fff; }
-        .badge-transito   { background: #2563eb; color: #fff; }
-        .badge-almacenada { background: #16a34a; color: #fff; }
-        .badge-despachada { background: #7c3aed; color: #fff; }
-        .badge-clasificada{ background: #0891b2; color: #fff; }
-
-        /* ── Buttons ────────────────────────────────────────────── */
-        .btn-primary  { background: #2563eb; border-color: #2563eb; }
-        .btn-success  { background: #16a34a; border-color: #16a34a; }
-        .btn-warning  { background: #d97706; border-color: #d97706; color: #fff; }
-        .btn { border-radius: 8px; font-weight: 500; font-size: 13px; }
-        .btn-sm { padding: 5px 12px; font-size: 12px; }
-
-        /* ── Modal / Toast ──────────────────────────────────────── */
-        .modal-content {
-            background: var(--bg-card); border: 1px solid var(--border);
-            color: var(--text); border-radius: 16px;
-        }
-        .modal-header { border-bottom: 1px solid var(--border); padding: 18px 22px; }
-        .modal-footer { border-top: 1px solid var(--border); }
-        .toast-container { z-index: 1100; }
-        .toast { background: #1e293b; color: var(--text); border: 1px solid var(--border); border-radius: 12px; }
-        .toast-header { background: var(--bg-card); color: var(--text); border-bottom: 1px solid var(--border); }
-
-        /* ── Forms ──────────────────────────────────────────────── */
+        /* Form controls used by Bootstrap JS modals */
         .form-control, .form-select {
-            background: #0f172a; border: 1px solid var(--border); color: var(--text);
-            border-radius: 10px; font-size: 14px;
+            background: #0f172a !important; border: 1px solid #334155 !important; color: #e2e8f0 !important;
+            border-radius: 10px !important; font-size: 15px !important; padding: 10px 14px !important;
+            font-family: 'Inter', sans-serif !important;
         }
         .form-control:focus, .form-select:focus {
-            background: #0f172a; border-color: var(--accent);
-            color: var(--text); box-shadow: 0 0 0 3px rgba(56,189,248,.15);
+            border-color: #38bdf8 !important; box-shadow: 0 0 0 3px rgba(56,189,248,.15) !important; outline: none !important;
         }
-        .form-control::placeholder { color: var(--muted); }
-        .form-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
+        .form-control::placeholder { color: #64748b !important; }
+        .form-label { font-size: 12px !important; font-weight: 600 !important; color: #64748b !important; text-transform: uppercase !important; letter-spacing: .4px !important; margin-bottom: 6px !important; display: block !important; }
+        .form-text { font-size: 12px !important; color: #475569 !important; margin-top: 4px !important; }
+        .form-check-input { background-color: #1e293b !important; border-color: #475569 !important; }
+        .form-check-input:checked { background-color: #0ea5e9 !important; border-color: #0ea5e9 !important; }
 
-        /* ── Misc ───────────────────────────────────────────────── */
-        .text-muted-custom { color: var(--muted); }
-        hr { border-color: var(--border); }
-        .progress { background: #1e293b; border-radius: 99px; height: 8px; }
+        /* Bootstrap btn overrides for modals */
+        .btn { border-radius: 10px !important; font-weight: 600 !important; font-size: 14px !important; padding: 8px 18px !important; font-family: 'Inter', sans-serif !important; transition: all .2s !important; }
+        .btn-sm { padding: 6px 14px !important; font-size: 13px !important; }
+        .btn-primary { background: #2563eb !important; border-color: #2563eb !important; color: #fff !important; }
+        .btn-primary:hover { background: #1d4ed8 !important; }
+        .btn-success { background: #16a34a !important; border-color: #16a34a !important; color: #fff !important; }
+        .btn-success:hover { background: #15803d !important; }
+        .btn-warning { background: #d97706 !important; border-color: #d97706 !important; color: #fff !important; }
+        .btn-warning:hover { background: #b45309 !important; }
+        .btn-secondary { background: #334155 !important; border-color: #334155 !important; color: #e2e8f0 !important; }
+        .btn-outline-secondary { background: transparent !important; border-color: #475569 !important; color: #94a3b8 !important; }
+        .btn-outline-secondary:hover { background: #1e293b !important; color: #e2e8f0 !important; }
+        .btn-outline-danger { background: transparent !important; border-color: #dc2626 !important; color: #dc2626 !important; }
+        .btn-outline-danger:hover { background: rgba(220,38,38,.1) !important; }
+        .btn-outline-light { background: transparent !important; border: 1px solid #334155 !important; color: #e2e8f0 !important; text-align: left !important; }
+        .btn-outline-light:hover { background: #1e293b !important; }
 
-        /* ── Global Search ──────────────────────────────────────── */
-        .search-wrapper { position: relative; }
-        .search-wrapper input {
-            background: #0f172a; border: 1px solid var(--border); color: var(--text);
-            border-radius: 10px; font-size: 13px; padding: 6px 12px 6px 32px; width: 200px;
-            transition: all .25s;
-        }
-        .search-wrapper input:focus { width: 280px; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,.12); outline: none; }
-        .search-wrapper input::placeholder { color: var(--muted); }
-        .search-wrapper .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
-        .search-results {
-            position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px;
-            background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
-            max-height: 320px; overflow-y: auto; z-index: 1050; display: none;
-            box-shadow: 0 8px 32px rgba(0,0,0,.4);
-        }
+        .spinner-border { color: #38bdf8 !important; }
+
+        /* Search dropdown */
+        .search-results { display: none; }
         .search-results.show { display: block; }
-        .search-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background .15s; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,.04); }
-        .search-item:hover { background: rgba(56,189,248,.06); }
-        .search-item:last-child { border-bottom: none; }
-        .search-item .si-id { font-weight: 700; color: var(--accent); min-width: 100px; }
-        .search-item .si-prod { flex: 1; }
-        .search-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
-
-        /* ── Live indicator ─────────────────────────────────────── */
-        .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; display: inline-block; animation: live-blink 1.5s ease-in-out infinite; }
-        @keyframes live-blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
-
-        /* ── Animations ─────────────────────────────────────────── */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .fade-in { animation: fadeInUp .35s ease both; }
-        .fade-in-delay-1 { animation-delay: .05s; }
-        .fade-in-delay-2 { animation-delay: .1s; }
-        .fade-in-delay-3 { animation-delay: .15s; }
-        .fade-in-delay-4 { animation-delay: .2s; }
-
-        @keyframes pulse-urgente {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.4); }
-            50%       { box-shadow: 0 0 0 6px rgba(220,38,38,0); }
-        }
-        .urgente-pulse { animation: pulse-urgente 1.8s ease-in-out infinite; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body class="bg-base text-slate-200 font-sans min-h-screen">
 
 <!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
-<nav class="navbar navbar-expand-lg">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/">
-            <div class="brand-icon">📦</div>
-            LogiSmart
+<nav class="sticky top-0 z-50 h-[68px] bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800/60 backdrop-blur-xl px-6 flex items-center justify-between">
+    <a href="/" class="flex items-center gap-3 group no-underline">
+        <div class="w-10 h-10 bg-gradient-to-br from-sky-500 to-indigo-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg shadow-sky-500/20 group-hover:shadow-sky-500/40 transition-shadow">📦</div>
+        <span class="text-xl font-bold bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">LogiSmart</span>
+    </a>
+
+    <div class="hidden md:flex items-center gap-1">
+        <a href="/" class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors {% if request.path == '/' %}text-sky-400 bg-sky-500/10{% else %}text-slate-400 hover:text-slate-200 hover:bg-white/5{% endif %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="/almacen/" class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors {% if request.path == '/almacen/' %}text-sky-400 bg-sky-500/10{% else %}text-slate-400 hover:text-slate-200 hover:bg-white/5{% endif %}">
+            <i class="bi bi-grid-3x3-gap"></i> Almacén
+        </a>
+        <a href="/despachos/" class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors {% if request.path == '/despachos/' %}text-sky-400 bg-sky-500/10{% else %}text-slate-400 hover:text-slate-200 hover:bg-white/5{% endif %}">
+            <i class="bi bi-truck"></i> Despachos
+        </a>
+        <a href="/configuracion/" class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors {% if request.path == '/configuracion/' %}text-sky-400 bg-sky-500/10{% else %}text-slate-400 hover:text-slate-200 hover:bg-white/5{% endif %}">
+            <i class="bi bi-robot"></i> Robot AGV
+        </a>
+        <a href="/administracion/" class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors {% if request.path == '/administracion/' %}text-sky-400 bg-sky-500/10{% else %}text-slate-400 hover:text-slate-200 hover:bg-white/5{% endif %}">
+            <i class="bi bi-people"></i> Administración
+        </a>
+    </div>
+
+    <div class="flex items-center gap-4">
+        <!-- Search -->
+        <div class="relative">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm pointer-events-none"></i>
+            <input type="text" id="global-search" placeholder="Buscar caja..." autocomplete="off"
+                   oninput="buscarCajas(this.value)"
+                   onfocus="if(this.value.length>=2)document.getElementById('search-results').classList.add('show')"
+                   onblur="setTimeout(()=>document.getElementById('search-results').classList.remove('show'),200)"
+                   class="bg-slate-800/60 border border-slate-700/50 rounded-lg text-sm pl-9 pr-4 py-2 w-48 focus:w-64 transition-all focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500/50 text-slate-300 placeholder-slate-500">
+            <div class="search-results absolute top-full left-0 right-0 mt-2 bg-surface border border-slate-700 rounded-xl max-h-80 overflow-y-auto z-[1050] shadow-2xl shadow-black/40" id="search-results"></div>
+        </div>
+
+        <a href="/api/docs/" target="_blank" class="text-slate-500 hover:text-slate-300 text-sm no-underline flex items-center gap-1 transition-colors" title="Documentación API">
+            <i class="bi bi-terminal"></i> API
         </a>
 
-        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu">
-            <i class="bi bi-list text-light fs-4"></i>
-        </button>
-
-        <div class="collapse navbar-collapse" id="navbarMenu">
-            <ul class="navbar-nav mx-auto gap-1">
-                <li class="nav-item">
-                    <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">
-                        <i class="bi bi-speedometer2"></i> Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/almacen/" class="nav-link {% if request.path == '/almacen/' %}active{% endif %}">
-                        <i class="bi bi-grid-3x3-gap"></i> Almacén
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/despachos/" class="nav-link {% if request.path == '/despachos/' %}active{% endif %}">
-                        <i class="bi bi-truck"></i> Despachos
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/configuracion/" class="nav-link {% if request.path == '/configuracion/' %}active{% endif %}">
-                        <i class="bi bi-robot"></i> Robot AGV
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a href="/administracion/" class="nav-link {% if request.path == '/administracion/' %}active{% endif %}">
-                        <i class="bi bi-people"></i> Administración
-                    </a>
-                </li>
-            </ul>
-            <div class="d-flex align-items-center gap-3">
-                <!-- Buscador Global -->
-                <div class="search-wrapper">
-                    <i class="bi bi-search search-icon"></i>
-                    <input type="text" id="global-search" placeholder="Buscar caja..." autocomplete="off" oninput="buscarCajas(this.value)" onfocus="if(this.value.length>=2)document.getElementById('search-results').classList.add('show')" onblur="setTimeout(()=>document.getElementById('search-results').classList.remove('show'),200)">
-                    <div class="search-results" id="search-results"></div>
-                </div>
-                <a href="/api/docs/" target="_blank" class="nav-link text-muted-custom" style="font-size: 13px;" title="Documentación API">
-                    <i class="bi bi-terminal"></i> API Docs
-                </a>
-                <div class="d-flex align-items-center gap-2 text-muted-custom" style="font-size:13px;">
-                    <span class="live-dot"></span>
-                    <span id="nav-pending-count">—</span> pendientes
-                    <span id="nav-pending-badge" class="pending-badge d-none">0</span>
-                </div>
-                <a href="/nueva-caja/" class="nav-link btn-nueva-caja">
-                    <i class="bi bi-plus-lg"></i> Nueva Caja
-                </a>
-            </div>
+        <div class="flex items-center gap-2 text-sm text-slate-500">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 live-dot inline-block"></span>
+            <span id="nav-pending-count">—</span> pendientes
+            <span id="nav-pending-badge" class="hidden bg-amber-500 text-slate-900 text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">0</span>
         </div>
+
+        <a href="/nueva-caja/" class="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5 no-underline">
+            <i class="bi bi-plus-lg"></i> Nueva Caja
+        </a>
     </div>
 </nav>
 
-<main class="container-fluid py-4 px-4">
+<main class="max-w-[1440px] mx-auto px-6 py-6">
     {% block content %}{% endblock %}
 </main>
 
 <!-- ── Toast ────────────────────────────────────────────────────────────────── -->
-<div class="toast-container position-fixed bottom-0 end-0 p-3">
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1100;">
     <div id="toastApp" class="toast" role="alert" data-bs-delay="4000">
         <div class="toast-header">
             <i class="bi bi-info-circle-fill me-2 text-info" id="toastIcon"></i>
@@ -334,9 +255,9 @@ function confirmarModal(titulo, msg, textBtn = 'Confirmar', cls = 'btn-primary')
         btn.className = `btn ${cls}`;
         btn.textContent = textBtn;
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modalConfirmacion'));
-        const handler = () => { modal.hide(); resolve(true); btn.removeEventListener('click', handler); };
-        btn.addEventListener('click', handler);
-        document.getElementById('modalConfirmacion').addEventListener('hidden.bs.modal', () => resolve(false), { once: true });
+        const handler = () => { modal.hide(); resolve(true); btn.onclick = null; };
+        btn.onclick = handler;
+        document.getElementById('modalConfirmacion').addEventListener('hidden.bs.modal', () => { resolve(false); btn.onclick = null; }, { once: true });
         modal.show();
     });
 }
@@ -373,7 +294,7 @@ async function obtenerUsuarioActual() {
                 <div style="width:36px;height:36px;background:#1e3a5f;border-radius:10px;display:flex;align-items:center;justify-content:center;">
                     <i class="bi bi-person-fill text-info"></i>
                 </div>
-                <div><div class="fw-semibold">${u.nombre}</div><div class="text-muted-custom" style="font-size:11px;">${u.rol}</div></div>
+                <div><div class="fw-semibold">${u.nombre}</div><div style="font-size:11px;color:#64748b;">${u.rol}</div></div>
             </button>`).join('');
         window._resolveUsuario = id => {
             _usuarioActual = id;
@@ -392,8 +313,8 @@ async function actualizarBadgePendientes() {
         const count = data.count ?? 0;
         document.getElementById('nav-pending-count').textContent = count;
         const badge = document.getElementById('nav-pending-badge');
-        if (count > 0) { badge.textContent = count; badge.classList.remove('d-none'); }
-        else badge.classList.add('d-none');
+        if (count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
+        else badge.classList.add('hidden');
     } catch {}
 }
 document.addEventListener('DOMContentLoaded', () => { actualizarBadgePendientes(); setInterval(actualizarBadgePendientes, 10000); });
@@ -410,22 +331,22 @@ async function buscarCajas(query) {
             const data = await res.json();
             const items = data.results || data || [];
             if (!items.length) {
-                box.innerHTML = '<div class="search-empty"><i class="bi bi-inbox me-2"></i>Sin resultados</div>';
+                box.innerHTML = '<div class="p-5 text-center text-slate-500 text-sm"><i class="bi bi-inbox mr-2"></i>Sin resultados</div>';
             } else {
                 const statusBadge = (e) => {
-                    const colors = { pendiente:'#f59e0b', en_transito:'#38bdf8', almacenada:'#22c55e', despachada:'#64748b' };
-                    return `<span class="badge" style="background:${colors[e]||'#475569'};font-size:10px;">${e}</span>`;
+                    const colors = { pendiente:'bg-amber-500/20 text-amber-400', en_transito:'bg-sky-500/20 text-sky-400', almacenada:'bg-emerald-500/20 text-emerald-400', despachada:'bg-slate-500/20 text-slate-400' };
+                    return `<span class="px-2 py-0.5 rounded text-[11px] font-semibold ${colors[e]||'bg-slate-600'}">${e}</span>`;
                 };
                 box.innerHTML = items.map(c => `
-                    <div class="search-item" onclick="window.location.href='/'">
-                        <span class="si-id">${c.id}</span>
-                        <span class="si-prod">${c.producto || '—'}</span>
+                    <div class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-sky-500/5 transition-colors text-sm border-b border-white/[.04] last:border-b-0" onclick="window.location.href='/'">
+                        <span class="font-bold text-sky-400 min-w-[120px]">${c.id}</span>
+                        <span class="flex-1 text-slate-300">${c.producto || '—'}</span>
                         ${statusBadge(c.estado)}
                     </div>
                 `).join('');
             }
             box.classList.add('show');
-        } catch { box.innerHTML = '<div class="search-empty">Error de búsqueda</div>'; box.classList.add('show'); }
+        } catch { box.innerHTML = '<div class="p-5 text-center text-slate-500 text-sm">Error de búsqueda</div>'; box.classList.add('show'); }
     }, 300);
 }
 </script>

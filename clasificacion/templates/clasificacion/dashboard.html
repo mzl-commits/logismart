@@ -1,414 +1,348 @@
 {% extends 'clasificacion/base.html' %}
 {% block title %}Dashboard — LogiSmart{% endblock %}
 
-{% block extra_css %}
-<style>
-/* ── Filter chips ─────────────────────────────────────── */
-.chip { padding:5px 14px; border-radius:99px; font-size:12px; font-weight:600; cursor:pointer;
-        border:1px solid var(--border); background:var(--bg-card); color:var(--muted); transition:all .2s; }
-.chip:hover { border-color:#475569; color:var(--text); }
-.chip.active { background:rgba(56,189,248,.15); border-color:var(--accent); color:var(--accent); }
-.chip-cat.active { background:rgba(129,140,248,.15); border-color:var(--accent2); color:var(--accent2); }
-
-/* ── Stats cards ──────────────────────────────────────── */
-.stat-card { border-radius:14px; padding:18px 20px; position:relative; overflow:hidden; }
-.stat-card .stat-val { font-size:34px; font-weight:700; line-height:1; }
-.stat-card .stat-lbl { font-size:11px; font-weight:500; opacity:.65; margin-top:3px; }
-.stat-card .stat-ico { font-size:38px; opacity:.12; position:absolute; right:14px; bottom:8px; }
-.s-blue  { background:linear-gradient(135deg,#1e3a5f,#1e40af22); border:1px solid #1e3a5f; }
-.s-amber { background:linear-gradient(135deg,#451a03,#d9770622); border:1px solid #92400e; }
-.s-cyan  { background:linear-gradient(135deg,#0c4a6e,#0ea5e922); border:1px solid #0369a1; }
-.s-green { background:linear-gradient(135deg,#14532d,#16a34a22); border:1px solid #166534; }
-
-/* ── Ocupación bar ────────────────────────────────────── */
-.occ-bar { height:7px; background:#1e293b; border-radius:99px; overflow:hidden; }
-.occ-fill { height:100%; border-radius:99px; transition:width .6s ease; background:linear-gradient(90deg,#16a34a,#059669); }
-.occ-fill.alta    { background:linear-gradient(90deg,#d97706,#b45309); }
-.occ-fill.critica { background:linear-gradient(90deg,#dc2626,#b91c1c); }
-
-/* ── Tabla cajas activas ──────────────────────────────── */
-.table thead th { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); padding:10px 12px; }
-.table td { padding:9px 12px; vertical-align:middle; }
-.sugerida-pill { background:rgba(56,189,248,.12); color:var(--accent); font-size:11px; font-weight:600;
-                 padding:3px 8px; border-radius:6px; border:1px solid rgba(56,189,248,.25); }
-.no-sugerida { color:var(--muted); font-size:12px; }
-
-/* ── Timeline historial ───────────────────────────────── */
-.timeline { position:relative; padding-left:24px; }
-.timeline::before { content:''; position:absolute; left:7px; top:0; bottom:0; width:2px; background:var(--border); }
-.tl-item { position:relative; margin-bottom:14px; }
-.tl-dot { position:absolute; left:-20px; top:3px; width:10px; height:10px; border-radius:50%;
-           background:var(--border); border:2px solid var(--bg-card); }
-.tl-dot.almacenada { background:#16a34a; }
-.tl-dot.en_transito { background:#2563eb; }
-.tl-dot.despachada { background:#7c3aed; }
-.tl-dot.pendiente { background:#d97706; }
-.tl-caja { font-size:13px; font-weight:600; color:var(--text); }
-.tl-estados { font-size:12px; color:var(--muted); }
-.tl-hora { font-size:11px; color:#475569; }
-
-/* ── Modal nueva categoría ────────────────────────────── */
-.cat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(70px,1fr)); gap:8px; }
-.cat-chip-preview { background:var(--bg-card2); border:1px solid var(--border); border-radius:10px;
-                    padding:8px 6px; text-align:center; font-size:12px; }
-</style>
-{% endblock %}
-
 {% block content %}
 <!-- Header -->
-<div class="row mb-4 align-items-center fade-in">
-    <div class="col">
-        <h2 class="fw-bold mb-1"><i class="bi bi-speedometer2 me-2"></i>Dashboard</h2>
-        <p class="text-muted-custom mb-0">Cajas activas · Almacén · Historial</p>
+<div class="flex items-center justify-between mb-6 fade-in">
+    <div>
+        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+            <i class="bi bi-speedometer2 text-sky-400"></i> Dashboard
+        </h2>
+        <p class="text-slate-500 text-sm mt-1">Cajas activas · Almacén · Historial</p>
     </div>
-    <div class="col-auto">
-        <a href="/nueva-caja/" class="btn btn-success"><i class="bi bi-plus-lg me-1"></i>Nueva caja</a>
+    <div class="text-right">
+        <a href="/nueva-caja/" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5 no-underline">
+            <i class="bi bi-plus-lg"></i> Nueva caja
+        </a>
     </div>
 </div>
 
 <!-- Stats -->
-<div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3 fade-in"><div class="stat-card s-blue"><div class="stat-val">{{ total_cajas }}</div><div class="stat-lbl">Total cajas</div><div class="stat-ico"><i class="bi bi-box-seam"></i></div></div></div>
-    <div class="col-6 col-lg-3 fade-in fade-in-delay-1"><div class="stat-card s-amber"><div class="stat-val text-warning">{{ cajas_pendientes }}</div><div class="stat-lbl">Pendientes</div><div class="stat-ico"><i class="bi bi-hourglass-split"></i></div></div></div>
-    <div class="col-6 col-lg-3 fade-in fade-in-delay-2"><div class="stat-card s-cyan"><div class="stat-val" style="color:#38bdf8">{{ cajas_transito }}</div><div class="stat-lbl">En tránsito</div><div class="stat-ico"><i class="bi bi-truck"></i></div></div></div>
-    <div class="col-6 col-lg-3 fade-in fade-in-delay-3"><div class="stat-card s-green"><div class="stat-val text-success">{{ cajas_almacenadas }}</div><div class="stat-lbl">Almacenadas</div><div class="stat-ico"><i class="bi bi-check-circle"></i></div></div></div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="fade-in relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-blue-950/80 to-blue-900/20 border border-blue-800/30 group hover:border-blue-700/50 transition-colors">
+        <div class="text-4xl font-extrabold text-white">{{ total_cajas }}</div>
+        <div class="text-sm font-medium text-blue-300/60 mt-1">Total cajas</div>
+        <i class="bi bi-box-seam absolute right-4 bottom-2 text-5xl text-blue-400/10 group-hover:text-blue-400/20 transition-colors"></i>
+    </div>
+    <div class="fade-in fade-d1 relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-amber-950/80 to-amber-900/20 border border-amber-800/30 group hover:border-amber-700/50 transition-colors">
+        <div class="text-4xl font-extrabold text-amber-400">{{ cajas_pendientes }}</div>
+        <div class="text-sm font-medium text-amber-300/60 mt-1">Pendientes</div>
+        <i class="bi bi-hourglass-split absolute right-4 bottom-2 text-5xl text-amber-400/10 group-hover:text-amber-400/20 transition-colors"></i>
+    </div>
+    <div class="fade-in fade-d2 relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-cyan-950/80 to-cyan-900/20 border border-cyan-800/30 group hover:border-cyan-700/50 transition-colors">
+        <div class="text-4xl font-extrabold text-sky-400">{{ cajas_transito }}</div>
+        <div class="text-sm font-medium text-cyan-300/60 mt-1">En tránsito</div>
+        <i class="bi bi-truck absolute right-4 bottom-2 text-5xl text-cyan-400/10 group-hover:text-cyan-400/20 transition-colors"></i>
+    </div>
+    <div class="fade-in fade-d3 relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-emerald-950/80 to-emerald-900/20 border border-emerald-800/30 group hover:border-emerald-700/50 transition-colors">
+        <div class="text-4xl font-extrabold text-emerald-400">{{ cajas_almacenadas }}</div>
+        <div class="text-sm font-medium text-emerald-300/60 mt-1">Almacenadas</div>
+        <i class="bi bi-check-circle absolute right-4 bottom-2 text-5xl text-emerald-400/10 group-hover:text-emerald-400/20 transition-colors"></i>
+    </div>
 </div>
 
-<!-- Ocupación con Donut -->
-<div class="row g-4 mb-4 fade-in">
-    <div class="col-lg-8">
-        <div class="card h-100">
-            <div class="card-body py-3">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="fw-semibold" style="font-size:13px;"><i class="bi bi-building me-2"></i>Ocupación del almacén</span>
-                    <span style="font-size:13px;"><span class="text-danger fw-semibold">{{ ubicaciones_ocupadas }}</span><span class="text-muted-custom"> / {{ total_ubicaciones }}</span> · <strong>{{ pct_ocupacion }}%</strong></span>
-                </div>
-                <div class="occ-bar"><div class="occ-fill {% if pct_ocupacion >= 90 %}critica{% elif pct_ocupacion >= 70 %}alta{% endif %}" style="width:{{ pct_ocupacion }}%"></div></div>
-                <div class="d-flex justify-content-between mt-1" style="font-size:11px;color:var(--muted);">
-                    <span>{{ ubicaciones_libres }} libres</span>
-                    <span>{% if pct_ocupacion >= 90 %}⚠️ Crítico{% elif pct_ocupacion >= 70 %}Capacidad alta{% else %}Normal{% endif %}</span>
-                </div>
-            </div>
+<!-- Ocupación -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6 fade-in fade-d1">
+    <div class="lg:col-span-2 bg-surface rounded-2xl border border-slate-800/60 p-6">
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-base font-semibold flex items-center gap-2"><i class="bi bi-building text-sky-400"></i> Ocupación del almacén</span>
+            <span class="text-sm"><span class="{% if pct_ocupacion >= 90 %}text-red-500{% elif pct_ocupacion >= 70 %}text-amber-500{% else %}text-emerald-400{% endif %} font-bold">{{ ubicaciones_ocupadas }}</span><span class="text-slate-600"> / {{ total_ubicaciones }}</span> · <strong class="text-white">{{ pct_ocupacion }}%</strong></span>
+        </div>
+        <div class="h-2.5 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-700 {% if pct_ocupacion >= 90 %}bg-gradient-to-r from-red-600 to-red-500{% elif pct_ocupacion >= 70 %}bg-gradient-to-r from-amber-500 to-amber-400{% else %}bg-gradient-to-r from-emerald-500 to-teal-500{% endif %}" style="width:{{ pct_ocupacion }}%"></div>
+        </div>
+        <div class="flex justify-between mt-3 text-xs text-slate-500">
+            <span>{{ ubicaciones_libres }} libres</span>
+            <span>{% if pct_ocupacion >= 90 %}⚠️ Crítico{% elif pct_ocupacion >= 70 %}Capacidad alta{% else %}Normal{% endif %}</span>
         </div>
     </div>
-    <div class="col-lg-4">
-        <div class="card h-100">
-            <div class="card-body d-flex align-items-center justify-content-center py-3">
-                <canvas id="donutOcupacion" style="max-width:140px; max-height:140px;"></canvas>
-                <div class="ms-3 text-center">
-                    <div class="fw-bold fs-3" style="color:{% if pct_ocupacion >= 90 %}#dc2626{% elif pct_ocupacion >= 70 %}#d97706{% else %}#16a34a{% endif %}">{{ pct_ocupacion }}%</div>
-                    <div class="text-muted-custom" style="font-size:12px;">Ocupación</div>
-                </div>
-            </div>
+    <div class="bg-surface rounded-2xl border border-slate-800/60 p-6 flex items-center justify-center gap-6">
+        <div style="max-width:110px; max-height:110px;">
+            <canvas id="donutOcupacion"></canvas>
+        </div>
+        <div class="text-center">
+            <div class="text-3xl font-extrabold {% if pct_ocupacion >= 90 %}text-red-500{% elif pct_ocupacion >= 70 %}text-amber-500{% else %}text-emerald-400{% endif %}">{{ pct_ocupacion }}%</div>
+            <div class="text-xs text-slate-500 mt-1">Ocupación</div>
         </div>
     </div>
 </div>
 
 <!-- Tabla + Historial -->
-<div class="row g-4 fade-in fade-in-delay-1">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <span class="fw-semibold"><i class="bi bi-box-seam me-2"></i>Cajas activas</span>
-                    <a href="/nueva-caja/" class="btn btn-sm btn-success"><i class="bi bi-plus-lg me-1"></i>Agregar</a>
-                </div>
-                <!-- Filtros estado -->
-                <div class="d-flex gap-1 flex-wrap mb-2">
-                    <span class="chip active" data-tipo="estado" data-val="all" onclick="setFiltro(this,'estado')">Todas</span>
-                    <span class="chip" data-tipo="estado" data-val="pendiente" onclick="setFiltro(this,'estado')">Pendiente</span>
-                    <span class="chip" data-tipo="estado" data-val="en_transito" onclick="setFiltro(this,'estado')">En tránsito</span>
-                    <span class="chip" data-tipo="estado" data-val="almacenada" onclick="setFiltro(this,'estado')">Almacenada</span>
-                </div>
-                <!-- Filtros categoría -->
-                <div class="d-flex gap-1 flex-wrap align-items-center">
-                    <span class="chip chip-cat active" data-tipo="cat" data-val="all" onclick="setFiltro(this,'cat')">Todas cat.</span>
-                    {% for cat in categorias %}
-                    <span class="chip chip-cat" data-tipo="cat" data-val="{{ cat.slug }}" onclick="setFiltro(this,'cat')">{{ cat.icono }} {{ cat.nombre }}</span>
-                    {% endfor %}
-                    <button class="btn btn-sm" style="background:rgba(129,140,248,.1);color:var(--accent2);border:1px dashed var(--accent2);font-size:11px;padding:3px 10px;" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevaCat')).show()">
-                        <i class="bi bi-plus"></i> Nueva cat.
-                    </button>
-                </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 fade-in fade-d2 mb-6">
+    <!-- Tabla -->
+    <div class="lg:col-span-2 bg-surface rounded-2xl border border-slate-800/60 overflow-hidden">
+        <div class="p-6 border-b border-slate-800/60">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-base font-semibold flex items-center gap-2"><i class="bi bi-box-seam text-sky-400"></i> Cajas activas</span>
+                <a href="/nueva-caja/" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors no-underline"><i class="bi bi-plus-lg"></i> Agregar</a>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th class="ps-3">Producto</th>
-                                <th>Categoría</th>
-                                <th>Peso</th>
-                                <th>Prioridad</th>
-                                <th>Estado</th>
-                                <th>Ubi. sugerida</th>
-                                <th>Acción</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-body">
-                        {% for caja in cajas_activas %}
-                        <tr data-estado="{{ caja.estado }}" data-cat="{{ caja.categoria }}">
-                            <td class="ps-3">
-                                <div class="fw-medium">{{ caja.producto }}{% if caja.es_fragil %} <span title="Frágil">🔷</span>{% endif %}</div>
-                                <div style="font-size:11px;color:var(--muted);">{{ caja.id }}</div>
-                            </td>
-                            <td style="font-size:12px;">{{ caja.categoria }}</td>
-                            <td style="font-size:13px;">{{ caja.peso_kg }} kg</td>
-                            <td>
-                                <span class="badge {% if caja.prioridad == 'urgente' %}badge-despachada urgente-pulse{% elif caja.prioridad == 'alta' %}badge-almacenada{% elif caja.prioridad == 'media' %}badge-transito{% else %}bg-secondary{% endif %}">
-                                    {{ caja.prioridad }}
-                                </span>
-                            </td>
-                            <td>
-                                {% if caja.estado == 'pendiente' %}<span class="badge badge-pendiente">pendiente</span>
-                                {% elif caja.estado == 'en_transito' %}<span class="badge badge-transito">en tránsito</span>
-                                {% elif caja.estado == 'almacenada' %}<span class="badge badge-almacenada">almacenada</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if caja.estado == 'pendiente' %}
-                                    <span class="sugerida-pill" id="rec-{{ caja.id }}">—</span>
-                                {% elif caja.id_ubicacion %}
-                                    <span style="font-size:12px;color:var(--muted);">{{ caja.id_ubicacion }}</span>
-                                {% else %}
-                                    <span class="no-sugerida">—</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if caja.estado == 'pendiente' %}
-                                    <button class="btn btn-sm btn-warning" id="btn-proc-{{ caja.id }}" onclick="procesarCaja('{{ caja.id }}', this)">
-                                        <i class="bi bi-play-fill"></i>
-                                    </button>
-                                {% elif caja.estado == 'en_transito' %}
-                                    <button class="btn btn-sm btn-success" id="btn-alm-{{ caja.id }}" onclick="confirmarAlmacenada('{{ caja.id }}', this)">
-                                        <i class="bi bi-check-lg"></i> Entregar
-                                    </button>
-                                {% elif caja.estado == 'almacenada' %}
-                                    <button class="btn btn-sm btn-outline-secondary" id="btn-des-{{ caja.id }}" onclick="confirmarDespacho('{{ caja.id }}', this)">
-                                        <i class="bi bi-truck"></i>
-                                    </button>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="7" class="text-center text-muted-custom py-5">
-                            <i class="bi bi-inbox fs-2 d-block mb-2 opacity-25"></i>No hay cajas activas.
-                        </td></tr>
-                        {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            
+            <!-- Filtros estado -->
+            <div class="flex gap-2 flex-wrap mb-3">
+                <span class="chip active px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border border-sky-500/30 text-sky-400 bg-sky-500/15 transition-all" data-tipo="estado" data-val="all" onclick="setFiltro(this,'estado')">Todas</span>
+                <span class="chip px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all" data-tipo="estado" data-val="pendiente" onclick="setFiltro(this,'estado')">Pendiente</span>
+                <span class="chip px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all" data-tipo="estado" data-val="en_transito" onclick="setFiltro(this,'estado')">En tránsito</span>
+                <span class="chip px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all" data-tipo="estado" data-val="almacenada" onclick="setFiltro(this,'estado')">Almacenada</span>
             </div>
+            <!-- Filtros categoría -->
+            <div class="flex gap-2 flex-wrap items-center">
+                <span class="chip-cat active px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border border-indigo-500/30 text-indigo-400 bg-indigo-500/15 transition-all" data-tipo="cat" data-val="all" onclick="setFiltro(this,'cat')">Todas cat.</span>
+                {% for cat in categorias %}
+                <span class="chip-cat px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-all" data-tipo="cat" data-val="{{ cat.slug }}" onclick="setFiltro(this,'cat')">{{ cat.icono }} {{ cat.nombre }}</span>
+                {% endfor %}
+                <button class="px-3 py-1.5 rounded-full text-xs font-semibold border border-dashed border-indigo-500/40 text-indigo-400 hover:bg-indigo-500/10 transition-colors" onclick="bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevaCat')).show()">
+                    <i class="bi bi-plus"></i> Nueva cat.
+                </button>
+            </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-800/60">
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-6 py-4">Producto</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Categoría</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Peso</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Prioridad</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Estado</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Ubicación</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-body" class="divide-y divide-slate-800/40">
+                {% for caja in cajas_activas %}
+                    <tr class="hover:bg-white/[.02] transition-colors" data-estado="{{ caja.estado }}" data-cat="{{ caja.categoria }}">
+                        <td class="px-6 py-3">
+                            <div class="font-medium text-slate-200 text-base">{{ caja.producto }}{% if caja.es_fragil %} <span title="Frágil">🔷</span>{% endif %}</div>
+                            <div class="text-xs text-slate-500">{{ caja.id }}</div>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-slate-400">{{ caja.categoria }}</td>
+                        <td class="px-4 py-3 text-sm text-slate-300">{{ caja.peso_kg }} kg</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2.5 py-1 rounded-md text-xs font-semibold 
+                                {% if caja.prioridad == 'urgente' %}bg-red-500/15 text-red-400 border border-red-500/20 animate-pulse
+                                {% elif caja.prioridad == 'alta' %}bg-amber-500/15 text-amber-400 border border-amber-500/20
+                                {% elif caja.prioridad == 'media' %}bg-sky-500/15 text-sky-400 border border-sky-500/20
+                                {% else %}bg-slate-500/15 text-slate-400 border border-slate-500/20{% endif %}">
+                                {{ caja.prioridad }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2.5 py-1 rounded-md text-xs font-semibold 
+                                {% if caja.estado == 'pendiente' %}bg-amber-600/20 text-amber-400
+                                {% elif caja.estado == 'en_transito' %}bg-sky-600/20 text-sky-400
+                                {% elif caja.estado == 'almacenada' %}bg-emerald-600/20 text-emerald-400
+                                {% endif %}">
+                                {{ caja.get_estado_display }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if caja.estado == 'pendiente' %}
+                                <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20" id="rec-{{ caja.id }}">—</span>
+                            {% elif caja.id_ubicacion %}
+                                <span class="text-sm text-slate-400">{{ caja.id_ubicacion }}</span>
+                            {% else %}
+                                <span class="text-slate-600 text-sm">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if caja.estado == 'pendiente' %}
+                                <button class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3 py-1.5 rounded-lg transition-colors" id="btn-proc-{{ caja.id }}" onclick="procesarCaja('{{ caja.id }}', this)">
+                                    <i class="bi bi-play-fill"></i>
+                                </button>
+                            {% elif caja.estado == 'en_transito' %}
+                                <button class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors" id="btn-alm-{{ caja.id }}" onclick="confirmarAlmacenada('{{ caja.id }}', this)">
+                                    <i class="bi bi-check-lg"></i> Entregar
+                                </button>
+                            {% elif caja.estado == 'almacenada' %}
+                                <button class="border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-white text-xs px-3 py-1.5 rounded-lg transition-colors" id="btn-des-{{ caja.id }}" onclick="confirmarDespacho('{{ caja.id }}', this)">
+                                    <i class="bi bi-truck"></i>
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="7" class="text-center text-slate-500 py-8">
+                        <i class="bi bi-inbox text-4xl block mb-2 opacity-30"></i>No hay cajas activas.
+                    </td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Timeline historial -->
-    <div class="col-lg-4">
-        <div class="card h-100">
-            <div class="card-header fw-semibold"><i class="bi bi-clock-history me-2"></i>Historial</div>
-            <div class="card-body" style="overflow-y:auto;max-height:520px;">
-                <div class="timeline">
-                    {% for log in historial_reciente %}
-                    <div class="tl-item">
-                        <div class="tl-dot {{ log.estado_nuevo }}"></div>
-                        <div class="tl-caja">{{ log.id_caja.id }}</div>
-                        <div class="tl-estados">
-                            {{ log.estado_anterior }}
-                            <i class="bi bi-arrow-right mx-1" style="font-size:10px;"></i>
-                            {% if log.estado_nuevo == 'almacenada' %}<span class="badge badge-almacenada">{{ log.estado_nuevo }}</span>
-                            {% elif log.estado_nuevo == 'en_transito' %}<span class="badge badge-transito">{{ log.estado_nuevo }}</span>
-                            {% elif log.estado_nuevo == 'despachada' %}<span class="badge badge-despachada">{{ log.estado_nuevo }}</span>
-                            {% else %}<span class="badge badge-pendiente">{{ log.estado_nuevo }}</span>
-                            {% endif %}
-                            {% if log.id_usuario %}<span class="text-muted-custom" style="font-size:11px;"> · {{ log.id_usuario.nombre }}</span>{% endif %}
-                        </div>
-                        <div class="tl-hora">{{ log.fecha_cambio|date:"d/m H:i" }}</div>
-                    </div>
-                    {% empty %}
-                    <p class="text-muted-custom">Sin movimientos.</p>
-                    {% endfor %}
+    <!-- Historial -->
+    <div class="bg-surface rounded-2xl border border-slate-800/60 overflow-hidden flex flex-col">
+        <div class="p-6 border-b border-slate-800/60 shrink-0">
+            <span class="text-base font-semibold flex items-center gap-2"><i class="bi bi-clock-history text-sky-400"></i> Historial</span>
+        </div>
+        <div class="p-6 space-y-5 overflow-y-auto flex-1 max-h-[500px]">
+            {% for log in historial_reciente %}
+            <div class="relative pl-6 border-l-2 border-slate-800">
+                <div class="absolute left-[-6px] top-1.5 w-3 h-3 rounded-full ring-2 ring-surface 
+                    {% if log.estado_nuevo == 'almacenada' %}bg-emerald-500
+                    {% elif log.estado_nuevo == 'en_transito' %}bg-sky-500
+                    {% elif log.estado_nuevo == 'despachada' %}bg-violet-500
+                    {% else %}bg-amber-500{% endif %}">
                 </div>
+                <div class="text-sm font-semibold text-white">{{ log.id_caja.id }}</div>
+                <div class="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                    {{ log.estado_anterior }} 
+                    <i class="bi bi-arrow-right text-[9px] text-slate-600"></i> 
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold 
+                        {% if log.estado_nuevo == 'almacenada' %}bg-emerald-600/20 text-emerald-400
+                        {% elif log.estado_nuevo == 'en_transito' %}bg-sky-600/20 text-sky-400
+                        {% elif log.estado_nuevo == 'despachada' %}bg-violet-600/20 text-violet-400
+                        {% else %}bg-amber-600/20 text-amber-400{% endif %}">
+                        {{ log.estado_nuevo }}
+                    </span>
+                    {% if log.id_usuario %}<span class="text-slate-600 ml-1">· {{ log.id_usuario.nombre }}</span>{% endif %}
+                </div>
+                <div class="text-[11px] text-slate-600 mt-1">{{ log.fecha_cambio|date:"d/m H:i" }}</div>
             </div>
+            {% empty %}
+            <p class="text-slate-500 text-sm">Sin movimientos.</p>
+            {% endfor %}
         </div>
     </div>
 </div>
 
-<!-- Gráfico de Flujo de Cajas -->
-<div class="row mt-4 fade-in fade-in-delay-2">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-graph-up me-2"></i>Flujo de Cajas (Últimos 7 días)</div>
-            <div class="card-body" style="position: relative; height: 300px; width: 100%;">
-                <canvas id="flujoChart"></canvas>
-            </div>
-        </div>
+<!-- Gráfico -->
+<div class="bg-surface rounded-2xl border border-slate-800/60 p-6 fade-in fade-d3 mb-4">
+    <div class="text-base font-semibold flex items-center gap-2 mb-4"><i class="bi bi-graph-up text-sky-400"></i> Flujo de Cajas (Últimos 7 días)</div>
+    <div style="position: relative; height: 320px; width: 100%;">
+        <canvas id="flujoChart"></canvas>
     </div>
 </div>
 
 <!-- Modal Despacho Dashboard -->
 <div class="modal fade" id="modalDespacho" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-truck me-2"></i>Despachar Caja <span id="md-caja-id"></span></h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-content bg-surface border border-slate-700 shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <h5 class="text-lg font-bold text-white flex items-center gap-2"><i class="bi bi-truck text-sky-400"></i> Despachar Caja</h5>
+                <button type="button" class="text-slate-400 hover:text-white transition-colors" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Placa del Transporte</label>
-                    <select class="form-select" id="md-placa">
-                        <option value="">-- Seleccionar Vehículo --</option>
+            <div class="p-6">
+                <input type="hidden" id="desp-caja-id">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Placa del Transporte</label>
+                    <select class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 transition-all appearance-none" id="desp-placa" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7rem top 50%; background-size: .65rem auto;">
+                        <option value="">Seleccionar vehículo...</option>
                         {% for v in vehiculos %}
-                        <option value="{{ v.placa }}">{{ v.placa }} - {{ v.marca }} (Capacidad: {{ v.capacidad_kg }}kg)</option>
+                        <option value="{{ v.placa }}">{{ v.placa }} ({{ v.marca }})</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Destino Final</label>
-                    <select class="form-select" id="md-destino">
-                        <option value="">-- Seleccionar Destino --</option>
+                <div class="mb-2">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Destino Final</label>
+                    <select class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 transition-all appearance-none" id="desp-destino" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7rem top 50%; background-size: .65rem auto;">
+                        <option value="">Seleccionar destino...</option>
                         {% for d in destinos %}
                         <option value="{{ d.nombre }}">{{ d.nombre }} ({{ d.direccion }})</option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
-            <div class="modal-footer border-top-0">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-success" id="btn-md-despachar" onclick="ejecutarDespacho()">Despachar</button>
+            <div class="px-6 py-4 border-t border-slate-800 flex justify-end gap-3 bg-slate-900/30">
+                <button type="button" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition-colors" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2" onclick="ejecutarDespacho(this)"><i class="bi bi-check-lg"></i> Confirmar Salida</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal nueva categoría -->
+<!-- Modal Nueva Categoría -->
 <div class="modal fade" id="modalNuevaCat" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-tag me-2"></i>Nueva categoría</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content bg-surface border border-slate-700 shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <h5 class="text-lg font-bold text-white flex items-center gap-2"><i class="bi bi-tag text-indigo-400"></i> Nueva Categoría</h5>
+                <button type="button" class="text-slate-400 hover:text-white transition-colors" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-3">
-                        <label class="form-label">Icono</label>
-                        <input type="text" id="nc-icono" class="form-control text-center fs-4" maxlength="4" placeholder="📦" oninput="actualizarPreview()">
-                    </div>
-                    <div class="col-9">
-                        <label class="form-label">Nombre (display)</label>
-                        <input type="text" id="nc-nombre" class="form-control" placeholder="Ej. Electrónica" oninput="actualizarPreview()">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Slug (valor en BD, solo minúsculas)</label>
-                        <input type="text" id="nc-slug" class="form-control" placeholder="ej. electronica" pattern="[a-z0-9_]+">
-                        <div class="form-text">Solo letras minúsculas, números y guión bajo.</div>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Descripción <span class="text-muted-custom">(opcional)</span></label>
-                        <input type="text" id="nc-desc" class="form-control" placeholder="Breve descripción">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Vista previa</label>
-                        <div id="nc-preview" class="cat-chip-preview d-inline-flex align-items-center gap-2 px-3 py-2">
-                            <span id="nc-prev-icon">📦</span>
-                            <span id="nc-prev-nombre">Nueva categoría</span>
-                        </div>
-                    </div>
+            <div class="p-6">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Nombre</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-all" id="ncat-nombre" placeholder="Ej. Juguetes">
+                </div>
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Icono (Emoji)</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-all text-xl" id="ncat-icono" placeholder="🧸" maxlength="2">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Prioridad (1-10)</label>
+                    <input type="number" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-indigo-500 transition-all" id="ncat-prio" value="1" min="1" max="10">
+                    <div class="text-[11px] text-slate-500 mt-2">1 = Menos prioritario, 10 = Máxima prioridad</div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button class="btn btn-success" onclick="guardarCategoria(this)">
-                    <i class="bi bi-check-lg me-1"></i>Guardar
-                </button>
+            <div class="px-6 py-4 border-t border-slate-800 flex justify-end gap-3 bg-slate-900/30">
+                <button type="button" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition-colors" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2" onclick="guardarCategoria(this)"><i class="bi bi-save"></i> Guardar</button>
             </div>
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Chart data from Django (safe JSON)
-const CHART_LABELS = {{ chart_labels_json|safe }};
-const CHART_INGRESOS = {{ chart_ingresos_json|safe }};
-const CHART_SALIDAS = {{ chart_salidas_json|safe }};
+// ── Gráficos ─────────────────────────────────────────────────────────────────
+const pColor = (p) => p >= 90 ? '#dc2626' : (p >= 70 ? '#d97706' : '#10b981');
+new Chart(document.getElementById('donutOcupacion'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Ocupado', 'Libre'],
+        datasets: [{
+            data: [{{ ubicaciones_ocupadas }}, {{ ubicaciones_libres }}],
+            backgroundColor: [pColor({{ pct_ocupacion }}), '#1e293b'],
+            borderWidth: 0,
+            hoverOffset: 2
+        }]
+    },
+    options: { cutout: '75%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+});
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Gráfico de líneas (Flujo)
-    const canvas = document.getElementById('flujoChart');
-    if (canvas) {
-        new Chart(canvas.getContext('2d'), {
-            type: 'line',
-            data: {
-                labels: CHART_LABELS,
-                datasets: [
-                    {
-                        label: 'Cajas Ingresadas',
-                        data: CHART_INGRESOS,
-                        borderColor: '#38bdf8',
-                        backgroundColor: 'rgba(56, 189, 248, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true
-                    },
-                    {
-                        label: 'Cajas Despachadas',
-                        data: CHART_SALIDAS,
-                        borderColor: '#16a34a',
-                        backgroundColor: 'rgba(22, 163, 74, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { labels: { color: '#94a3b8' } }
-                },
-                scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } },
-                    x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }
-                }
-            }
-        });
-    }
-
-    // Donut de ocupación
-    const donutCanvas = document.getElementById('donutOcupacion');
-    if (donutCanvas) {
-        new Chart(donutCanvas.getContext('2d'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Ocupadas', 'Libres'],
-                datasets: [{
-                    data: [{{ ubicaciones_ocupadas }}, {{ ubicaciones_libres }}],
-                    backgroundColor: ['{% if pct_ocupacion >= 90 %}#dc2626{% elif pct_ocupacion >= 70 %}#d97706{% else %}#16a34a{% endif %}', '#1e293b'],
-                    borderWidth: 0,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                cutout: '72%',
-                responsive: true,
-                plugins: { legend: { display: false }, tooltip: { enabled: true } }
-            }
-        });
+const chartLabels = JSON.parse('{{ chart_labels_json|safe }}');
+const chartIngresos = JSON.parse('{{ chart_ingresos_json|safe }}');
+const chartSalidas = JSON.parse('{{ chart_salidas_json|safe }}');
+new Chart(document.getElementById('flujoChart'), {
+    type: 'line',
+    data: {
+        labels: chartLabels,
+        datasets: [
+            { label: 'Cajas Ingresadas', data: chartIngresos, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.1)', tension: 0.4, fill: true },
+            { label: 'Cajas Despachadas', data: chartSalidas, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.1)', tension: 0.4, fill: true }
+        ]
+    },
+    options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+            y: { beginAtZero: true, grid: { color: '#1e293b' }, ticks: { stepSize: 1, color: '#64748b' } },
+            x: { grid: { display: false }, ticks: { color: '#64748b' } }
+        },
+        plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } } } },
+        interaction: { intersect: false, mode: 'index' }
     }
 });
 
-
-// ── Doble filtro: estado + categoría ─────────────────────────────────────────
+// ── Filtros ──────────────────────────────────────────────────────────────────
 let filtros = { estado: 'all', cat: 'all' };
 
 function setFiltro(chip, tipo) {
-    document.querySelectorAll(`.chip[data-tipo="${tipo}"]`).forEach(c => c.classList.remove('active'));
+    let selector = tipo === 'estado' ? '.chip' : '.chip-cat';
+    let defaultClass = tipo === 'estado' ? 'border-sky-500/30 text-sky-400 bg-sky-500/15' : 'border-indigo-500/30 text-indigo-400 bg-indigo-500/15';
+    let inactiveClass = 'border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-500';
+
+    document.querySelectorAll(`${selector}[data-tipo="${tipo}"]`).forEach(c => {
+        c.classList.remove('active');
+        c.className = c.className.replace(defaultClass, '').replace(inactiveClass, '').trim() + ' ' + inactiveClass;
+    });
+    
     chip.classList.add('active');
+    chip.className = chip.className.replace(inactiveClass, '').trim() + ' ' + defaultClass;
+    
     filtros[tipo] = chip.dataset.val;
     aplicarFiltros();
 }
@@ -421,9 +355,7 @@ function aplicarFiltros() {
     });
 }
 
-// ── Sugerida column — mostrar desde contexto Python ──────────────────────────
-// (Ya viene del servidor, no necesita fetch adicional)
-// Tabla de recomendaciones del server embebida en JS para lookups
+// ── Sugerida column ──────────────────────────────────────────────────────────
 const RECS = {
     {% for caja_id, rec in recomendaciones.items %}
     "{{ caja_id }}": "{{ rec.nombre|default:'—' }}",
@@ -454,97 +386,66 @@ async function confirmarAlmacenada(id, btn) {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
         body: JSON.stringify({ id_usuario: uid }),
     });
-    const d = await res.json();
-    if (res.ok) { mostrarToast(`Caja ${id} almacenada ✓`, 'success'); setTimeout(() => location.reload(), 1000); }
-    else { mostrarToast(d.detalle || d.error || 'Error', 'danger'); btnCargando(btn, false); }
+    if (res.ok) { mostrarToast(`Caja ${id} almacenada correctamente ✓`, 'success'); setTimeout(() => location.reload(), 1000); }
+    else { const d = await res.json(); mostrarToast(d.error || 'Error', 'danger'); btnCargando(btn, false); }
 }
 
-let cajaParaDespachar = null;
-let btnParaDespachar = null;
-
 function confirmarDespacho(id, btn) {
-    cajaParaDespachar = id;
-    btnParaDespachar = btn;
-    document.getElementById('md-caja-id').textContent = id;
-    document.getElementById('md-placa').value = '';
-    document.getElementById('md-destino').value = '';
+    document.getElementById('desp-caja-id').value = id;
+    document.getElementById('desp-placa').value = '';
+    document.getElementById('desp-destino').value = '';
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDespacho')).show();
 }
 
-async function ejecutarDespacho() {
-    const id = cajaParaDespachar;
-    const btn = btnParaDespachar;
-    const placa = document.getElementById('md-placa').value;
-    const destino = document.getElementById('md-destino').value;
-
-    if (!placa) return mostrarToast('Selecciona la placa del transporte', 'warning');
-    if (!destino) return mostrarToast('Selecciona el destino', 'warning');
-
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDespacho')).hide();
+async function ejecutarDespacho(btn) {
+    const id = document.getElementById('desp-caja-id').value;
+    const placa = document.getElementById('desp-placa').value;
+    const destino = document.getElementById('desp-destino').value;
+    if (!placa || !destino) { mostrarToast('Debes seleccionar transporte y destino', 'warning'); return; }
+    
     const uid = await obtenerUsuarioActual();
     btnCargando(btn, true);
-    
-    const res = await fetch(`/api/cajas/${id}/confirmar_despacho/`, {
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-        body: JSON.stringify({ 
-            id_usuario: uid,
-            transporte_placa: placa,
-            destino: destino
-        }),
-    });
-    const d = await res.json();
-    if (res.ok) { mostrarToast(`Caja ${id} despachada ✓`, 'success'); setTimeout(() => location.reload(), 1000); }
-    else { mostrarToast(d.detalle || d.error || 'Error', 'danger'); btnCargando(btn, false); }
+    try {
+        const res = await fetch(`/api/cajas/${id}/confirmar_despacho/`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ id_usuario: uid, transporte_placa: placa, destino: destino }),
+        });
+        if (res.ok) { 
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDespacho')).hide();
+            mostrarToast(`Caja ${id} despachada ✓`, 'success'); 
+            setTimeout(() => location.reload(), 1000); 
+        }
+        else { const d = await res.json(); mostrarToast(d.error || 'Error', 'danger'); btnCargando(btn, false); }
+    } catch { mostrarToast('Error de red', 'danger'); btnCargando(btn, false); }
 }
-
-// ── Rellenar columna Sugerida desde RECS ─────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    for (const [id, nombre] of Object.entries(RECS)) {
-        const el = document.getElementById(`rec-${id}`);
-        if (el && nombre && nombre !== '—' && nombre !== 'None') el.textContent = nombre;
-        else if (el) { el.textContent = 'Sin espacio'; el.style.opacity = '.5'; }
-    }
-});
-
-function actualizarPreview() {
-    document.getElementById('nc-prev-icon').textContent  = document.getElementById('nc-icono').value  || '📦';
-    document.getElementById('nc-prev-nombre').textContent = document.getElementById('nc-nombre').value || 'Nueva categoría';
-    // Auto-sugerir slug
-    const nombre = document.getElementById('nc-nombre').value;
-    const slugField = document.getElementById('nc-slug');
-    if (!slugField.dataset.touched) {
-        slugField.value = nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-    }
-}
-document.getElementById('nc-slug').addEventListener('input', function() { this.dataset.touched = '1'; });
 
 async function guardarCategoria(btn) {
-    const slug   = document.getElementById('nc-slug').value.trim();
-    const nombre = document.getElementById('nc-nombre').value.trim();
-    const icono  = document.getElementById('nc-icono').value.trim() || '📦';
-    const desc   = document.getElementById('nc-desc').value.trim();
-
-    if (!slug || !nombre) { mostrarToast('Completa slug y nombre.', 'warning'); return; }
-    if (!/^[a-z0-9_]+$/.test(slug)) { mostrarToast('Slug solo puede tener minúsculas, números y _', 'warning'); return; }
-
+    const nombre = document.getElementById('ncat-nombre').value.trim();
+    const icono = document.getElementById('ncat-icono').value.trim();
+    const prio = document.getElementById('ncat-prio').value;
+    if (!nombre) { mostrarToast('El nombre es requerido', 'warning'); return; }
+    
     btnCargando(btn, true);
     try {
-        const res = await fetch('/api/categorias/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-            body: JSON.stringify({ slug, nombre, icono, descripcion: desc }),
+        const slug = nombre.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        const res = await fetch(`/api/categorias/`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ nombre, slug, icono: icono || '📦', prioridad_base: parseInt(prio) }),
         });
-        const d = await res.json();
         if (res.ok) {
-            mostrarToast(`Categoría "${nombre}" creada ✓`, 'success');
             bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNuevaCat')).hide();
-            setTimeout(() => location.reload(), 800);
-        } else {
-            mostrarToast(Object.values(d).flat().join(', ') || 'Error', 'danger');
-        }
-    } catch { mostrarToast('Error de conexión', 'danger'); }
+            mostrarToast('Categoría creada', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else { const d = await res.json(); mostrarToast(Object.values(d).flat().join(', '), 'danger'); }
+    } catch { mostrarToast('Error de red', 'danger'); }
     finally { btnCargando(btn, false); }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    Object.keys(RECS).forEach(id => {
+        const span = document.getElementById(`rec-${id}`);
+        if (span && RECS[id] !== '—') span.textContent = RECS[id];
+    });
+});
 </script>
 {% endblock %}

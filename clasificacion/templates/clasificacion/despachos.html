@@ -2,119 +2,136 @@
 {% block title %}Despachos — LogiSmart{% endblock %}
 
 {% block content %}
-<div class="row mb-4 align-items-center fade-in">
-    <div class="col">
-        <h2 class="fw-bold mb-1"><i class="bi bi-truck me-2"></i>Gestión de Despachos</h2>
-        <p class="text-muted-custom mb-0">Registra la salida de cajas almacenadas hacia su destino final</p>
+<div class="flex items-center justify-between mb-6 fade-in">
+    <div>
+        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+            <i class="bi bi-truck text-sky-400"></i> Gestión de Despachos
+        </h2>
+        <p class="text-slate-500 text-sm mt-1">Registra la salida de cajas almacenadas hacia su destino final</p>
     </div>
 </div>
 
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- Panel Izquierdo: Cajas Almacenadas -->
-    <div class="col-lg-7 fade-in">
-        <div class="card h-100">
-            <div class="card-header fw-semibold"><i class="bi bi-box-seam me-2"></i>Cajas Listas para Despacho</div>
-            <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
-                    <table class="table table-hover mb-0">
-                        <thead class="sticky-top bg-dark">
-                            <tr>
-                                <th style="width: 40px;"><input class="form-check-input" type="checkbox" id="checkAll" onchange="toggleAll(this)"></th>
-                                <th>Caja</th>
-                                <th>Peso</th>
-                                <th>Ubicación</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabla-almacenadas">
-                            {% for caja in cajas_almacenadas %}
-                            <tr>
-                                <td>
-                                    <input class="form-check-input caja-checkbox" type="checkbox" value="{{ caja.id }}" data-peso="{{ caja.peso_kg }}">
-                                </td>
-                                <td>
-                                    <div class="fw-medium">{{ caja.producto }}</div>
-                                    <div style="font-size:11px;color:var(--muted);">{{ caja.id }} · {{ caja.categoria }}</div>
-                                </td>
-                                <td>{{ caja.peso_kg }} kg</td>
-                                <td><span class="badge badge-almacenada">{{ caja.id_ubicacion }}</span></td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted-custom py-5">
-                                    <i class="bi bi-inbox fs-2 d-block mb-2 opacity-25"></i>No hay cajas en el almacén.
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+    <div class="lg:col-span-7 fade-in">
+        <div class="bg-surface rounded-2xl border border-slate-800/60 overflow-hidden shadow-xl shadow-black/20 h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-800/60 bg-slate-900/50">
+                <span class="font-semibold text-white flex items-center gap-2"><i class="bi bi-box-seam text-sky-400"></i> Cajas Listas para Despacho</span>
             </div>
-            <div class="card-footer d-flex justify-content-between align-items-center">
-                <span style="font-size: 13px;" class="text-muted-custom">Seleccionadas: <strong id="lbl-count" class="text-white">0</strong> (<span id="lbl-peso">0.00</span> kg)</span>
+            
+            <div class="overflow-x-auto flex-grow max-h-[500px]">
+                <table class="w-full text-sm">
+                    <thead class="sticky top-0 bg-slate-900/90 backdrop-blur z-10">
+                        <tr class="border-b border-slate-800/60">
+                            <th class="px-6 py-4 w-12 text-center">
+                                <input class="form-check-input mt-0 cursor-pointer w-4 h-4 rounded border-slate-600 bg-slate-800 focus:ring-sky-500 focus:ring-offset-slate-900" type="checkbox" id="checkAll" onchange="toggleAll(this)">
+                            </th>
+                            <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Caja</th>
+                            <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Peso</th>
+                            <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Ubicación</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabla-almacenadas" class="divide-y divide-slate-800/40">
+                        {% for caja in cajas_almacenadas %}
+                        <tr class="hover:bg-white/[.02] transition-colors">
+                            <td class="px-6 py-3 text-center">
+                                <input class="form-check-input caja-checkbox cursor-pointer w-4 h-4 rounded border-slate-600 bg-slate-800 focus:ring-sky-500 focus:ring-offset-slate-900" type="checkbox" value="{{ caja.id }}" data-peso="{{ caja.peso_kg }}">
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-slate-200 text-base">{{ caja.producto }}</div>
+                                <div class="text-xs text-slate-500 mt-0.5">{{ caja.id }} <span class="mx-1">·</span> {{ caja.categoria }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-slate-300">{{ caja.peso_kg }} kg</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-500/20">
+                                    {{ caja.id_ubicacion }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-slate-500 py-12">
+                                <i class="bi bi-inbox text-5xl block mb-3 opacity-30"></i>
+                                <p class="text-base font-medium">No hay cajas en el almacén.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4 border-t border-slate-800/60 bg-slate-900/30 flex justify-between items-center text-sm">
+                <span class="text-slate-400">Seleccionadas: <strong id="lbl-count" class="text-white text-base ml-1">0</strong> <span class="mx-1 text-slate-600">|</span> <span id="lbl-peso" class="text-white">0.00</span> kg</span>
             </div>
         </div>
     </div>
 
     <!-- Panel Derecho: Formulario de Despacho -->
-    <div class="col-lg-5 fade-in fade-in-delay-1">
-        <div class="card mb-4">
-            <div class="card-header fw-semibold"><i class="bi bi-send-check me-2"></i>Registrar Salida</div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Usuario Responsable</label>
-                    <select class="form-select" id="des-usuario">
+    <div class="lg:col-span-5 fade-in fade-d1">
+        <div class="bg-surface rounded-2xl border border-slate-800/60 overflow-hidden shadow-xl shadow-black/20 mb-6">
+            <div class="px-6 py-4 border-b border-slate-800/60 bg-slate-900/50">
+                <span class="font-semibold text-white flex items-center gap-2"><i class="bi bi-send-check text-sky-400"></i> Registrar Salida</span>
+            </div>
+            <div class="p-6">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Usuario Responsable</label>
+                    <select class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7rem top 50%; background-size: .65rem auto;" id="des-usuario">
                         <option value="">-- Seleccionar Operador --</option>
                         {% for u in usuarios %}
                         <option value="{{ u.id_usuario }}">{{ u.nombre }} ({{ u.rol }})</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Placa del Transporte</label>
-                    <select class="form-select" id="des-placa">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Placa del Transporte</label>
+                    <select class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7rem top 50%; background-size: .65rem auto;" id="des-placa">
                         <option value="">-- Seleccionar Vehículo --</option>
                         {% for v in vehiculos %}
                         <option value="{{ v.placa }}">{{ v.placa }} - {{ v.marca }} (Capacidad: {{ v.capacidad_kg }}kg)</option>
                         {% endfor %}
                     </select>
                 </div>
-                <div class="mb-4">
-                    <label class="form-label">Destino Final</label>
-                    <select class="form-select" id="des-destino">
+                <div class="mb-6">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Destino Final</label>
+                    <select class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7rem top 50%; background-size: .65rem auto;" id="des-destino">
                         <option value="">-- Seleccionar Destino --</option>
                         {% for d in destinos %}
                         <option value="{{ d.nombre }}">{{ d.nombre }} ({{ d.direccion }})</option>
                         {% endfor %}
                     </select>
                 </div>
-                <button class="btn btn-success w-100 fw-semibold py-2" id="btn-despachar" onclick="despacharSeleccion(this)" disabled>
-                    <i class="bi bi-truck me-2"></i>Confirmar Despacho
+                <button class="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all" id="btn-despachar" onclick="despacharSeleccion(this)" disabled>
+                    <i class="bi bi-truck text-lg"></i> Confirmar Despacho
                 </button>
             </div>
         </div>
 
         <!-- Historial Reciente de Despachos -->
-        <div class="card">
-            <div class="card-header fw-semibold"><i class="bi bi-clock-history me-2"></i>Últimas Salidas</div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush" style="max-height: 250px; overflow-y: auto;">
+        <div class="bg-surface rounded-2xl border border-slate-800/60 overflow-hidden shadow-xl shadow-black/20 fade-in fade-d2 flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-800/60 bg-slate-900/50 shrink-0">
+                <span class="font-semibold text-white flex items-center gap-2"><i class="bi bi-clock-history text-sky-400"></i> Últimas Salidas</span>
+            </div>
+            <div class="flex-grow max-h-[250px] overflow-y-auto p-4">
+                <div class="space-y-3">
                     {% for des in historial_despachos %}
-                    <li class="list-group-item bg-transparent" style="border-color: var(--border);">
-                        <div class="d-flex justify-content-between align-items-start">
+                    <div class="bg-slate-800/30 border border-slate-700/50 rounded-xl p-4 hover:bg-slate-800/50 transition-colors">
+                        <div class="flex justify-between items-start">
                             <div>
-                                <div class="fw-semibold text-success"><i class="bi bi-box me-1"></i>{{ des.id_caja_id }}</div>
-                                <div style="font-size: 12px; color: var(--muted);">🚚 {{ des.transporte_placa }} → {{ des.destino }}</div>
+                                <div class="font-semibold text-emerald-400 flex items-center gap-2"><i class="bi bi-box"></i> {{ des.id_caja_id }}</div>
+                                <div class="text-xs text-slate-400 mt-1 flex items-center gap-1.5"><i class="bi bi-truck"></i> {{ des.transporte_placa }} <i class="bi bi-arrow-right text-[9px]"></i> {{ des.destino }}</div>
                             </div>
-                            <div class="text-end">
-                                <div style="font-size: 11px;" class="text-muted-custom">{{ des.fecha_salida|date:"d/m/Y H:i" }}</div>
-                                <div style="font-size: 11px;"><i class="bi bi-person me-1"></i>{{ des.id_usuario_despacho.nombre }}</div>
+                            <div class="text-right">
+                                <div class="text-xs text-slate-500">{{ des.fecha_salida|date:"d/m/Y H:i" }}</div>
+                                <div class="text-xs text-slate-400 mt-1 flex items-center justify-end gap-1"><i class="bi bi-person"></i> {{ des.id_usuario_despacho.nombre }}</div>
                             </div>
                         </div>
-                    </li>
+                    </div>
                     {% empty %}
-                    <li class="list-group-item bg-transparent text-center text-muted-custom py-3 border-0">Aún no hay despachos registrados.</li>
+                    <div class="text-center text-slate-500 py-6">
+                        <i class="bi bi-clock-history text-3xl block mb-2 opacity-30"></i>
+                        Aún no hay despachos registrados.
+                    </div>
                     {% endfor %}
-                </ul>
+                </div>
             </div>
         </div>
     </div>

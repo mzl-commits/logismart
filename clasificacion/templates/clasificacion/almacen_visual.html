@@ -2,46 +2,42 @@
 {% block title %}Almacén — LogiSmart{% endblock %}
 
 {% block extra_css %}
-<style>
-.almacen-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
-.mapa-panel { background: linear-gradient(145deg, #020617 0%, #0f172a 100%); border: 1px solid rgba(56,189,248,.1); border-radius: 20px; padding: 24px; min-height: 550px; overflow-x: auto; box-shadow: 0 8px 32px rgba(0,0,0,.3); }
-.side-panel { background: linear-gradient(180deg, var(--bg-card) 0%, #0c1222 100%); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; position: sticky; top: 20px; max-height: calc(100vh - 140px); display: flex; flex-direction: column; box-shadow: 0 4px 24px rgba(0,0,0,.2); }
+<style type="text/tailwindcss">
+/* Layout */
+.almacen-layout { @apply grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start; }
+.mapa-panel { @apply bg-gradient-to-br from-slate-950 to-slate-900 border border-sky-500/10 rounded-2xl p-6 min-h-[550px] overflow-x-auto shadow-2xl shadow-black/30; }
+.side-panel { @apply bg-gradient-to-b from-surface to-slate-950 border border-slate-800/60 rounded-2xl overflow-hidden sticky top-6 shadow-xl flex flex-col max-h-[calc(100vh-140px)]; }
 
 /* Tabs */
-.side-tabs { display: flex; border-bottom: 1px solid var(--border); }
-.side-tab { flex: 1; padding: 14px; text-align: center; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all .25s; }
-.side-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: rgba(56,189,248,.04); }
-.side-tab:hover:not(.active) { color: var(--text); background: rgba(255,255,255,.02); }
-.side-tab-content { display: none; padding: 18px; overflow-y: auto; flex: 1; }
-.side-tab-content.active { display: block; }
+.side-tabs { @apply flex border-b border-slate-800/60 bg-slate-900/50; }
+.side-tab { @apply flex-1 py-4 text-center text-xs font-bold uppercase tracking-wider cursor-pointer text-slate-500 transition-all border-b-2 border-transparent; }
+.side-tab.active { @apply text-sky-400 border-sky-500 bg-sky-500/5; }
+.side-tab:hover:not(.active) { @apply text-slate-300 bg-white/5; }
+.side-tab-content { @apply hidden p-5 overflow-y-auto flex-1; }
+.side-tab-content.active { @apply block; }
 
 /* Celdas del mapa */
-.pasillo-row { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-.pasillo-label { font-size: 18px; font-weight: 800; color: var(--accent); width: 40px; flex-shrink: 0; text-shadow: 0 0 12px rgba(56,189,248,.4); padding-top: 20px; }
-.ubicaciones-row { display: flex; gap: 14px; flex-wrap: wrap; flex: 1; }
+.pasillo-row { @apply flex items-start gap-4 mb-6 flex-wrap; }
+.pasillo-label { @apply text-2xl font-black text-sky-400 w-10 shrink-0 pt-5 drop-shadow-[0_0_12px_rgba(56,189,248,0.4)]; }
+.ubicaciones-row { @apply flex gap-3.5 flex-wrap flex-1; }
 .ubicacion-cell {
-    width: 100px; min-height: 85px; border-radius: 12px; padding: 14px 8px; text-align: center;
-    cursor: pointer; transition: all .25s cubic-bezier(.4,0,.2,1); border: 2px solid transparent; position: relative; flex-shrink: 0;
-    user-select: none; backdrop-filter: blur(4px); display: flex; flex-direction: column; justify-content: center; align-items: center;
+    @apply w-[100px] min-h-[85px] rounded-xl p-3 text-center cursor-pointer transition-all duration-300 border-2 border-transparent relative shrink-0 select-none flex flex-col justify-center items-center backdrop-blur-sm;
 }
-.ubicacion-cell:hover { transform: translateY(-4px) scale(1.05); z-index: 2; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
-.cell-libre   { background: linear-gradient(135deg, #064e3b 0%, #065f46 100%); color: #a7f3d0; border-color: rgba(16,185,129,.5); }
-.cell-ocupada { background: linear-gradient(135deg, #1c1917 0%, #292524 100%); color: #f5f5f4; border-color: rgba(168,162,158,.3); }
-.cell-name    { font-size: 14px; font-weight: 800; line-height: 1.3; letter-spacing: .5px; margin-bottom: 4px; }
-.cell-status  { font-size: 12px; font-weight: 600; opacity: .9; text-transform: uppercase; }
+.ubicacion-cell:hover { @apply -translate-y-1 scale-105 z-10 shadow-[0_8px_24px_rgba(0,0,0,0.5)]; }
+.cell-libre   { @apply bg-gradient-to-br from-emerald-900 to-emerald-800 text-emerald-200 border-emerald-500/50; }
+.cell-ocupada { @apply bg-gradient-to-br from-slate-900 to-slate-800 text-slate-200 border-slate-500/30; }
+.cell-name    { @apply text-sm font-black leading-tight tracking-wide mb-1; }
+.cell-status  { @apply text-xs font-bold opacity-90 uppercase; }
 
 /* Parada badge */
 .parada-badge {
-    position: absolute; top: -8px; right: -8px; width: 22px; height: 22px;
-    border-radius: 50%; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-    background: linear-gradient(135deg, #f59e0b, #d97706); color: #111; border: 2px solid #030712;
-    box-shadow: 0 2px 8px rgba(245,158,11,.4);
+    @apply absolute -top-2 -right-2 w-[22px] h-[22px] rounded-full text-[10px] font-black flex items-center justify-center bg-gradient-to-br from-amber-500 to-amber-600 text-amber-950 border-2 border-slate-950 shadow-[0_2px_8px_rgba(245,158,11,0.4)];
 }
-.parada-badge.current { background: linear-gradient(135deg, #22c55e, #16a34a); animation: pulse-badge .9s ease-in-out infinite; box-shadow: 0 2px 12px rgba(34,197,94,.5); }
-.parada-badge.done { background: #475569; color: #94a3b8; box-shadow: none; }
+.parada-badge.current { @apply bg-gradient-to-br from-emerald-500 to-emerald-600 text-emerald-950 shadow-[0_2px_12px_rgba(34,197,94,0.5)]; animation: pulse-badge .9s ease-in-out infinite; }
+.parada-badge.done { @apply bg-slate-700 text-slate-400 shadow-none; }
 
 /* Ruta */
-.cell-ruta { border-color: rgba(245,158,11,.4) !important; box-shadow: inset 0 0 0 1px rgba(245,158,11,.2), 0 0 16px rgba(245,158,11,.1); }
+.cell-ruta { @apply border-amber-500/60 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.2),0_0_16px_rgba(245,158,11,0.1)] !important; }
 
 /* Carro actual */
 @keyframes pulse-carro {
@@ -49,8 +45,8 @@
     70%  { box-shadow: 0 0 0 10px rgba(56,189,248,0), inset 0 0 0 2px rgba(56,189,248,.8); }
     100% { box-shadow: 0 0 0 0 rgba(56,189,248,0), inset 0 0 0 2px rgba(56,189,248,.8); }
 }
-.cell-carro { border-color: #38bdf8 !important; animation: pulse-carro 1.4s ease-out infinite; background: linear-gradient(135deg, #0c4a6e, #0369a1) !important; }
-.carro-emoji { font-size: 20px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,.3)); }
+.cell-carro { @apply border-sky-400 bg-gradient-to-br from-sky-900 to-sky-700 !important; animation: pulse-carro 1.4s ease-out infinite; }
+.carro-emoji { @apply text-xl block drop-shadow-md; }
 
 @keyframes pulse-badge {
     0%, 100% { transform: scale(1); }
@@ -59,61 +55,56 @@
 
 /* Llegada */
 .llegada-card {
-    background: linear-gradient(135deg, #14532d, #166534);
-    border: 1px solid rgba(22,163,74,.4); border-radius: 16px; padding: 22px; text-align: center;
-    box-shadow: 0 4px 20px rgba(22,163,74,.15);
+    @apply bg-gradient-to-br from-emerald-900 to-emerald-800 border border-emerald-500/40 rounded-2xl p-6 text-center shadow-[0_4px_20px_rgba(22,163,74,0.15)];
 }
-.llegada-card .llegada-icon { font-size: 44px; margin-bottom: 10px; }
-.llegada-card h5 { color: #86efac; font-weight: 700; }
+.llegada-card .llegada-icon { @apply text-5xl mb-3 drop-shadow-md; }
 
 /* Estado chips */
-.estado-chip { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 11px; font-weight: 700; }
-.chip-esperando { background: rgba(30,41,59,.8); color:#94a3b8; }
-.chip-moviendo  { background: rgba(30,58,95,.8); color:#7dd3fc; }
-.chip-llego     { background: rgba(20,83,45,.8); color:#86efac; }
-.chip-regresando { background: rgba(76,29,149,.8); color:#c4b5fd; }
+.estado-chip { @apply inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider; }
+.chip-esperando { @apply bg-slate-800/80 text-slate-400; }
+.chip-moviendo  { @apply bg-sky-900/80 text-sky-300; }
+.chip-llego     { @apply bg-emerald-900/80 text-emerald-300; }
+.chip-regresando { @apply bg-violet-900/80 text-violet-300; }
 
 /* Paradas list */
-.parada-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.05); align-items: flex-start; }
-.parada-num { width: 26px; height: 26px; border-radius: 50%; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.parada-info { flex: 1; font-size: 13px; }
-.parada-sub  { font-size: 11px; color: var(--muted); }
-
-@media (max-width: 992px) { .almacen-layout { grid-template-columns: 1fr; } .side-panel { position: static; max-height: none; } }
+.parada-item { @apply flex gap-3 py-3 border-b border-white/5 items-start; }
+.parada-num { @apply w-7 h-7 rounded-full text-[11px] font-black flex items-center justify-center shrink-0 shadow-inner; }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Header -->
-<div class="row mb-3 align-items-center fade-in">
-    <div class="col">
-        <h2 class="fw-bold mb-1"><i class="bi bi-grid-3x3-gap me-2"></i>Mapa del Almacén</h2>
-        <p class="text-muted-custom mb-0">Recorrido del carro en tiempo real · Confirma entregas directamente aquí</p>
+<div class="flex items-center justify-between mb-6 fade-in">
+    <div>
+        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+            <i class="bi bi-grid-3x3-gap text-sky-400"></i> Mapa del Almacén
+        </h2>
+        <p class="text-slate-500 text-sm mt-1">Recorrido del carro en tiempo real · Confirma entregas directamente aquí</p>
     </div>
-    <div class="col-auto d-flex gap-2">
-        <button class="btn btn-sm btn-outline-secondary" onclick="cargarTodo()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
-        <button class="btn btn-sm btn-warning" id="btn-avanzar" onclick="avanzarCarro(this)"><i class="bi bi-skip-forward-fill"></i> Avanzar</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="resetCarro(this)"><i class="bi bi-x-circle"></i> Reset</button>
+    <div class="flex gap-2">
+        <button class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors" onclick="cargarTodo()"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+        <button class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors" id="btn-avanzar" onclick="avanzarCarro(this)"><i class="bi bi-skip-forward-fill"></i> Avanzar</button>
+        <button class="border border-red-500/50 hover:bg-red-500/10 text-red-400 text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors" onclick="resetCarro(this)"><i class="bi bi-x-circle"></i> Reset</button>
     </div>
 </div>
 
 <!-- Leyenda -->
-<div class="d-flex flex-wrap gap-3 mb-3 fade-in fade-in-delay-1" style="font-size:12px;">
-    <span><span style="width:14px;height:14px;background:#064e3b;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:middle;"></span>Libre</span>
-    <span><span style="width:14px;height:14px;background:#1c1917;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:middle;"></span>Ocupada</span>
-    <span><span style="width:14px;height:14px;border:2px solid #38bdf8;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:middle;"></span>Carro</span>
-    <span><span style="width:14px;height:14px;background:#f59e0b;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;font-size:9px;text-align:center;line-height:14px;font-weight:700;color:#111;">N</span>Parada</span>
-    <span><span style="width:14px;height:14px;border:2px dashed #854d0e;border-radius:4px;display:inline-block;margin-right:5px;vertical-align:middle;"></span>Ruta</span>
+<div class="flex flex-wrap gap-4 mb-5 fade-in fade-d1 text-xs font-medium text-slate-400 bg-slate-900/30 py-2 px-4 rounded-xl inline-flex border border-slate-800/60">
+    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-emerald-800 rounded flex-shrink-0"></span>Libre</span>
+    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-slate-800 rounded flex-shrink-0"></span>Ocupada</span>
+    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 border-2 border-sky-400 rounded flex-shrink-0"></span>Carro</span>
+    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 bg-amber-500 rounded-full text-[9px] text-amber-950 font-bold flex items-center justify-center flex-shrink-0">N</span>Parada</span>
+    <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 border-2 border-dashed border-amber-600 rounded flex-shrink-0"></span>Ruta</span>
 </div>
 
 <!-- Layout principal -->
-<div class="almacen-layout fade-in fade-in-delay-2">
+<div class="almacen-layout fade-in fade-d2">
     <!-- Mapa -->
     <div class="mapa-panel">
         <div id="contenedor-mapa">
-            <div class="text-center py-5 text-muted-custom">
-                <div class="spinner-border text-info mb-3" role="status"></div>
-                <p>Cargando almacén...</p>
+            <div class="text-center py-12 text-slate-500">
+                <div class="spinner-border text-sky-400 mb-4" role="status"></div>
+                <p class="text-sm">Cargando almacén...</p>
             </div>
         </div>
     </div>
@@ -121,17 +112,17 @@
     <!-- Panel lateral -->
     <div class="side-panel">
         <div class="side-tabs">
-            <div class="side-tab active" onclick="cambiarTab('carro', this)"><i class="bi bi-truck me-1"></i>Carro</div>
-            <div class="side-tab" onclick="cambiarTab('ubicacion', this)"><i class="bi bi-geo-alt me-1"></i>Ubicación</div>
+            <div class="side-tab active" onclick="cambiarTab('carro', this)"><i class="bi bi-truck text-base mr-1"></i>Carro</div>
+            <div class="side-tab" onclick="cambiarTab('ubicacion', this)"><i class="bi bi-geo-alt text-base mr-1"></i>Ubicación</div>
         </div>
         <div id="tab-carro" class="side-tab-content active">
-            <p class="text-muted-custom text-center py-3">Cargando...</p>
+            <p class="text-slate-500 text-sm text-center py-6">Cargando...</p>
         </div>
         <div id="tab-ubicacion" class="side-tab-content">
-            <p class="text-muted-custom text-center py-4">
-                <i class="bi bi-hand-index fs-3 d-block mb-2 opacity-50"></i>
-                Selecciona una celda del mapa para ver detalles.
-            </p>
+            <div class="text-center py-8">
+                <i class="bi bi-hand-index text-5xl block mb-4 text-slate-600"></i>
+                <p class="text-sm text-slate-400">Selecciona una celda del mapa para ver detalles.</p>
+            </div>
         </div>
     </div>
 </div>
@@ -169,7 +160,7 @@ function getParada(x, y) {
 // ── Renderizar mapa (layout por pasillo) ──────────────────────────────────────
 function renderMapa() {
     const cont = document.getElementById('contenedor-mapa');
-    if (!ubicacionesGlobal.length) { cont.innerHTML = `<div class="alert alert-warning">Sin ubicaciones.</div>`; return; }
+    if (!ubicacionesGlobal.length) { cont.innerHTML = `<div class="bg-amber-500/10 border border-amber-500/30 text-amber-400 p-4 rounded-xl text-sm">Sin ubicaciones.</div>`; return; }
 
     const cajasByUbi = {};
     cajasGlobal.forEach(c => { if (c.id_ubicacion) cajasByUbi[c.id_ubicacion] = c; });
@@ -209,7 +200,7 @@ function renderMapa() {
 // ── Renderizar tab Carro ──────────────────────────────────────────────────────
 function renderCarro() {
     const tab = document.getElementById('tab-carro');
-    if (!carroGlobal) { tab.innerHTML = `<p class="text-muted-custom text-center py-4">Sin datos del carro.</p>`; return; }
+    if (!carroGlobal) { tab.innerHTML = `<p class="text-slate-500 text-center py-6 text-sm">Sin datos del carro.</p>`; return; }
 
     const estadoClass = { esperando: 'chip-esperando', moviendo: 'chip-moviendo', llego: 'chip-llego', regresando: 'chip-regresando' }[carroGlobal.estado] || 'chip-esperando';
     const paradas = carroGlobal.paradas || [];
@@ -221,49 +212,49 @@ function renderCarro() {
     if (llegó && paradas[paradaActual]) {
         const p = paradas[paradaActual];
         llegadaHtml = `
-            <div class="llegada-card mb-3">
+            <div class="llegada-card mb-5">
                 <div class="llegada-icon">🎯</div>
-                <h5>¡Carro llegó!</h5>
-                <p class="mb-1" style="color:#86efac;font-weight:600;">${p.ubicacion_nombre}</p>
-                <p class="text-muted-custom mb-3" style="font-size:13px;">Parada ${paradaActual + 1}/${paradas.length} · 📦 ${p.producto}</p>
-                <button class="btn btn-success w-100 py-2 fw-semibold" id="btn-confirmar-parada" onclick="confirmarParada(this)">
-                    <i class="bi bi-check-circle-fill me-2"></i>Confirmar entrega
+                <h5 class="text-emerald-300 font-bold text-lg mb-1">¡Carro llegó!</h5>
+                <p class="text-white font-bold text-base mb-1">${p.ubicacion_nombre}</p>
+                <p class="text-emerald-200/70 text-xs mb-4">Parada ${paradaActual + 1}/${paradas.length} · 📦 ${p.producto}</p>
+                <button class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/50 transition-all" id="btn-confirmar-parada" onclick="confirmarParada(this)">
+                    <i class="bi bi-check-circle-fill text-lg"></i> Confirmar entrega
                 </button>
             </div>`;
     } else if (regresando) {
         llegadaHtml = `
-            <div class="llegada-card mb-3" style="background: linear-gradient(135deg, #4c1d95, #3b0764); border-color: #7c3aed;">
-                <div class="llegada-icon">🏠</div>
-                <h5 style="color:#c4b5fd;">Regresando a base</h5>
-                <p class="text-muted-custom mb-0" style="font-size:13px;">Todas las entregas completadas.</p>
+            <div class="mb-5 bg-gradient-to-br from-violet-900 to-fuchsia-900 border border-violet-500/40 rounded-2xl p-6 text-center shadow-[0_4px_20px_rgba(124,58,237,0.15)]">
+                <div class="text-5xl mb-3 drop-shadow-md">🏠</div>
+                <h5 class="text-violet-200 font-bold text-lg mb-1">Regresando a base</h5>
+                <p class="text-violet-300/70 text-xs">Todas las entregas completadas.</p>
             </div>`;
     }
 
     const paradasHtml = paradas.length ? `
-        <div class="mb-3">
-            <div class="text-muted-custom mb-2" style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Ruta de ${paradas.length} parada(s)</div>
+        <div class="mt-4">
+            <div class="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-3">Ruta de ${paradas.length} parada(s)</div>
             ${paradas.map((p, i) => `
                 <div class="parada-item">
-                    <div class="parada-num" style="background:${i === paradaActual ? '#16a34a' : i < paradaActual ? '#1e293b' : '#1e3a5f'};color:${i === paradaActual ? '#fff' : '#94a3b8'}">
+                    <div class="parada-num ${i === paradaActual ? 'bg-emerald-600 text-white' : i < paradaActual ? 'bg-slate-800 text-emerald-500' : 'bg-slate-800 text-slate-500'}">
                         ${i < paradaActual ? '✓' : i + 1}
                     </div>
-                    <div class="parada-info">
-                        <div class="${i === paradaActual ? 'fw-semibold' : i < paradaActual ? 'text-muted-custom' : ''}">${p.ubicacion_nombre}</div>
-                        <div class="parada-sub">${p.producto}</div>
+                    <div class="flex-1 text-sm">
+                        <div class="${i === paradaActual ? 'font-bold text-white' : i < paradaActual ? 'text-slate-500' : 'text-slate-300 font-medium'}">${p.ubicacion_nombre}</div>
+                        <div class="text-xs ${i === paradaActual ? 'text-slate-300' : 'text-slate-500'} mt-0.5">${p.producto}</div>
                     </div>
                 </div>`).join('')}
         </div>` : '';
 
     tab.innerHTML = `
         ${llegadaHtml}
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <span class="fw-semibold" style="font-size:13px;"><i class="bi bi-truck me-2"></i>Carro automatizado</span>
+        <div class="flex justify-between items-center mb-5 bg-slate-900/50 border border-slate-700 p-3 rounded-xl">
+            <span class="font-bold text-sm text-slate-200 flex items-center gap-2"><i class="bi bi-truck text-sky-400"></i> Carro automatizado</span>
             <span class="estado-chip ${estadoClass}">${carroGlobal.estado}</span>
         </div>
-        <div style="font-size:13px;" class="mb-3">
-            <div class="d-flex justify-content-between py-1 border-bottom" style="border-color:var(--border)!important;"><span class="text-muted-custom">Posición</span> <span>(${carroGlobal.pos_x}, ${carroGlobal.pos_y})</span></div>
-            <div class="d-flex justify-content-between py-1 border-bottom" style="border-color:var(--border)!important;"><span class="text-muted-custom">Destino</span> <span>(${carroGlobal.destino_x}, ${carroGlobal.destino_y})</span></div>
-            <div class="d-flex justify-content-between py-1"><span class="text-muted-custom">Pasos restantes</span> <span>${carroGlobal.ruta?.length ?? 0}</span></div>
+        <div class="text-sm bg-slate-900/30 border border-slate-800 rounded-xl p-4 mb-4">
+            <div class="flex justify-between py-2 border-b border-slate-800/60"><span class="text-slate-400">Posición</span> <span class="font-mono text-sky-400">(${carroGlobal.pos_x}, ${carroGlobal.pos_y})</span></div>
+            <div class="flex justify-between py-2 border-b border-slate-800/60"><span class="text-slate-400">Destino</span> <span class="font-mono text-amber-400">(${carroGlobal.destino_x}, ${carroGlobal.destino_y})</span></div>
+            <div class="flex justify-between py-2"><span class="text-slate-400">Pasos restantes</span> <span class="font-bold text-white">${carroGlobal.ruta?.length ?? 0}</span></div>
         </div>
         ${paradasHtml}`;
 }
@@ -285,29 +276,42 @@ function seleccionarUbicacion(id) {
     const catIcon = { electronica:'💻', textil:'👕', alimento:'🍎', herramienta:'🔧', quimico:'⚗️', otro:'📦' };
 
     tab.innerHTML = `
-        <div class="mb-3">
-            <div class="fw-bold" style="font-size:18px;color:var(--accent);">${u.pasillo}${u.estante}-N${u.nivel}</div>
-            <div class="d-flex gap-2 mt-1 flex-wrap">
-                <span class="badge" style="background:#1e293b;color:#94a3b8;">${u.tipo_estante}</span>
-                ${u.estado_ocupacion ? '<span class="badge" style="background:#7f1d1d;color:#fca5a5;">Ocupada</span>' : '<span class="badge" style="background:#14532d;color:#86efac;">Libre</span>'}
-                ${u.permite_fragil ? '<span class="badge" style="background:#0c4a6e;color:#7dd3fc;">Frágil OK</span>' : ''}
-                ${u.permite_quimico ? '<span class="badge" style="background:#451a03;color:#fcd34d;">Químico OK</span>' : ''}
+        <div class="bg-slate-900/50 border border-slate-700 rounded-xl p-5 mb-5 text-center">
+            <div class="font-black text-2xl text-sky-400 drop-shadow-md">${u.pasillo}${u.estante}-N${u.nivel}</div>
+            <div class="flex justify-center gap-2 mt-3 flex-wrap">
+                <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">${u.tipo_estante}</span>
+                ${u.estado_ocupacion ? '<span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-red-900/50 text-red-300 border border-red-500/30">Ocupada</span>' : '<span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-900/50 text-emerald-300 border border-emerald-500/30">Libre</span>'}
+                ${u.permite_fragil ? '<span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-sky-900/50 text-sky-300 border border-sky-500/30">Frágil OK</span>' : ''}
+                ${u.permite_quimico ? '<span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-900/50 text-amber-300 border border-amber-500/30">Químico OK</span>' : ''}
             </div>
         </div>
-        <div style="font-size:13px;" class="mb-3">
-            <div class="d-flex justify-content-between py-1 border-bottom" style="border-color:var(--border)!important;"><span class="text-muted-custom">Capacidad</span><span>${u.capacidad_peso_kg} kg</span></div>
-            <div class="d-flex justify-content-between py-1 border-bottom" style="border-color:var(--border)!important;"><span class="text-muted-custom">Prioridad cat.</span><span>${u.prioridad_categoria}</span></div>
-            <div class="d-flex justify-content-between py-1"><span class="text-muted-custom">Coords</span><span>X:${u.coord_x} Y:${u.coord_y}</span></div>
+        
+        <div class="text-sm bg-slate-900/30 border border-slate-800 rounded-xl p-4 mb-5">
+            <div class="flex justify-between py-2 border-b border-slate-800/60"><span class="text-slate-400">Capacidad</span><span class="font-bold text-white">${u.capacidad_peso_kg} kg</span></div>
+            <div class="flex justify-between py-2 border-b border-slate-800/60"><span class="text-slate-400">Prioridad cat.</span><span class="font-bold text-white">${u.prioridad_categoria}</span></div>
+            <div class="flex justify-between py-2"><span class="text-slate-400">Coords</span><span class="font-mono text-sky-400">X:${u.coord_x} Y:${u.coord_y}</span></div>
         </div>
+        
         ${c ? `
-            <div class="card" style="border-color:var(--border);">
-                <div class="card-body" style="padding:14px;">
-                    <div class="fw-semibold mb-1">${catIcon[c.categoria] || '📦'} ${c.producto}</div>
-                    <div class="text-muted-custom mb-2" style="font-size:12px;">${c.id} · ${c.peso_kg} kg ${c.es_fragil ? '· 🔷 Frágil' : ''}</div>
-                    <span class="badge badge-${c.estado === 'en_transito' ? 'transito' : c.estado === 'almacenada' ? 'almacenada' : 'pendiente'}">${c.estado}</span>
-                    ${c.estado === 'almacenada' ? `<div class="mt-2"><button class="btn btn-sm btn-outline-secondary w-100" onclick="confirmarDespachoDesdePanel('${c.id}', this)"><i class="bi bi-truck me-1"></i>Despachar</button></div>` : ''}
-                </div>
-            </div>` : `<div class="text-muted-custom text-center py-2" style="font-size:13px;"><i class="bi bi-check-circle me-1 text-success"></i>Ubicación libre</div>`}
+            <div class="bg-surface border border-slate-700 rounded-xl p-5 shadow-lg relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 text-7xl opacity-5">${catIcon[c.categoria] || '📦'}</div>
+                <div class="font-bold text-lg mb-1 flex items-center gap-2">${catIcon[c.categoria] || '📦'} ${c.producto}</div>
+                <div class="text-slate-400 text-xs mb-3 flex items-center gap-1.5"><span class="text-sky-400 font-mono">${c.id}</span> · ${c.peso_kg} kg ${c.es_fragil ? '· <span class="text-sky-300">🔷 Frágil</span>' : ''}</div>
+                
+                <span class="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider mb-4 
+                    ${c.estado === 'en_transito' ? 'bg-sky-900/50 text-sky-300 border border-sky-500/30' : 
+                      c.estado === 'almacenada' ? 'bg-emerald-900/50 text-emerald-300 border border-emerald-500/30' : 
+                      'bg-amber-900/50 text-amber-300 border border-amber-500/30'}">${c.estado.replace("_"," ")}</span>
+                
+                ${c.estado === 'almacenada' ? `
+                    <button class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 transition-colors border border-slate-700" onclick="confirmarDespachoDesdePanel('${c.id}', this)">
+                        <i class="bi bi-truck text-sky-400"></i> Despachar
+                    </button>` : ''}
+            </div>` : `
+            <div class="text-center py-8 text-emerald-500/50 border border-emerald-500/20 bg-emerald-500/5 rounded-xl">
+                <i class="bi bi-check-circle text-4xl block mb-2"></i>
+                <span class="text-sm font-medium">Ubicación libre</span>
+            </div>`}
     `;
 
     // Cambiar al tab ubicación

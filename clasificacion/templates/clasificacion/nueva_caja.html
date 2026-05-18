@@ -3,147 +3,135 @@
 
 {% block extra_css %}
 <style>
-.cat-btn, .prio-btn {
-    border: 2px solid var(--border); background: var(--bg-card); color: var(--text);
-    border-radius: 12px; padding: 12px 10px; text-align: center; cursor: pointer;
-    transition: all .2s; user-select: none;
-}
-.cat-btn:hover  { border-color: var(--accent); background: rgba(56,189,248,.08); }
-.cat-btn.active { border-color: var(--accent); background: rgba(56,189,248,.15); color: var(--accent); }
-.cat-icon { font-size: 26px; display: block; margin-bottom: 4px; }
-.cat-label { font-size: 11px; font-weight: 600; }
+/* Extendiendo Tailwind con las clases activas usadas en JS */
+.cat-btn { @apply border-2 border-slate-700 bg-surface rounded-xl p-3 text-center cursor-pointer transition-all select-none text-slate-400; }
+.cat-btn:hover { @apply border-indigo-500/50 bg-indigo-500/5 text-slate-200; }
+.cat-btn.active { @apply border-indigo-500 bg-indigo-500/15 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.15)]; }
 
-.prio-btn { display: flex; align-items: center; gap: 8px; padding: 10px 14px; }
-.prio-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-.prio-baja    { border-color: #475569; } .prio-baja.active    { border-color: #94a3b8; background: rgba(148,163,184,.1); }
-.prio-media   { border-color: #1d4ed8; } .prio-media.active   { border-color: #3b82f6; background: rgba(59,130,246,.12); }
-.prio-alta    { border-color: #c2410c; } .prio-alta.active    { border-color: #f97316; background: rgba(249,115,22,.12); }
-.prio-urgente { border-color: #991b1b; } .prio-urgente.active { border-color: #ef4444; background: rgba(239,68,68,.12); }
+.prio-btn { @apply flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-700 bg-surface cursor-pointer transition-all text-sm font-semibold text-slate-400; }
+.prio-baja:hover { @apply border-slate-500 bg-slate-800/50 text-slate-200; }
+.prio-baja.active { @apply border-slate-400 bg-slate-500/20 text-slate-300; }
+.prio-media:hover { @apply border-sky-600 bg-sky-900/20 text-sky-200; }
+.prio-media.active { @apply border-sky-500 bg-sky-500/20 text-sky-400 shadow-[0_0_10px_rgba(14,165,233,0.15)]; }
+.prio-alta:hover { @apply border-amber-600 bg-amber-900/20 text-amber-200; }
+.prio-alta.active { @apply border-amber-500 bg-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.15)]; }
+.prio-urgente:hover { @apply border-red-600 bg-red-900/20 text-red-200; }
+.prio-urgente.active { @apply border-red-500 bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.15)]; }
 
-.queue-item {
-    background: var(--bg-card2); border: 1px solid var(--border); border-radius: 12px;
-    padding: 12px 16px; display: flex; align-items: center; gap: 12px;
-    animation: fadeInUp .25s ease both;
-}
-.queue-item .q-icon { font-size: 22px; }
-.queue-item .q-info { flex: 1; }
-.queue-item .q-name { font-weight: 600; font-size: 14px; }
-.queue-item .q-meta { font-size: 12px; color: var(--muted); }
-.toggle-fragil { width: 44px; height: 24px; background: #1e293b; border-radius: 99px; position: relative; cursor: pointer; transition: background .2s; border: 1px solid var(--border); }
-.toggle-fragil.on { background: #0ea5e9; }
-.toggle-fragil::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: left .2s; }
-.toggle-fragil.on::after { left: 22px; }
-.id-sugerido-chip { background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.3); color: var(--accent); font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+.toggle-fragil { @apply w-12 h-6 bg-slate-800 rounded-full relative cursor-pointer transition-colors border border-slate-700; }
+.toggle-fragil.on { @apply bg-sky-500 border-sky-400; }
+.toggle-fragil::after { content: ''; @apply absolute top-[1px] left-[1px] w-[20px] h-[20px] bg-white rounded-full transition-all; }
+.toggle-fragil.on::after { @apply left-[25px]; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-4 fade-in">
-    <div class="col">
-        <h2 class="fw-bold mb-1"><i class="bi bi-plus-circle me-2 text-success"></i>Registrar Cajas</h2>
-        <p class="text-muted-custom mb-0">Agrega cajas a la cola y luego envía el carro con ruta optimizada.</p>
+<div class="flex items-center justify-between mb-6 fade-in">
+    <div>
+        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+            <i class="bi bi-plus-circle text-emerald-400"></i> Registrar Cajas
+        </h2>
+        <p class="text-slate-500 text-sm mt-1">Agrega cajas a la cola y luego envía el carro con ruta optimizada.</p>
     </div>
 </div>
 
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- ── Formulario ──────────────────────────────────────────── -->
-    <div class="col-lg-7 fade-in fade-in-delay-1">
-        <div class="card">
-            <div class="card-header d-flex align-items-center justify-content-between">
-                <span><i class="bi bi-box me-2"></i>Datos de la caja</span>
-                <span id="id-sugerido-chip" class="id-sugerido-chip d-none" title="Click para usar este ID"></span>
+    <div class="lg:col-span-7 fade-in fade-d1">
+        <div class="bg-surface rounded-2xl border border-slate-800/60 overflow-hidden shadow-xl shadow-black/20">
+            <div class="px-6 py-4 border-b border-slate-800/60 flex items-center justify-between bg-slate-900/50">
+                <span class="font-semibold text-white flex items-center gap-2"><i class="bi bi-box"></i> Datos de la caja</span>
+                <span id="id-sugerido-chip" class="hidden cursor-pointer bg-sky-500/10 border border-sky-500/30 text-sky-400 text-xs font-bold px-3 py-1 rounded-lg hover:bg-sky-500/20 transition-colors" title="Click para usar este ID"></span>
             </div>
-            <div class="card-body">
+            <div class="p-6">
                 <form id="formCaja" novalidate>
                     <!-- ID + Producto -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-5">
-                            <label class="form-label">ID de caja</label>
-                            <input type="text" class="form-control" id="campo-id" placeholder="CAJ-20260508-001" required>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-5 mb-6">
+                        <div class="md:col-span-5">
+                            <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">ID de caja</label>
+                            <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" id="campo-id" placeholder="CAJ-20260508-001" required>
                         </div>
-                        <div class="col-sm-7">
-                            <label class="form-label">Producto / descripción</label>
-                            <input type="text" class="form-control" id="campo-producto" placeholder="Ej. Laptop Dell XPS 15" required>
+                        <div class="md:col-span-7">
+                            <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Producto / descripción</label>
+                            <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" id="campo-producto" placeholder="Ej. Laptop Dell XPS 15" required>
                         </div>
                     </div>
 
                     <!-- Categoría -->
-                    <div class="mb-4">
-                        <label class="form-label">Categoría</label>
-                        <div class="row g-2">
+                    <div class="mb-6">
+                        <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Categoría</label>
+                        <div class="grid grid-cols-3 sm:grid-cols-6 gap-3">
                             {% for cat in categorias %}
-                            <div class="col-4 col-sm-2">
-                                <div class="cat-btn" data-val="{{ cat.slug }}" onclick="seleccionarCategoria(this)">
-                                    <span class="cat-icon">{{ cat.icono }}</span>
-                                    <span class="cat-label">{{ cat.nombre }}</span>
-                                </div>
+                            <div class="cat-btn" data-val="{{ cat.slug }}" onclick="seleccionarCategoria(this)">
+                                <span class="block text-3xl mb-1 drop-shadow-md">{{ cat.icono }}</span>
+                                <span class="text-xs font-bold">{{ cat.nombre }}</span>
                             </div>
                             {% empty %}
-                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="electronica" onclick="seleccionarCategoria(this)"><span class="cat-icon">💻</span><span class="cat-label">Electrónica</span></div></div>
-                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="textil" onclick="seleccionarCategoria(this)"><span class="cat-icon">👕</span><span class="cat-label">Textil</span></div></div>
-                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="alimento" onclick="seleccionarCategoria(this)"><span class="cat-icon">🍎</span><span class="cat-label">Alimento</span></div></div>
-                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="herramienta" onclick="seleccionarCategoria(this)"><span class="cat-icon">🔧</span><span class="cat-label">Herramienta</span></div></div>
-                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="quimico" onclick="seleccionarCategoria(this)"><span class="cat-icon">⚗️</span><span class="cat-label">Químico</span></div></div>
-                            <div class="col-4 col-sm-2"><div class="cat-btn" data-val="otro" onclick="seleccionarCategoria(this)"><span class="cat-icon">📦</span><span class="cat-label">Otro</span></div></div>
+                            <div class="cat-btn" data-val="electronica" onclick="seleccionarCategoria(this)"><span class="block text-3xl mb-1">💻</span><span class="text-xs font-bold">Electrónica</span></div>
+                            <div class="cat-btn" data-val="textil" onclick="seleccionarCategoria(this)"><span class="block text-3xl mb-1">👕</span><span class="text-xs font-bold">Textil</span></div>
+                            <div class="cat-btn" data-val="alimento" onclick="seleccionarCategoria(this)"><span class="block text-3xl mb-1">🍎</span><span class="text-xs font-bold">Alimento</span></div>
+                            <div class="cat-btn" data-val="herramienta" onclick="seleccionarCategoria(this)"><span class="block text-3xl mb-1">🔧</span><span class="text-xs font-bold">Herramienta</span></div>
+                            <div class="cat-btn" data-val="quimico" onclick="seleccionarCategoria(this)"><span class="block text-3xl mb-1">⚗️</span><span class="text-xs font-bold">Químico</span></div>
+                            <div class="cat-btn" data-val="otro" onclick="seleccionarCategoria(this)"><span class="block text-3xl mb-1">📦</span><span class="text-xs font-bold">Otro</span></div>
                             {% endfor %}
                         </div>
                         <input type="hidden" id="campo-categoria" required>
                     </div>
 
                     <!-- Prioridad -->
-                    <div class="mb-4">
-                        <label class="form-label">Prioridad</label>
-                        <div class="d-flex gap-2 flex-wrap">
+                    <div class="mb-6">
+                        <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Prioridad</label>
+                        <div class="flex gap-3 flex-wrap">
                             <div class="prio-btn prio-baja" data-val="baja" onclick="seleccionarPrioridad(this)">
-                                <div class="prio-dot" style="background:#64748b"></div> Baja
+                                <div class="w-3 h-3 rounded-full bg-slate-500"></div> Baja
                             </div>
                             <div class="prio-btn prio-media" data-val="media" onclick="seleccionarPrioridad(this)">
-                                <div class="prio-dot" style="background:#3b82f6"></div> Media
+                                <div class="w-3 h-3 rounded-full bg-sky-500"></div> Media
                             </div>
                             <div class="prio-btn prio-alta" data-val="alta" onclick="seleccionarPrioridad(this)">
-                                <div class="prio-dot" style="background:#f97316"></div> Alta
+                                <div class="w-3 h-3 rounded-full bg-amber-500"></div> Alta
                             </div>
                             <div class="prio-btn prio-urgente" data-val="urgente" onclick="seleccionarPrioridad(this)">
-                                <div class="prio-dot" style="background:#ef4444"></div> Urgente
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div> Urgente
                             </div>
                         </div>
                         <input type="hidden" id="campo-prioridad" required>
                     </div>
 
                     <!-- Peso + Frágil -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-4">
-                            <label class="form-label">Peso (kg)</label>
-                            <input type="number" step="0.1" min="0.1" class="form-control" id="campo-peso" placeholder="0.0" required>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+                        <div>
+                            <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Peso (kg)</label>
+                            <input type="number" step="0.1" min="0.1" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" id="campo-peso" placeholder="0.0" required>
                         </div>
-                        <div class="col-sm-4">
-                            <label class="form-label">Cantidad</label>
-                            <input type="number" min="1" class="form-control" id="campo-cantidad" value="1" required>
+                        <div>
+                            <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Cantidad</label>
+                            <input type="number" min="1" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" id="campo-cantidad" value="1" required>
                         </div>
-                        <div class="col-sm-4">
-                            <label class="form-label d-block">¿Es frágil?</label>
-                            <div class="d-flex align-items-center gap-3 mt-2">
+                        <div>
+                            <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">¿Es frágil?</label>
+                            <div class="flex items-center gap-3 mt-3">
                                 <div class="toggle-fragil" id="toggle-fragil" onclick="toggleFragil(this)"></div>
-                                <span id="fragil-label" class="text-muted-custom">No</span>
+                                <span id="fragil-label" class="text-slate-400 font-medium">No</span>
                             </div>
                             <input type="hidden" id="campo-fragil" value="false">
                         </div>
                     </div>
 
                     <!-- Proveedor + Medida -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-sm-6">
-                            <label class="form-label">Proveedor</label>
-                            <select class="form-select" id="campo-proveedor" required>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                        <div>
+                            <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Proveedor</label>
+                            <select class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7rem top 50%; background-size: .65rem auto;" id="campo-proveedor" required>
                                 <option value="">Seleccionar proveedor...</option>
                                 {% for p in proveedores %}
                                 <option value="{{ p.id_proveedor }}">{{ p.nombre_empresa }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-sm-6">
-                            <label class="form-label">Medida / tamaño</label>
-                            <select class="form-select" id="campo-medida" required>
+                        <div>
+                            <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Medida / tamaño</label>
+                            <select class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7rem top 50%; background-size: .65rem auto;" id="campo-medida" required>
                                 <option value="">Seleccionar medida...</option>
                                 {% for m in medidas %}
                                 <option value="{{ m.id_medida }}">{{ m.nombre }} ({{ m.largo }}×{{ m.ancho }}×{{ m.alto }})</option>
@@ -152,8 +140,8 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-success w-100 py-2" id="btn-agregar">
-                        <i class="bi bi-plus-lg me-2"></i>Agregar a la cola →
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5" id="btn-agregar">
+                        <i class="bi bi-plus-lg"></i> Agregar a la cola <i class="bi bi-arrow-right"></i>
                     </button>
                 </form>
             </div>
@@ -161,32 +149,34 @@
     </div>
 
     <!-- ── Cola de cajas ─────────────────────────────────────────── -->
-    <div class="col-lg-5 fade-in fade-in-delay-2">
-        <div class="card h-100 d-flex flex-column">
-            <div class="card-header d-flex align-items-center justify-content-between">
-                <span><i class="bi bi-list-task me-2"></i>Cola de pendientes</span>
-                <span class="badge" style="background:#1e3a5f;color:#38bdf8;" id="badge-cola">0 cajas</span>
+    <div class="lg:col-span-5 fade-in fade-d2">
+        <div class="bg-surface rounded-2xl border border-slate-800/60 overflow-hidden shadow-xl shadow-black/20 h-full flex flex-col">
+            <div class="px-6 py-4 border-b border-slate-800/60 flex items-center justify-between bg-slate-900/50">
+                <span class="font-semibold text-white flex items-center gap-2"><i class="bi bi-list-task"></i> Cola de pendientes</span>
+                <span class="bg-indigo-500/20 text-indigo-400 font-bold px-3 py-1 rounded-lg text-sm" id="badge-cola">0 cajas</span>
             </div>
-            <div class="card-body flex-grow-1 d-flex flex-column">
-                <div id="lista-cola" class="d-flex flex-column gap-2 flex-grow-1">
-                    <div class="text-center py-5 text-muted-custom" id="cola-vacia">
-                        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
-                        La cola está vacía.<br>Agrega cajas para enviar el carro.
+            
+            <div class="p-4 flex-grow flex flex-col">
+                <div id="lista-cola" class="flex flex-col gap-3 flex-grow">
+                    <div class="text-center py-12 text-slate-500" id="cola-vacia">
+                        <i class="bi bi-inbox text-5xl block mb-3 opacity-30"></i>
+                        <p class="text-base font-medium">La cola está vacía.</p>
+                        <p class="text-sm">Agrega cajas para enviar el carro.</p>
                     </div>
                 </div>
 
-                <div class="mt-4 border-top border-secondary pt-3">
-                    <div class="mb-3">
-                        <label class="form-label">Operador</label>
-                        <select class="form-select" id="select-usuario-envio">
+                <div class="mt-6 pt-5 border-t border-slate-800/60">
+                    <div class="mb-4">
+                        <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Operador Responsable</label>
+                        <select class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" style="background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2394a3b8%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right .7rem top 50%; background-size: .65rem auto;" id="select-usuario-envio">
                             <option value="">Seleccionar...</option>
                             {% for u in usuarios %}
                             <option value="{{ u.id_usuario }}">{{ u.nombre }} ({{ u.rol }})</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <button class="btn btn-primary w-100 py-2" id="btn-enviar-carro" disabled onclick="enviarCarro(this)">
-                        <i class="bi bi-truck me-2"></i>Enviar carro con ruta optimizada
+                    <button class="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:hover:bg-sky-600 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 transition-all" id="btn-enviar-carro" disabled onclick="enviarCarro(this)">
+                        <i class="bi bi-truck text-lg"></i> Enviar carro con ruta optimizada
                     </button>
                 </div>
             </div>
@@ -209,7 +199,7 @@ async function cargarIdSugerido() {
         const data = await res.json();
         const chip = document.getElementById('id-sugerido-chip');
         chip.textContent = `💡 ${data.id_sugerido}`;
-        chip.classList.remove('d-none');
+        chip.classList.remove('hidden');
         chip.onclick = () => { document.getElementById('campo-id').value = data.id_sugerido; };
         document.getElementById('campo-id').placeholder = data.id_sugerido;
     } catch {}
@@ -232,6 +222,13 @@ function toggleFragil(el) {
     esFragil = !esFragil;
     el.classList.toggle('on', esFragil);
     document.getElementById('fragil-label').textContent = esFragil ? 'Sí' : 'No';
+    if(esFragil) {
+        document.getElementById('fragil-label').classList.add('text-sky-400');
+        document.getElementById('fragil-label').classList.remove('text-slate-400');
+    } else {
+        document.getElementById('fragil-label').classList.remove('text-sky-400');
+        document.getElementById('fragil-label').classList.add('text-slate-400');
+    }
     document.getElementById('campo-fragil').value = esFragil;
 }
 
@@ -262,23 +259,28 @@ function renderizarCola() {
     badge.textContent = `${colaPendientes.length} caja${colaPendientes.length !== 1 ? 's' : ''}`;
     btnEnviar.disabled = colaPendientes.length === 0;
 
-    const items = lista.querySelectorAll('.queue-item');
+    const items = lista.querySelectorAll('.queue-item-tw');
     items.forEach(i => i.remove());
 
     if (!colaPendientes.length) { vacia.style.display = ''; return; }
     vacia.style.display = 'none';
 
     const catIcons = { electronica:'💻', textil:'👕', alimento:'🍎', herramienta:'🔧', quimico:'⚗️', otro:'📦' };
+    const prioColors = { urgente: 'bg-red-500/20 text-red-400 border border-red-500/30', alta: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', media: 'bg-sky-500/20 text-sky-400 border border-sky-500/30', baja: 'bg-slate-500/20 text-slate-400 border border-slate-500/30' };
+
     colaPendientes.forEach(c => {
         const div = document.createElement('div');
-        div.className = 'queue-item';
+        div.className = 'queue-item-tw p-4 rounded-xl border border-slate-700 bg-slate-800/40 flex items-center gap-4 animate-[fadeInUp_0.3s_ease]';
         div.innerHTML = `
-            <div class="q-icon">${catIcons[c.categoria] || '📦'}</div>
-            <div class="q-info">
-                <div class="q-name">${c.producto}</div>
-                <div class="q-meta">${c.id} · ${c.peso_kg} kg · <span class="badge badge-${c.prioridad === 'urgente' ? 'despachada' : c.prioridad === 'alta' ? 'almacenada' : 'transito'}">${c.prioridad}</span></div>
+            <div class="text-3xl drop-shadow-md">${catIcons[c.categoria] || '📦'}</div>
+            <div class="flex-1">
+                <div class="font-bold text-white text-base">${c.producto}</div>
+                <div class="text-sm text-slate-400 mt-1 flex items-center gap-2">
+                    <span class="text-sky-400 font-medium">${c.id}</span> · ${c.peso_kg} kg · 
+                    <span class="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${prioColors[c.prioridad]||prioColors.media}">${c.prioridad}</span>
+                </div>
             </div>
-            ${c.es_fragil ? '<span title="Frágil" style="color:#38bdf8;">🔷</span>' : ''}
+            ${c.es_fragil ? '<span title="Frágil" class="text-2xl drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">🔷</span>' : ''}
         `;
         lista.appendChild(div);
     });
@@ -318,6 +320,7 @@ document.getElementById('formCaja').addEventListener('submit', async (e) => {
             esFragil = false;
             document.getElementById('toggle-fragil').classList.remove('on');
             document.getElementById('fragil-label').textContent = 'No';
+            document.getElementById('fragil-label').className = 'text-slate-400 font-medium';
             categoriaSeleccionada = null;
             colaPendientes.push(data);
             renderizarCola();
@@ -345,11 +348,16 @@ async function enviarCarro(btn) {
         });
         const data = await res.json();
         if (res.ok) {
-            const paradas = (data.paradas || []).map((p, i) => `<li>${i+1}. <strong>${p.ubicacion_nombre}</strong> — ${p.producto}</li>`).join('');
+            const paradas = (data.paradas || []).map((p, i) => `<li class="py-1 border-b border-slate-700/50 last:border-0"><span class="text-sky-400 font-bold mr-2">${i+1}.</span> <strong class="text-white">${p.ubicacion_nombre}</strong> <span class="text-slate-400 mx-2">—</span> ${p.producto}</li>`).join('');
             mostrarModalInfo('🚗 Carro en camino', `
-                <p class="mb-3">${data.mensaje}. Ruta optimizada con <strong>${data.total_paradas} parada(s)</strong>.</p>
-                <ul class="list-unstyled">${paradas}</ul>
-                ${data.sin_ubicacion?.length ? `<div class="alert alert-warning mt-3">Sin ubicación: ${data.sin_ubicacion.join(', ')}</div>` : ''}
+                <div class="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4 mb-4">
+                    <p class="text-sky-200 m-0">${data.mensaje}. Ruta optimizada con <strong class="text-white">${data.total_paradas} parada(s)</strong>.</p>
+                </div>
+                <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
+                    <h6 class="text-slate-300 font-bold mb-3 uppercase tracking-wider text-xs">Itinerario de Paradas</h6>
+                    <ul class="list-none p-0 m-0 text-sm">${paradas}</ul>
+                </div>
+                ${data.sin_ubicacion?.length ? `<div class="mt-4 bg-amber-500/10 border border-amber-500/30 text-amber-400 p-3 rounded-xl text-sm"><i class="bi bi-exclamation-triangle mr-2"></i>Sin ubicación asignada: <strong>${data.sin_ubicacion.join(', ')}</strong></div>` : ''}
             `, '/almacen/', '🗺️ Ver en mapa');
             colaPendientes = [];
             renderizarCola();

@@ -2,156 +2,145 @@
 {% block title %}Administración — LogiSmart{% endblock %}
 
 {% block content %}
-<div class="row mb-4 align-items-center fade-in">
-    <div class="col">
-        <h2 class="fw-bold mb-1"><i class="bi bi-people me-2"></i>Panel de Administración</h2>
-        <p class="text-muted-custom mb-0">Gestión de Usuarios, Proveedores y Datos Logísticos (Vehículos/Destinos)</p>
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 fade-in">
+    <div>
+        <h2 class="text-2xl font-bold mb-1 text-white"><i class="bi bi-people me-2 text-sky-400"></i>Panel de Administración</h2>
+        <p class="text-sm text-slate-400 mb-0">Gestión de Usuarios, Proveedores y Datos Logísticos (Vehículos/Destinos)</p>
     </div>
 </div>
 
-<div class="row g-4">
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
     <!-- Panel Usuarios -->
-    <div class="col-lg-6 fade-in">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
-                <span><i class="bi bi-person-badge me-2"></i>Usuarios (Operadores)</span>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                    <table class="table table-hover mb-0">
-                        <thead class="sticky-top bg-dark">
-                            <tr>
-                                <th>ID</th>
-                                <th>Nombre</th>
-                                <th>Rol</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for u in usuarios %}
-                            <tr>
-                                <td class="text-muted-custom">{{ u.id_usuario }}</td>
-                                <td class="fw-medium">{{ u.nombre }}</td>
-                                <td><span class="badge" style="background:#1e293b;color:#94a3b8;">{{ u.rol }}</span></td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="3" class="text-center text-muted-custom py-4">No hay usuarios.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[450px] fade-in">
+        <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center justify-between bg-slate-900/30 shrink-0">
+            <span class="flex items-center gap-2"><i class="bi bi-person-badge text-sky-400"></i>Usuarios (Operadores)</span>
+        </div>
+        <div class="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-slate-950/95 backdrop-blur z-10">
+                    <tr class="border-b border-slate-800/60 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                        <th class="px-6 py-4">ID</th>
+                        <th class="px-6 py-4">Nombre</th>
+                        <th class="px-6 py-4">Rol</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for u in usuarios %}
+                    <tr class="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
+                        <td class="px-6 py-3 text-slate-500">{{ u.id_usuario }}</td>
+                        <td class="px-6 py-3 font-semibold text-white">{{ u.nombre }}</td>
+                        <td class="px-6 py-3">
+                            <span class="bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md text-xs font-semibold">{{ u.rol }}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-center text-slate-500 py-6">No hay usuarios.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
     <!-- Panel Proveedores -->
-    <div class="col-lg-6 fade-in fade-in-delay-1">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
-                <span><i class="bi bi-building me-2"></i>Proveedores</span>
-                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalProveedor"><i class="bi bi-plus"></i> Nuevo</button>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                    <table class="table table-hover mb-0">
-                        <thead class="sticky-top bg-dark">
-                            <tr>
-                                <th>RUC/ID</th>
-                                <th>Razón Social</th>
-                                <th>Contacto</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for p in proveedores %}
-                            <tr>
-                                <td class="text-muted-custom">{{ p.id_proveedor }}</td>
-                                <td class="fw-medium">{{ p.razon_social }}</td>
-                                <td style="font-size:12px;">{{ p.contacto_nombre }}<br><span class="text-muted-custom">{{ p.contacto_telefono }}</span></td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro('/api/proveedores/{{ p.id_proveedor }}/', 'Proveedor {{ p.razon_social }}')"><i class="bi bi-trash"></i></button>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="3" class="text-center text-muted-custom py-4">No hay proveedores.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[450px] fade-in fade-d1">
+        <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center justify-between bg-slate-900/30 shrink-0">
+            <span class="flex items-center gap-2"><i class="bi bi-building text-sky-400"></i>Proveedores</span>
+            <button class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-600/30 hover:border-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalProveedor"><i class="bi bi-plus-lg"></i> Nuevo</button>
+        </div>
+        <div class="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-slate-950/95 backdrop-blur z-10">
+                    <tr class="border-b border-slate-800/60 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                        <th class="px-6 py-4">RUC/ID</th>
+                        <th class="px-6 py-4">Razón Social</th>
+                        <th class="px-6 py-4">Contacto</th>
+                        <th class="px-6 py-4"></th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for p in proveedores %}
+                    <tr class="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
+                        <td class="px-6 py-3 text-slate-500">{{ p.id_proveedor }}</td>
+                        <td class="px-6 py-3 font-semibold text-white">{{ p.razon_social }}</td>
+                        <td class="px-6 py-3 text-xs">
+                            <div class="text-slate-300">{{ p.contacto_nombre }}</div>
+                            <div class="text-slate-500">{{ p.contacto_telefono }}</div>
+                        </td>
+                        <td class="px-6 py-3 text-right">
+                            <button class="text-slate-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-400/10 transition-colors" onclick="eliminarRegistro('/api/proveedores/{{ p.id_proveedor }}/', 'Proveedor {{ p.razon_social }}')"><i class="bi bi-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-slate-500 py-6">No hay proveedores.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
     <!-- Panel Vehículos -->
-    <div class="col-lg-6 fade-in fade-in-delay-2">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
-                <span><i class="bi bi-truck me-2"></i>Flota de Vehículos</span>
-                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalVehiculo"><i class="bi bi-plus"></i> Nuevo</button>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                    <table class="table table-hover mb-0">
-                        <thead class="sticky-top bg-dark">
-                            <tr>
-                                <th>Placa</th>
-                                <th>Marca / Modelo</th>
-                                <th>Capacidad</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for v in vehiculos %}
-                            <tr>
-                                <td class="fw-bold">{{ v.placa }}</td>
-                                <td>{{ v.marca }}</td>
-                                <td class="text-muted-custom">{{ v.capacidad_kg }} kg</td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro('/api/vehiculos/{{ v.id_vehiculo }}/', 'Vehículo {{ v.placa }}')"><i class="bi bi-trash"></i></button>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="4" class="text-center text-muted-custom py-4">No hay vehículos registrados.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[450px] fade-in fade-d2">
+        <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center justify-between bg-slate-900/30 shrink-0">
+            <span class="flex items-center gap-2"><i class="bi bi-truck text-sky-400"></i>Flota de Vehículos</span>
+            <button class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-600/30 hover:border-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalVehiculo"><i class="bi bi-plus-lg"></i> Nuevo</button>
+        </div>
+        <div class="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-slate-950/95 backdrop-blur z-10">
+                    <tr class="border-b border-slate-800/60 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                        <th class="px-6 py-4">Placa</th>
+                        <th class="px-6 py-4">Marca / Modelo</th>
+                        <th class="px-6 py-4">Capacidad</th>
+                        <th class="px-6 py-4"></th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for v in vehiculos %}
+                    <tr class="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
+                        <td class="px-6 py-3 font-semibold text-white">{{ v.placa }}</td>
+                        <td class="px-6 py-3 text-slate-300">{{ v.marca }}</td>
+                        <td class="px-6 py-3 text-slate-500">{{ v.capacidad_kg }} kg</td>
+                        <td class="px-6 py-3 text-right">
+                            <button class="text-slate-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-400/10 transition-colors" onclick="eliminarRegistro('/api/vehiculos/{{ v.id_vehiculo }}/', 'Vehículo {{ v.placa }}')"><i class="bi bi-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center text-slate-500 py-6">No hay vehículos registrados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
     <!-- Panel Destinos -->
-    <div class="col-lg-6 fade-in fade-in-delay-3">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center fw-semibold">
-                <span><i class="bi bi-geo-alt me-2"></i>Sedes y Destinos</span>
-                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalDestino"><i class="bi bi-plus"></i> Nuevo</button>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                    <table class="table table-hover mb-0">
-                        <thead class="sticky-top bg-dark">
-                            <tr>
-                                <th>Nombre / Sucursal</th>
-                                <th>Dirección</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for d in destinos %}
-                            <tr>
-                                <td class="fw-bold">{{ d.nombre }}</td>
-                                <td class="text-muted-custom" style="font-size:12px;">{{ d.direccion }}</td>
-                                <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro('/api/destinos/{{ d.id_destino }}/', 'Destino {{ d.nombre }}')"><i class="bi bi-trash"></i></button>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="3" class="text-center text-muted-custom py-4">No hay destinos registrados.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[450px] fade-in fade-d3">
+        <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center justify-between bg-slate-900/30 shrink-0">
+            <span class="flex items-center gap-2"><i class="bi bi-geo-alt text-sky-400"></i>Sedes y Destinos</span>
+            <button class="bg-emerald-600/20 text-emerald-400 hover:bg-emerald-600 hover:text-white border border-emerald-600/30 hover:border-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalDestino"><i class="bi bi-plus-lg"></i> Nuevo</button>
+        </div>
+        <div class="overflow-x-auto overflow-y-auto flex-1 custom-scrollbar">
+            <table class="w-full text-left border-collapse">
+                <thead class="sticky top-0 bg-slate-950/95 backdrop-blur z-10">
+                    <tr class="border-b border-slate-800/60 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                        <th class="px-6 py-4">Nombre / Sucursal</th>
+                        <th class="px-6 py-4">Dirección</th>
+                        <th class="px-6 py-4"></th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    {% for d in destinos %}
+                    <tr class="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
+                        <td class="px-6 py-3 font-semibold text-white">{{ d.nombre }}</td>
+                        <td class="px-6 py-3 text-xs text-slate-400">{{ d.direccion }}</td>
+                        <td class="px-6 py-3 text-right">
+                            <button class="text-slate-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-400/10 transition-colors" onclick="eliminarRegistro('/api/destinos/{{ d.id_destino }}/', 'Destino {{ d.nombre }}')"><i class="bi bi-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-center text-slate-500 py-6">No hay destinos registrados.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -159,42 +148,42 @@
 <!-- Modal Nuevo Proveedor -->
 <div class="modal fade" id="modalProveedor" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-building me-2"></i>Registrar Proveedor</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-content bg-surface border border-slate-700 shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <h5 class="text-lg font-bold text-white flex items-center gap-2"><i class="bi bi-building text-sky-400"></i> Registrar Proveedor</h5>
+                <button type="button" class="text-slate-400 hover:text-white transition-colors" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">RUC / ID</label>
-                    <input type="text" class="form-control" id="p-ruc" placeholder="Ej. 20123456789">
+            <div class="p-6">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">RUC / ID</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="p-ruc" placeholder="Ej. 20123456789">
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Razón Social</label>
-                    <input type="text" class="form-control" id="p-razon" placeholder="Nombre de la empresa">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Razón Social</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="p-razon" placeholder="Nombre de la empresa">
                 </div>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Contacto (Nombre)</label>
-                        <input type="text" class="form-control" id="p-contacto" placeholder="Ej. Juan Pérez">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                    <div>
+                        <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Contacto (Nombre)</label>
+                        <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="p-contacto" placeholder="Ej. Juan Pérez">
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Teléfono</label>
-                        <input type="text" class="form-control" id="p-tel" placeholder="Ej. 999 888 777">
+                    <div>
+                        <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Teléfono</label>
+                        <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="p-tel" placeholder="Ej. 999 888 777">
                     </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <input type="email" class="form-control" id="p-email" placeholder="Ej. contacto@empresa.com">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Email</label>
+                    <input type="email" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="p-email" placeholder="Ej. contacto@empresa.com">
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Dirección</label>
-                    <input type="text" class="form-control" id="p-dir" placeholder="Ej. Av. Principal 123">
+                <div class="mb-2">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Dirección</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="p-dir" placeholder="Ej. Av. Principal 123">
                 </div>
             </div>
-            <div class="modal-footer border-top-0">
-                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button class="btn btn-success" onclick="guardarProveedor(this)">Guardar Proveedor</button>
+            <div class="px-6 py-4 border-t border-slate-800 flex justify-end gap-3 bg-slate-900/30">
+                <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition-colors" data-bs-dismiss="modal">Cancelar</button>
+                <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2" onclick="guardarProveedor(this)"><i class="bi bi-save"></i> Guardar</button>
             </div>
         </div>
     </div>
@@ -203,28 +192,28 @@
 <!-- Modal Nuevo Vehículo -->
 <div class="modal fade" id="modalVehiculo" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-truck me-2"></i>Registrar Vehículo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-content bg-surface border border-slate-700 shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <h5 class="text-lg font-bold text-white flex items-center gap-2"><i class="bi bi-truck text-sky-400"></i> Registrar Vehículo</h5>
+                <button type="button" class="text-slate-400 hover:text-white transition-colors" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Placa</label>
-                    <input type="text" class="form-control" id="v-placa" placeholder="Ej. ABC-123">
+            <div class="p-6">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Placa</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="v-placa" placeholder="Ej. ABC-123">
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Marca / Descripción</label>
-                    <input type="text" class="form-control" id="v-marca" placeholder="Ej. Toyota Dyna">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Marca / Descripción</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="v-marca" placeholder="Ej. Toyota Dyna">
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Capacidad de Carga (kg)</label>
-                    <input type="number" class="form-control" id="v-capacidad" value="1000">
+                <div class="mb-2">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Capacidad de Carga (kg)</label>
+                    <input type="number" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 transition-all" id="v-capacidad" value="1000">
                 </div>
             </div>
-            <div class="modal-footer border-top-0">
-                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button class="btn btn-success" onclick="guardarVehiculo(this)">Guardar Vehículo</button>
+            <div class="px-6 py-4 border-t border-slate-800 flex justify-end gap-3 bg-slate-900/30">
+                <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition-colors" data-bs-dismiss="modal">Cancelar</button>
+                <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2" onclick="guardarVehiculo(this)"><i class="bi bi-save"></i> Guardar</button>
             </div>
         </div>
     </div>
@@ -233,24 +222,24 @@
 <!-- Modal Nuevo Destino -->
 <div class="modal fade" id="modalDestino" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-geo-alt me-2"></i>Registrar Destino</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        <div class="modal-content bg-surface border border-slate-700 shadow-2xl">
+            <div class="px-6 py-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <h5 class="text-lg font-bold text-white flex items-center gap-2"><i class="bi bi-geo-alt text-sky-400"></i> Registrar Destino</h5>
+                <button type="button" class="text-slate-400 hover:text-white transition-colors" data-bs-dismiss="modal"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Nombre o Identificador</label>
-                    <input type="text" class="form-control" id="d-nombre" placeholder="Ej. Sucursal Centro">
+            <div class="p-6">
+                <div class="mb-5">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Nombre o Identificador</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="d-nombre" placeholder="Ej. Sucursal Centro">
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Dirección Exacta</label>
-                    <input type="text" class="form-control" id="d-direccion" placeholder="Ej. Av. Principal 123">
+                <div class="mb-2">
+                    <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Dirección Exacta</label>
+                    <input type="text" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 transition-all" id="d-direccion" placeholder="Ej. Av. Principal 123">
                 </div>
             </div>
-            <div class="modal-footer border-top-0">
-                <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button class="btn btn-success" onclick="guardarDestino(this)">Guardar Destino</button>
+            <div class="px-6 py-4 border-t border-slate-800 flex justify-end gap-3 bg-slate-900/30">
+                <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold rounded-lg transition-colors" data-bs-dismiss="modal">Cancelar</button>
+                <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2" onclick="guardarDestino(this)"><i class="bi bi-save"></i> Guardar</button>
             </div>
         </div>
     </div>
