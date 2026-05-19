@@ -1,0 +1,739 @@
+﻿
+' ============================================================
+' SISTEMA LOGISMART - DIAGRAMAS PLANTUML
+' ============================================================
+
+
+' ============================================================
+' 1. DIAGRAMA DE CASOS DE USO
+' ============================================================
+
+@startuml diagrama_casos_uso
+left to right direction
+skinparam actorStyle awesome
+skinparam backgroundColor #0D1F23
+skinparam ArrowColor #69818D
+skinparam ActorBackgroundColor #2D4A53
+skinparam ActorBorderColor #69818D
+skinparam ActorFontColor #AFB3B7
+skinparam UsecaseBackgroundColor #132E35
+skinparam UsecaseBorderColor #2D4A53
+skinparam UsecaseFontColor #AFB3B7
+skinparam defaultFontColor #AFB3B7
+skinparam PackageBackgroundColor #0D1F23
+skinparam PackageBorderColor #2D4A53
+
+title Sistema LogiSmart - Casos de Uso
+
+actor "Operador" as OP
+actor "Despachador" as DS
+actor "Administrador" as AD
+actor "Carro AGV" as AGV
+actor "ESP32" as HW
+
+rectangle "Sistema LogiSmart" {
+    package "Gestión de Cajas" {
+        usecase "Registrar nueva caja" as UC1
+        usecase "Clasificar caja automáticamente" as UC2
+        usecase "Asignar ubicación óptima" as UC3
+        usecase "Procesar lote de cajas" as UC4
+        usecase "Confirmar almacenamiento" as UC5
+        usecase "Buscar caja" as UC6
+    }
+
+    package "Gestión de Despachos" {
+        usecase "Seleccionar cajas a despachar" as UC7
+        usecase "Registrar salida de caja" as UC8
+        usecase "Asignar vehículo y destino" as UC9
+        usecase "Liberar ubicación" as UC10
+    }
+
+    package "Control del Carro AGV" {
+        usecase "Visualizar mapa del almacén" as UC11
+        usecase "Avanzar carro" as UC12
+        usecase "Confirmar entrega en parada" as UC13
+        usecase "Resetear carro a base" as UC14
+        usecase "Generar ruta optimizada" as UC15
+    }
+
+    package "Administración" {
+        usecase "Gestionar usuarios" as UC16
+        usecase "Gestionar proveedores" as UC17
+        usecase "Gestionar vehículos" as UC18
+        usecase "Gestionar destinos" as UC19
+        usecase "Configurar carro AGV" as UC20
+        usecase "Gestionar categorías" as UC21
+    }
+
+    package "Reportes y Monitoreo" {
+        usecase "Ver dashboard" as UC22
+        usecase "Ver historial de movimientos" as UC23
+        usecase "Ver ocupación del almacén" as UC24
+    }
+}
+
+' Operador
+OP --> UC1
+OP --> UC4
+OP --> UC5
+OP --> UC6
+OP --> UC11
+OP --> UC12
+OP --> UC13
+OP --> UC22
+
+' Despachador
+DS --> UC7
+DS --> UC8
+DS --> UC9
+DS --> UC6
+DS --> UC22
+
+' Administrador
+AD --> UC16
+AD --> UC17
+AD --> UC18
+AD --> UC19
+AD --> UC20
+AD --> UC21
+AD --> UC22
+AD --> UC23
+AD --> UC24
+
+' AGV
+AGV --> UC12
+AGV --> UC15
+
+' Hardware
+HW --> UC12
+
+' Relaciones include/extend
+UC4 ..> UC2 : <<include>>
+UC4 ..> UC3 : <<include>>
+UC4 ..> UC15 : <<include>>
+UC1 ..> UC2 : <<extend>>
+UC8 ..> UC10 : <<include>>
+UC8 ..> UC23 : <<include>>
+UC5 ..> UC23 : <<include>>
+
+@enduml
+
+
+' ============================================================
+' 2. DIAGRAMA DE FLUJO (ACTIVIDADES)
+' ============================================================
+
+@startuml diagrama_flujo
+skinparam backgroundColor #0D1F23
+skinparam ArrowColor #69818D
+skinparam ActivityBackgroundColor #132E35
+skinparam ActivityBorderColor #2D4A53
+skinparam ActivityFontColor #AFB3B7
+skinparam defaultFontColor #AFB3B7
+skinparam ActivityStartColor #69818D
+skinparam ActivityEndColor #5A636A
+skinparam PartitionBackgroundColor #0D1F23
+skinparam PartitionBorderColor #2D4A53
+
+title Flujo Principal del Sistema LogiSmart
+
+start
+
+:Ingresa nueva caja al sistema;
+:Registrar datos básicos\n(producto, peso, medida, proveedor);
+:Caja en estado: **PENDIENTE**;
+
+if (¿Procesar lote?) then (Sí)
+    :Obtener configuración del carro;
+    :Filtrar cajas pendientes\npor peso, volumen y paradas;
+    
+    partition "Clasificación Automática" {
+        :Clasificar caja por:\n- Categoría\n- Fragilidad\n- Peso\n- Dimensiones;
+    }
+    
+    partition "Optimización de Ubicación" {
+        :Buscar ubicaciones libres compatibles;
+        if (¿Hay ubicación disponible?) then (Sí)
+            :Calcular score de compatibilidad\n(tipo estante, categoría, peso);
+            :Asignar mejor ubicación;
+        else (No)
+            :Registrar caja sin ubicación;
+            stop
+        endif
+    }
+    
+    :Cambiar estado a **EN_TRÁNSITO**;
+    :Registrar en historial de movimientos;
+    :Marcar ubicación como ocupada;
+    
+    partition "Ruta del Carro AGV" {
+        :Optimizar orden de paradas (Nearest Neighbor);
+        :Generar ruta A* hasta primera parada;
+        :Enviar coordenadas a ESP32;
+        :Estado carro: **MOVIENDO**;
+    }
+    
+    partition "Ejecución de Ruta" {
+        repeat
+            :Carro avanza un paso;
+            if (¿Llegó a destino?) then (Sí)
+                :Estado carro: **LLEGÓ**;
+                :Operador confirma entrega;
+                :Cambiar estado caja a **ALMACENADA**;
+                :Registrar en historial;
+                if (¿Hay más paradas?) then (Sí)
+                    :Calcular ruta a siguiente parada;
+                    :Estado carro: **MOVIENDO**;
+                else (No)
+                    :Calcular ruta de regreso a base;
+                    :Estado carro: **REGRESANDO**;
+                endif
+            else (No)
+                :Continuar avanzando;
+            endif
+        repeat while (¿Carro en movimiento?) is (Sí)
+        :Carro llegó a base;
+        :Estado carro: **ESPERANDO**;
+    }
+
+else (No — Individual)
+    :Procesar caja individual;
+    :Clasificar y asignar ubicación;
+    :Generar ruta individual;
+endif
+
+:Caja almacenada en ubicación asignada;
+
+partition "Proceso de Despacho" {
+    :Despachador selecciona cajas;
+    :Asignar vehículo y destino;
+    :Confirmar despacho;
+    :Estado caja: **DESPACHADA**;
+    :Liberar ubicación en almacén;
+    :Registrar despacho en historial;
+    :Crear registro en tabla Despacho;
+}
+
+stop
+
+@enduml
+
+
+' ============================================================
+' 3. DIAGRAMA DE SECUENCIA
+' ============================================================
+
+@startuml diagrama_secuencia
+skinparam backgroundColor #0D1F23
+skinparam ArrowColor #69818D
+skinparam ActorBackgroundColor #2D4A53
+skinparam ActorBorderColor #69818D
+skinparam ActorFontColor #AFB3B7
+skinparam ParticipantBackgroundColor #132E35
+skinparam ParticipantBorderColor #2D4A53
+skinparam ParticipantFontColor #AFB3B7
+skinparam SequenceLifeLineBorderColor #2D4A53
+skinparam SequenceGroupBackgroundColor #132E35
+skinparam SequenceGroupBorderColor #69818D
+skinparam SequenceGroupFontColor #AFB3B7
+skinparam NoteBackgroundColor #2D4A53
+skinparam NoteBorderColor #69818D
+skinparam NoteFontColor #AFB3B7
+skinparam sequenceArrowThickness 2
+skinparam maxMessageSize 120
+skinparam defaultFontColor #AFB3B7
+skinparam SequenceArrowFontColor #AFB3B7
+skinparam SequenceDividerFontColor #AFB3B7
+skinparam SequenceDividerBackgroundColor #132E35
+
+title LogiSmart - Diagrama de Secuencia
+
+actor Operador as OP
+actor Despachador as DS
+participant Frontend as FE
+participant "API Django" as API
+participant Servicios as SVC
+database BD
+
+== 1. Registro de Caja ==
+
+OP -> FE : Llena formulario nueva caja
+FE -> API : POST /api/cajas/
+API -> BD : INSERT caja (estado=pendiente)
+BD --> API : OK, id generado
+API --> FE : 201 Created {id, estado}
+FE --> OP : Notificacion de exito
+
+== 2. Procesamiento de Lote ==
+
+OP -> FE : Click "Procesar Lote"
+FE -> API : POST /api/cajas/procesar_lote/
+API -> BD : SELECT cajas pendientes
+BD --> API : Lista de cajas
+
+note over API : Filtra por peso_max,\nvolumen_max y max_paradas
+
+loop Por cada caja seleccionada
+    API -> SVC : ClasificadorCajas.clasificar(caja)
+    SVC --> API : {categoria, fragilidad, peso_clase}
+    API -> SVC : OptimizadorUbicaciones\n.encontrar_mejor_ubicacion()
+    SVC -> BD : SELECT ubicaciones libres
+    BD --> SVC : Resultados
+    SVC --> API : Mejor ubicacion + score
+    API -> BD : UPDATE caja a en_transito
+    API -> BD : UPDATE ubicacion a ocupada
+    API -> BD : INSERT historial movimiento
+end
+
+== 3. Generacion de Ruta ==
+
+API -> SVC : RutaService.optimizar_paradas()
+note right of SVC : Nearest Neighbor:\nordena por cercania
+SVC --> API : Paradas ordenadas []
+
+API -> SVC : RutaService.generar_ruta(origen, destino)
+note right of SVC : BFS/A*:\ngénera lista {x,y}
+SVC --> API : Ruta [{x,y}, ...]
+
+API -> BD : UPDATE estado_carro\n(moviendo, ruta, paradas)
+API -> SVC : ESP32.enviar_coordenadas(x, y)
+SVC --> API : Resultado conexion
+API --> FE : 200 OK {paradas, ruta}
+FE --> OP : Mapa actualizado
+
+== 4. Avance del Carro ==
+
+OP -> FE : Click "Avanzar"
+FE -> API : POST /api/carro/avanzar/
+API -> BD : SELECT estado_carro
+BD --> API : carro {ruta, pos}
+API -> BD : UPDATE pos_x, pos_y
+
+alt Carro llego al destino
+    API -> BD : UPDATE carro = llego
+    API --> FE : {estado: llego}
+    FE --> OP : Boton "Confirmar entrega"
+
+    OP -> FE : Click "Confirmar entrega"
+    FE -> API : POST /api/carro/confirmar_parada/
+    API -> BD : UPDATE caja a almacenada
+    API -> BD : INSERT historial (en_transito a almacenada)
+
+    alt Quedan mas paradas
+        API -> SVC : generar_ruta(pos, sig_parada)
+        SVC --> API : Nueva ruta
+        API -> BD : UPDATE carro (moviendo)
+        API -> SVC : ESP32.enviar_coordenadas()
+    else Ultima parada
+        API -> SVC : generar_ruta(pos, base)
+        SVC --> API : Ruta de regreso
+        API -> BD : UPDATE carro (regresando)
+    end
+else Carro en camino
+    API --> FE : {estado: moviendo, pos: {x,y}}
+    FE -> FE : Actualiza mapa
+end
+
+== 5. Despacho ==
+
+DS -> FE : Selecciona cajas + vehiculo + destino
+FE -> API : POST /api/cajas/{id}/confirmar_despacho/
+API -> BD : UPDATE caja a despachada
+API -> BD : UPDATE ubicacion a libre
+API -> BD : INSERT historial (almacenada a despachada)
+API -> BD : INSERT registro Despacho
+API --> FE : 200 OK
+FE --> DS : Despacho confirmado
+
+@enduml
+
+
+' ============================================================
+' 4. DIAGRAMA DE CLASES
+' ============================================================
+
+@startuml diagrama_clases
+skinparam backgroundColor #0D1F23
+skinparam ArrowColor #69818D
+skinparam ClassBackgroundColor #132E35
+skinparam ClassBorderColor #2D4A53
+skinparam ClassFontColor #AFB3B7
+skinparam defaultFontColor #AFB3B7
+skinparam ClassHeaderBackgroundColor #2D4A53
+skinparam NoteBackgroundColor #0D1F23
+skinparam NoteBorderColor #5A636A
+
+title LogiSmart - Diagrama de Clases
+
+class Medida {
+    +id_medida: int <<PK>>
+    +nombre: str
+    +largo: Decimal
+    +ancho: Decimal
+    +alto: Decimal
+    +volumen: Decimal
+    --
+    +save(): void
+    +__str__(): str
+}
+
+class Proveedor {
+    +id_proveedor: int <<PK>>
+    +nombre_empresa: str
+    +contacto: str
+    --
+    +__str__(): str
+}
+
+class Categoria {
+    +id: int <<PK>>
+    +slug: str <<unique>>
+    +nombre: str
+    +icono: str
+    +descripcion: str
+    --
+    +__str__(): str
+}
+
+class Ubicacion {
+    +id_ubicacion: int <<PK>>
+    +pasillo: str
+    +estante: int
+    +nivel: int
+    +estado_ocupacion: bool
+    +tipo_estante: str
+    +capacidad_peso_kg: Decimal
+    +permite_fragil: bool
+    +permite_quimico: bool
+    +prioridad_categoria: str
+    --
+    +coord_x: int <<property>>
+    +coord_y: int <<property>>
+    +__str__(): str
+}
+
+class Usuario {
+    +id_usuario: int <<PK>>
+    +nombre: str
+    +rol: str
+    --
+    +__str__(): str
+}
+
+class Caja {
+    +id: str <<PK>>
+    +producto: str
+    +cantidad: int
+    +peso_kg: Decimal
+    +prioridad: str
+    +categoria: str
+    +es_fragil: bool
+    +estado: str
+    +hora_llegada: datetime
+    --
+    +__str__(): str
+}
+
+class Despacho {
+    +id_despacho: int <<PK>>
+    +destino: str
+    +transporte_placa: str
+    +fecha_salida: datetime
+    --
+    +__str__(): str
+}
+
+class HistorialMovimientos {
+    +id_log: int <<PK>>
+    +estado_anterior: str
+    +estado_nuevo: str
+    +fecha_cambio: datetime
+    --
+    +__str__(): str
+}
+
+class ConfigCarro {
+    +nombre: str
+    +largo_cm: Decimal
+    +ancho_cm: Decimal
+    +alto_cm: Decimal
+    +peso_maximo_kg: Decimal
+    +max_paradas: int
+    +pos_base_x: int
+    +pos_base_y: int
+    +notas: str
+    --
+    +volumen_cm3: float <<property>>
+    +get_config(): ConfigCarro <<classmethod>>
+    +save(): void
+}
+
+class EstadoCarro {
+    +id: int <<PK>>
+    +pos_x: int
+    +pos_y: int
+    +destino_x: int
+    +destino_y: int
+    +ruta: JSON
+    +estado: str
+    +caja_id: str
+    +paradas: JSON
+    +parada_actual: int
+    +actualizado_en: datetime
+    --
+    +__str__(): str
+}
+
+class Vehiculo {
+    +id_vehiculo: int <<PK>>
+    +placa: str <<unique>>
+    +marca: str
+    +capacidad_kg: Decimal
+    --
+    +__str__(): str
+}
+
+class Destino {
+    +id_destino: int <<PK>>
+    +nombre: str <<unique>>
+    +direccion: str
+    --
+    +__str__(): str
+}
+
+class ClasificadorCajas <<Service>> {
+    +{static} clasificar(caja: Caja): dict
+}
+
+class OptimizadorUbicaciones <<Service>> {
+    +{static} encontrar_mejor_ubicacion(clasificacion, caja): Ubicacion
+    +{static} ocupar_ubicacion(ubi: Ubicacion): void
+    +{static} liberar_ubicacion(ubi: Ubicacion): void
+}
+
+class RutaService <<Service>> {
+    +{static} generar_ruta(ox, oy, dx, dy): list
+    +{static} optimizar_paradas(ox, oy, paradas): list
+}
+
+class ESP32Service <<Service>> {
+    +enviar_coordenadas(x, y): dict
+    +cerrar(): void
+}
+
+' Relaciones de herencia/composición
+Caja "N" --> "1" Medida : id_medida
+Caja "N" --> "1" Proveedor : id_proveedor
+Caja "N" --> "0..1" Ubicacion : id_ubicacion
+
+Despacho "N" --> "1" Caja : id_caja
+Despacho "N" --> "1" Usuario : id_usuario_despacho
+
+HistorialMovimientos "N" --> "1" Caja : id_caja
+HistorialMovimientos "N" --> "1" Usuario : id_usuario
+
+' Servicios
+ClasificadorCajas ..> Caja : usa
+OptimizadorUbicaciones ..> Ubicacion : consulta/modifica
+OptimizadorUbicaciones ..> ClasificadorCajas : usa
+RutaService ..> EstadoCarro : genera rutas para
+ESP32Service ..> EstadoCarro : notifica coordenadas
+
+note right of EstadoCarro
+  Singleton (id=1)
+  paradas: JSON array
+  [{caja_id, x, y, ubicacion_id,
+    ubicacion_nombre, producto}]
+end note
+
+note right of ConfigCarro
+  Singleton (pk=1)
+  Dimensiones del carro AGV
+  y límites operativos
+end note
+
+note bottom of Caja
+  estados: pendiente → clasificada
+           → en_transito → almacenada
+           → despachada
+end note
+
+@enduml
+
+
+' ============================================================
+' 5. DIAGRAMA ENTIDAD-RELACIÓN
+' ============================================================
+
+@startuml diagrama_er
+skinparam backgroundColor #0D1F23
+skinparam ArrowColor #69818D
+skinparam EntityBackgroundColor #132E35
+skinparam EntityBorderColor #2D4A53
+skinparam EntityFontColor #AFB3B7
+skinparam defaultFontColor #AFB3B7
+skinparam EntityHeaderBackgroundColor #2D4A53
+skinparam NoteBackgroundColor #0D1F23
+skinparam NoteBorderColor #5A636A
+
+title LogiSmart - Diagrama Entidad-Relación
+
+entity "MEDIDA" as MED {
+    * id_medida: INTEGER <<PK>>
+    --
+    * nombre: VARCHAR(100)
+    * largo: DECIMAL(10,2)
+    * ancho: DECIMAL(10,2)
+    * alto: DECIMAL(10,2)
+    * volumen: DECIMAL(10,2)
+}
+
+entity "PROVEEDOR" as PROV {
+    * id_proveedor: INTEGER <<PK>>
+    --
+    * nombre_empresa: VARCHAR(150)
+    * contacto: VARCHAR(100)
+}
+
+entity "CATEGORIA" as CAT {
+    * id: INTEGER <<PK>>
+    --
+    * slug: VARCHAR(30) <<UNIQUE>>
+    * nombre: VARCHAR(50)
+    * icono: VARCHAR(10)
+    descripcion: VARCHAR(100)
+}
+
+entity "UBICACION" as UBI {
+    * id_ubicacion: INTEGER <<PK>>
+    --
+    * pasillo: VARCHAR(10)
+    * estante: INTEGER
+    * nivel: INTEGER
+    * estado_ocupacion: BOOLEAN
+    * tipo_estante: VARCHAR(20)
+    * capacidad_peso_kg: DECIMAL(8,2)
+    * permite_fragil: BOOLEAN
+    * permite_quimico: BOOLEAN
+    * prioridad_categoria: VARCHAR(20)
+    <<UNIQUE: pasillo+estante+nivel>>
+}
+
+entity "USUARIO" as USR {
+    * id_usuario: INTEGER <<PK>>
+    --
+    * nombre: VARCHAR(100)
+    * rol: VARCHAR(20)
+}
+
+entity "CAJA" as CAJA {
+    * id: VARCHAR(20) <<PK>>
+    --
+    * id_medida: INTEGER <<FK>>
+    id_ubicacion: INTEGER <<FK, NULLABLE>>
+    * id_proveedor: INTEGER <<FK>>
+    * producto: VARCHAR(150)
+    * cantidad: INTEGER
+    * peso_kg: DECIMAL(8,2)
+    * prioridad: VARCHAR(20)
+    * categoria: VARCHAR(30)
+    * es_fragil: BOOLEAN
+    * estado: VARCHAR(20)
+    * hora_llegada: DATETIME
+}
+
+entity "DESPACHO" as DES {
+    * id_despacho: INTEGER <<PK>>
+    --
+    * id_caja: VARCHAR(20) <<FK>>
+    * id_usuario_despacho: INTEGER <<FK>>
+    * destino: VARCHAR(200)
+    * transporte_placa: VARCHAR(20)
+    * fecha_salida: DATETIME
+}
+
+entity "HISTORIAL_MOVIMIENTOS" as HIS {
+    * id_log: INTEGER <<PK>>
+    --
+    * id_caja: VARCHAR(20) <<FK>>
+    * id_usuario: INTEGER <<FK>>
+    * estado_anterior: VARCHAR(20)
+    * estado_nuevo: VARCHAR(20)
+    * fecha_cambio: DATETIME
+}
+
+entity "CONFIG_CARRO" as CFG {
+    * id: INTEGER <<PK, Singleton=1>>
+    --
+    * nombre: VARCHAR(50)
+    * largo_cm: DECIMAL(8,1)
+    * ancho_cm: DECIMAL(8,1)
+    * alto_cm: DECIMAL(8,1)
+    * peso_maximo_kg: DECIMAL(8,2)
+    * max_paradas: INTEGER
+    * pos_base_x: INTEGER
+    * pos_base_y: INTEGER
+    notas: TEXT
+}
+
+entity "ESTADO_CARRO" as ECR {
+    * id: INTEGER <<PK, Singleton=1>>
+    --
+    * pos_x: INTEGER
+    * pos_y: INTEGER
+    * destino_x: INTEGER
+    * destino_y: INTEGER
+    * ruta: JSON
+    * estado: VARCHAR(20)
+    caja_id: VARCHAR(20)
+    * paradas: JSON
+    * parada_actual: INTEGER
+    * actualizado_en: DATETIME
+}
+
+entity "VEHICULO" as VEH {
+    * id_vehiculo: INTEGER <<PK>>
+    --
+    * placa: VARCHAR(20) <<UNIQUE>>
+    marca: VARCHAR(50)
+    * capacidad_kg: DECIMAL(8,2)
+}
+
+entity "DESTINO" as DEST {
+    * id_destino: INTEGER <<PK>>
+    --
+    * nombre: VARCHAR(100) <<UNIQUE>>
+    direccion: VARCHAR(200)
+}
+
+' Relaciones
+MED  ||--o{ CAJA   : "define dimensiones\n(id_medida)"
+PROV ||--o{ CAJA   : "suministra\n(id_proveedor)"
+UBI  |o--o{ CAJA   : "almacena\n(id_ubicacion) 0..1"
+
+CAJA ||--o{ DESPACHO           : "es despachada\n(id_caja)"
+USR  ||--o{ DESPACHO           : "autoriza\n(id_usuario_despacho)"
+
+CAJA ||--o{ HISTORIAL_MOVIMIENTOS : "registra cambios\n(id_caja)"
+USR  ||--o{ HISTORIAL_MOVIMIENTOS : "realiza acción\n(id_usuario)"
+
+note top of CFG
+  Singleton: siempre pk=1
+  Define capacidad operativa
+  del carro AGV
+end note
+
+note top of ECR
+  Singleton: siempre id=1
+  Seguimiento en tiempo real
+  del carro AGV
+end note
+
+note bottom of CAJA
+  estados válidos:
+  pendiente | clasificada |
+  en_transito | almacenada |
+  despachada
+end note
+
+@enduml

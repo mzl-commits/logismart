@@ -1,0 +1,209 @@
+
+================================================================
+   MODELAMIENTO DEL PROBLEMA Y LÓGICA DE NEGOCIO
+                     LogiSmart
+================================================================
+
+
+1. ACTORES DEL SISTEMA
+------------------------
+
+El sistema LogiSmart reconoce cuatro actores principales que
+interactúan con la plataforma en distintos niveles de acceso
+y responsabilidad:
+
+  OPERADOR
+  --------
+  Es el actor de mayor actividad en el sistema. Se encarga de
+  registrar las cajas que ingresan al almacén, iniciar el proceso
+  de clasificación y procesamiento por lotes, controlar el avance
+  del carro AGV en tiempo real y confirmar la entrega de cada caja
+  en su ubicación asignada. Trabaja directamente desde el dashboard
+  y el mapa visual del almacén.
+
+  DESPACHADOR
+  -----------
+  Responsable de gestionar la salida de cajas del almacén. Selecciona
+  las cajas almacenadas que serán enviadas, asigna el vehículo de
+  transporte, indica el destino final y confirma el despacho,
+  liberando así la ubicación física que ocupaba cada caja.
+
+  ADMINISTRADOR
+  -------------
+  Gestiona los datos maestros del sistema: usuarios y sus roles,
+  proveedores registrados, flota de vehículos disponibles, sedes y
+  destinos de entrega, categorías de productos y la configuración
+  operativa del carro AGV (dimensiones, peso máximo, límite de
+  paradas, posición base). Es el único actor con acceso total al
+  panel de administración.
+
+  CARRO AGV / SISTEMA AUTOMATIZADO
+  ----------------------------------
+  Actor no humano que ejecuta las rutas de entrega dentro del
+  almacén. Recibe coordenadas desde el sistema a través del
+  microcontrolador ESP32, avanza posición por posición siguiendo
+  la ruta calculada y cambia de estado según las confirmaciones
+  del operador. Sus estados son: esperando, moviendo, llegó,
+  regresando.
+
+
+================================================================
+
+2. ACCIONES PRINCIPALES DEL SISTEMA
+--------------------------------------
+
+A continuación se describen las acciones más importantes que
+realiza LogiSmart en cada etapa del flujo logístico:
+
+  REGISTRO DE CAJA
+  ----------------
+  El operador ingresa los datos de una nueva caja: identificador,
+  nombre del producto, cantidad, peso en kg, dimensiones (medida),
+  categoría, proveedor, fragilidad y nivel de prioridad. El sistema
+  genera un ID sugerido basado en la fecha actual y registra la
+  caja con estado inicial "pendiente".
+
+  CLASIFICACIÓN AUTOMÁTICA
+  ------------------------
+  Al procesar una caja, el sistema analiza automáticamente sus
+  atributos (categoría, peso, fragilidad, dimensiones) y determina
+  las restricciones que condicionan qué estantes son compatibles:
+  si la caja es frágil, solo puede ir a ubicaciones que lo permitan;
+  si contiene químicos, solo a estantes autorizados; el peso no debe
+  superar la capacidad del estante, etc.
+
+  ASIGNACIÓN ÓPTIMA DE UBICACIÓN
+  --------------------------------
+  El sistema evalúa todas las ubicaciones libres del almacén y
+  calcula un score de compatibilidad para cada una, considerando:
+  coincidencia de categoría preferida del estante, tipo de estante
+  adecuado, capacidad de peso disponible y condiciones especiales.
+  Asigna la ubicación de mayor puntaje.
+
+  PROCESAMIENTO EN LOTE
+  ----------------------
+  El operador puede procesar múltiples cajas pendientes en una sola
+  operación. El sistema selecciona cuántas caben en el carro según
+  su peso máximo, volumen total y límite de paradas. Clasifica y
+  asigna ubicación a cada una, luego optimiza el orden de entrega
+  (algoritmo Nearest Neighbor) y genera la ruta completa para el
+  carro AGV.
+
+  CONTROL DEL CARRO AGV
+  ----------------------
+  El sistema genera rutas paso a paso (coordenadas x, y) usando
+  BFS/A*. El operador avanza el carro manualmente o este se
+  desplaza de forma semi-autónoma. Al llegar a cada parada, el
+  operador confirma la entrega, el sistema marca la caja como
+  "almacenada" y recalcula la ruta hacia la siguiente parada.
+  Al completar todas las entregas, el carro regresa a su base.
+
+  GESTIÓN DE DESPACHOS
+  ----------------------
+  El despachador selecciona una o varias cajas almacenadas,
+  asigna un vehículo de la flota registrada y un destino de entrega.
+  Al confirmar, el sistema cambia el estado de la caja a "despachada",
+  libera la ubicación en el almacén, registra el evento en el
+  historial y crea un registro formal de despacho.
+
+  MONITOREO Y TRAZABILIDAD
+  -------------------------
+  Cada cambio de estado de una caja (pendiente → en_tránsito →
+  almacenada → despachada) queda registrado en el historial de
+  movimientos con fecha, hora y el usuario responsable. El dashboard
+  muestra en tiempo real: total de cajas, pendientes, en tránsito,
+  almacenadas, nivel de ocupación del almacén y flujo de los
+  últimos 7 días.
+
+
+================================================================
+
+3. REGLAS DE NEGOCIO
+----------------------
+
+Las siguientes reglas definen el comportamiento válido del sistema
+y las restricciones que no pueden ser violadas:
+
+  REGLAS DE ESTADO DE CAJA
+  -------------------------
+  RN-01: Una caja solo puede ser procesada si su estado actual
+         es "pendiente". No se puede procesar una caja que ya
+         esté en tránsito, almacenada o despachada.
+
+  RN-02: Una caja solo puede confirmarse como "almacenada" si
+         su estado actual es "en_tránsito". No se puede saltar
+         estados en el flujo.
+
+  RN-03: Una caja solo puede ser despachada si su estado actual
+         es "almacenada". Una caja en tránsito no puede
+         despacharse directamente.
+
+  RN-04: Una caja despachada no puede volver a ningún estado
+         anterior. El despacho es un estado final.
+
+  REGLAS DE UBICACIÓN
+  --------------------
+  RN-05: Una ubicación no puede ser asignada a más de una caja
+         simultáneamente. Si una ubicación está ocupada, no
+         puede ser asignada hasta que se libere.
+
+  RN-06: Si una caja es frágil (es_fragil=True), solo puede
+         asignarse a ubicaciones donde permite_fragil=True.
+
+  RN-07: Si una caja es de categoría "quimico", solo puede
+         asignarse a ubicaciones donde permite_quimico=True.
+
+  RN-08: El peso de la caja no puede superar la capacidad de
+         peso máximo (capacidad_peso_kg) de la ubicación asignada.
+
+  RN-09: Al despachar una caja, su ubicación se libera
+         automáticamente (estado_ocupacion=False) para que
+         pueda recibir nuevas cajas.
+
+  REGLAS DEL CARRO AGV
+  ----------------------
+  RN-10: El carro solo puede recibir nuevas instrucciones de
+         ruta si su estado es "esperando". Un carro en movimiento
+         no puede ser reasignado.
+
+  RN-11: El número de cajas por lote no puede superar el límite
+         de paradas configurado (max_paradas) ni exceder el peso
+         máximo (peso_maximo_kg) o volumen total del carro.
+
+  RN-12: Después de completar todas las entregas de un lote, el
+         carro debe regresar a su posición base antes de poder
+         iniciar una nueva ruta.
+
+  RN-13: La confirmación de entrega en una parada solo es posible
+         cuando el carro está en estado "llegó". No se puede
+         confirmar entrega si el carro aún está en movimiento.
+
+  REGLAS DE REGISTRO Y TRAZABILIDAD
+  ------------------------------------
+  RN-14: Todo cambio de estado de una caja debe registrarse en
+         el historial de movimientos con el usuario responsable.
+         No se admiten cambios de estado anónimos en el sistema.
+
+  RN-15: Un despacho debe registrar obligatoriamente: caja,
+         usuario despachador, vehículo (placa) y destino. No se
+         puede despachar sin completar estos cuatro campos.
+
+  RN-16: El identificador de una caja (id) es único e inmutable.
+         Una vez generado no puede modificarse.
+
+  REGLAS ADMINISTRATIVAS
+  -----------------------
+  RN-17: La configuración del carro (ConfigCarro) es un registro
+         singleton. Solo existe una configuración activa a la vez.
+
+  RN-18: Los proveedores y vehículos en uso no pueden eliminarse
+         si tienen cajas o despachos asociados activos.
+
+  RN-19: Cada categoría debe tener un slug único e irrepetible
+         que sirve como identificador interno en el sistema.
+
+
+================================================================
+Proyecto: LogiSmart — Sistema de Gestión Logística Inteligente
+Tecnologías: Python · Django · REST API · AGV · ESP32 · SQLite
+================================================================

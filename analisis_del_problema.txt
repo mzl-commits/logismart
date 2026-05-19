@@ -1,0 +1,81 @@
+
+================================================================
+   ANÁLISIS DEL PROBLEMA — SISTEMA LOGÍSTICO INTELIGENTE
+                        LogiSmart
+================================================================
+
+1. IDENTIFICACIÓN DEL PROBLEMA REAL
+--------------------------------------
+
+En los entornos de almacenamiento y distribución de mercancías, uno
+de los problemas más frecuentes y costosos es la gestión ineficiente
+del inventario físico dentro del almacén. En muchas organizaciones,
+especialmente en pequeñas y medianas empresas del sector logístico, el
+proceso de recepción, clasificación y almacenamiento de cajas se realiza
+de forma completamente manual: un operario debe revisar cada bulto,
+determinar a qué zona del almacén pertenece según su categoría, peso o
+fragilidad, y desplazarse físicamente para colocarlo en el estante
+correcto. Este proceso genera múltiples problemas: errores de
+clasificación, pérdida de tiempo en desplazamientos innecesarios,
+desconocimiento en tiempo real del nivel de ocupación del almacén,
+dificultad para localizar productos específicos y falta de trazabilidad
+en los movimientos de cada caja desde su ingreso hasta su despacho.
+Todo esto se traduce en retrasos operativos, aumento de costos
+laborales y mayor probabilidad de errores humanos que afectan
+directamente la satisfacción del cliente final.
+
+
+2. SOLUCIÓN TECNOLÓGICA PROPUESTA
+------------------------------------
+
+Para resolver esta problemática, se propone implementar LogiSmart,
+un sistema de gestión logística inteligente compuesto por tres capas
+tecnológicas integradas. En primer lugar, una plataforma web desarrollada
+con el framework Django (Python) y una API REST que centraliza toda la
+información del almacén: cajas, ubicaciones, proveedores, usuarios,
+vehículos y registros de despacho. Esta plataforma incorpora un módulo
+de clasificación automática que, al registrar una nueva caja, analiza sus
+atributos (categoría, peso, dimensiones, fragilidad, prioridad) y
+determina la ubicación óptima disponible mediante un algoritmo de scoring
+por compatibilidad. En segundo lugar, se integra un Carro Automatizado
+(AGV — Autonomous Guided Vehicle) que recibe las coordenadas de destino
+a través de una conexión con un microcontrolador ESP32, y ejecuta rutas
+optimizadas mediante un algoritmo BFS/A* con planificación de paradas
+múltiples usando la heurística del vecino más cercano (Nearest Neighbor).
+Finalmente, un dashboard en tiempo real permite a los operadores
+visualizar el mapa del almacén, el estado de cada ubicación, el
+recorrido activo del carro y el historial completo de movimientos de
+cada caja, todo desde una interfaz web moderna accesible desde cualquier
+dispositivo.
+
+
+3. JUSTIFICACIÓN DE LA SOLUCIÓN
+----------------------------------
+
+LogiSmart es la solución más adecuada para este entorno por varias
+razones de orden técnico, económico y operativo. Desde el punto de vista
+técnico, la arquitectura seleccionada — Django REST Framework como backend,
+una base de datos relacional SQLite/PostgreSQL y una interfaz Tailwind CSS
+en el frontend — ofrece una combinación probada, escalable y de bajo costo
+de implementación. La integración del carro AGV mediante el protocolo de
+comunicación serial con ESP32 permite automatizar el transporte físico de
+cajas dentro del almacén sin requerir infraestructura de redes complejas
+ni costosos sistemas propietarios. Desde el punto de vista operativo,
+la solución reduce drásticamente los desplazamientos del personal humano,
+elimina los errores de clasificación manual gracias al motor de asignación
+automática, y garantiza trazabilidad completa mediante el registro de
+historial de movimientos asociado a cada usuario y caja. Finalmente,
+desde el punto de vista económico, al tratarse de un sistema de código
+abierto desarrollado internamente, los costos de licenciamiento son nulos
+y su mantenimiento puede realizarse con los mismos recursos del equipo
+de desarrollo, lo que la convierte en una alternativa significativamente
+más accesible que las soluciones WMS (Warehouse Management Systems)
+comerciales disponibles en el mercado, las cuales suelen requerir
+inversiones iniciales elevadas y configuraciones complejas inadecuadas
+para operaciones de mediana escala.
+
+
+================================================================
+Proyecto: LogiSmart — Sistema de Gestión Logística Inteligente
+Tecnologías: Python · Django · REST API · AGV · ESP32 · SQLite
+================================================================

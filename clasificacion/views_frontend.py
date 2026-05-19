@@ -108,9 +108,9 @@ def configuracion(request):
         caben_vol = int(cart_vol / vol_m) if vol_m > 0 else None
         if vol_m == 0:
             tamano = 'indefinido'
-        elif vol_m <= 1000:
+        elif vol_m <= 8000:
             tamano = 'pequena'
-        elif vol_m <= 27000:
+        elif vol_m <= 64000:
             tamano = 'mediana'
         else:
             tamano = 'grande'
