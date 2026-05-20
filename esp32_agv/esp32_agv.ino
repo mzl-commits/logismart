@@ -25,13 +25,35 @@ const char* server_url = "http://192.168.1.100:8000"; // IP y puerto del servido
 // ==========================================
 // 2. CONFIGURACIÓN DE HARDWARE (PINS)
 // ==========================================
+// CONFIG_MODO_SENSORES determina cómo se distribuyen tus 4 sensores:
+// MODO_A: 2 para seguimiento de línea y 2 para detección de obstáculos (frontal y trasero). ¡Recomendado!
+// MODO_B: 4 para seguimiento de línea e intersecciones completas (sin sensor de obstáculos físico).
+#define MODO_A 1
+#define MODO_B 2
+#define CONFIG_MODO_SENSORES MODO_A
+
 #define PIN_SERVO_IZQ    18
 #define PIN_SERVO_DER    19
 
-#define PIN_SEN_L_OUTER  34  // Sensor Izquierdo Exterior (Intersecciones)
-#define PIN_SEN_L_INNER  32  // Sensor Izquierdo Interior (Seguimiento de línea)
-#define PIN_SEN_R_INNER  33  // Sensor Derecho Interior (Seguimiento de línea)
-#define PIN_SEN_R_OUTER  35  // Sensor Derecho Exterior (Intersecciones)
+// Asignación de Pines según el Modo
+#if CONFIG_MODO_SENSORES == MODO_A
+  #define PIN_SEN_L_INNER        32  // Sensor Izquierdo Seguimiento de Línea
+  #define PIN_SEN_R_INNER        33  // Sensor Derecho Seguimiento de Línea
+  #define PIN_SEN_OBSTACLE_FRONT 34  // Sensor de Obstáculo Frontal (Detiene el carro)
+  #define PIN_SEN_OBSTACLE_BACK  35  // Sensor de Obstáculo Trasero (Opcional/Seguridad)
+  
+  // En MODO_A no hay sensores de cruce externos físicos
+  #define PIN_SEN_L_OUTER        -1
+  #define PIN_SEN_R_OUTER        -1
+#else
+  #define PIN_SEN_L_OUTER        34  // Sensor Izquierdo Exterior (Cruces)
+  #define PIN_SEN_L_INNER        32  // Sensor Izquierdo Interior (Línea)
+  #define PIN_SEN_R_INNER        33  // Sensor Derecho Interior (Línea)
+  #define PIN_SEN_R_OUTER        35  // Sensor Derecho Exterior (Cruces)
+  
+  #define PIN_SEN_OBSTACLE_FRONT -1
+  #define PIN_SEN_OBSTACLE_BACK  -1
+#endif
 
 #define PIN_BUZZER       25  // Zumbador piezoeléctrico para alertas
 #define PIN_LED_STATUS   2   // LED integrado del ESP32
@@ -40,6 +62,9 @@ const char* server_url = "http://192.168.1.100:8000"; // IP y puerto del servido
 #define SENSORS_ARE_ANALOG true
 #define UMBRAL_LINEA       2000  // Valor analógico de corte (línea negra vs fondo claro)
 #define ESTADO_LÍNEA       HIGH  // HIGH si el sensor lee 1 en negro (digital)
+
+// Configuración de Sensores de Proximidad de Obstáculos
+#define OBSTACLE_ACTIVE_STATE LOW   // LOW si el sensor se activa en BAJO (común en módulos ópticos de obstáculos)
 
 // ==========================================
 // 3. VELOCIDADES Y CALIBRACIÓN DE SERVOS
@@ -90,6 +115,9 @@ bool tieneSiguienteNodo = false;
 Servo servoIzq;
 Servo servoDer;
 
+State estadoPrevio = STATE_ESPERANDO;
+unsigned long obstaculoDespejadoTiempo = 0;
+
 unsigned long ultimoFiltroRuta = 0;
 const int intervaloPolling = 1500; // Milisegundos entre peticiones de estado al servidor
 
@@ -97,11 +125,17 @@ const int intervaloPolling = 1500; // Milisegundos entre peticiones de estado al
 // 5. FUNCIONES DE LECTURA DE SENSORES
 // ==========================================
 bool leeSensor(int pin) {
+  if (pin == -1) return false;
   if (SENSORS_ARE_ANALOG) {
     return analogRead(pin) > UMBRAL_LINEA;
   } else {
     return digitalRead(pin) == ESTADO_LÍNEA;
   }
+}
+
+bool leeSensorObstaculo(int pin) {
+  if (pin == -1) return false;
+  return digitalRead(pin) == OBSTACLE_ACTIVE_STATE;
 }
 
 // Estructura de lectura rápida de línea
@@ -118,7 +152,59 @@ LineReading leerSensores() {
   lr.lInner = leeSensor(PIN_SEN_L_INNER);
   lr.rInner = leeSensor(PIN_SEN_R_INNER);
   lr.rOuter = leeSensor(PIN_SEN_R_OUTER);
+
+  // En MODO_A (2 sensores de seguimiento de línea), simulamos la detección de intersección.
+  // La intersección se detecta cuando ambos sensores de seguimiento de línea (lInner y rInner)
+  // pisan la línea transversal negra simultáneamente.
+  if (CONFIG_MODO_SENSORES == MODO_A) {
+    if (lr.lInner && lr.rInner) {
+      lr.lOuter = true;
+      lr.rOuter = true;
+    }
+  }
   return lr;
+}
+
+void verificarObstaculos() {
+  if (CONFIG_MODO_SENSORES != MODO_A) return;
+
+  bool obstaculoDelante = leeSensorObstaculo(PIN_SEN_OBSTACLE_FRONT);
+  bool obstaculoDetras  = leeSensorObstaculo(PIN_SEN_OBSTACLE_BACK);
+
+  // Detener el carro si detecta un obstáculo en el frente mientras se mueve
+  bool obstaculoDetectado = false;
+  if (estadoActual == STATE_SIGUIENDO || estadoActual == STATE_GIRANDO_IZQ || 
+      estadoActual == STATE_GIRANDO_DER || estadoActual == STATE_GIRO_180) {
+    if (obstaculoDelante) {
+      obstaculoDetectado = true;
+    }
+  }
+
+  if (estadoActual != STATE_OBSTACULO) {
+    if (obstaculoDetectado) {
+      estadoPrevio = estadoActual;
+      estadoActual = STATE_OBSTACULO;
+      pararMotores();
+      sonarBip(450);
+      Serial.println("[SEGURIDAD] ¡OBSTÁCULO DETECTADO! Deteniendo motores inmediatamente.");
+    }
+  } else {
+    // Si ya está detenido por obstáculo, verificar si se despejó el frente y detrás
+    if (!obstaculoDelante && !obstaculoDetras) {
+      if (obstaculoDespejadoTiempo == 0) {
+        obstaculoDespejadoTiempo = millis();
+      } else if (millis() - obstaculoDespejadoTiempo > 1500) { // Debounce de seguridad de 1.5s
+        estadoActual = estadoPrevio;
+        obstaculoDespejadoTiempo = 0;
+        Serial.println("[SEGURIDAD] Obstáculo despejado. Reanudando marcha.");
+        sonarBip(100);
+        delay(50);
+        sonarBip(100);
+      }
+    } else {
+      obstaculoDespejadoTiempo = 0; // Si vuelve a aparecer, reiniciar temporizador
+    }
+  }
 }
 
 // ==========================================
@@ -165,10 +251,13 @@ void setup() {
   Serial.begin(115200);
   
   // Pines de sensores como entrada
-  pinMode(PIN_SEN_L_OUTER, INPUT);
-  pinMode(PIN_SEN_L_INNER, INPUT);
-  pinMode(PIN_SEN_R_INNER, INPUT);
-  pinMode(PIN_SEN_R_OUTER, INPUT);
+  if (PIN_SEN_L_OUTER != -1) pinMode(PIN_SEN_L_OUTER, INPUT);
+  if (PIN_SEN_L_INNER != -1) pinMode(PIN_SEN_L_INNER, INPUT);
+  if (PIN_SEN_R_INNER != -1) pinMode(PIN_SEN_R_INNER, INPUT);
+  if (PIN_SEN_R_OUTER != -1) pinMode(PIN_SEN_R_OUTER, INPUT);
+  
+  if (PIN_SEN_OBSTACLE_FRONT != -1) pinMode(PIN_SEN_OBSTACLE_FRONT, INPUT);
+  if (PIN_SEN_OBSTACLE_BACK != -1) pinMode(PIN_SEN_OBSTACLE_BACK, INPUT);
   
   // Salidas adicionales
   pinMode(PIN_BUZZER, OUTPUT);
@@ -451,6 +540,21 @@ void iniciarGiro180() {
 // 10. BUCLE DE CONTROL PRINCIPAL (LOOP)
 // ==========================================
 void loop() {
+  // Verificar sensores de obstáculo antes de continuar
+  verificarObstaculos();
+
+  if (estadoActual == STATE_OBSTACULO) {
+    // Si hay un obstáculo, emitir pitidos de advertencia intermitentes y esperar
+    static unsigned long ultimoPitido = 0;
+    if (millis() - ultimoPitido > 750) {
+      ultimoPitido = millis();
+      sonarBip(120);
+      Serial.println("[OBSTÁCULO] Carro bloqueado. Esperando que se libere el frente...");
+    }
+    delay(40);
+    return; // No realizar ninguna acción de movimiento ni polling de red
+  }
+
   // --- MODO WIRELESS WIFI ---
   if (WiFi.status() == WL_CONNECTED) {
     
