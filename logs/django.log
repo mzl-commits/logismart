@@ -44,3 +44,11 @@
 [2026-05-11 11:47:07,735] INFO clasificacion: Caja CAJ-20260511-001 almacenada en parada 1.
 [2026-05-11 11:47:07,745] INFO clasificacion: Ruta completada. Carro regresando a base (0,0).
 [2026-05-11 11:47:12,138] INFO clasificacion: Carro llegó a base (0,0).
+[2026-05-19 00:55:39,760] INFO clasificacion: Caja CAJ-20260519-001 almacenada en parada 0.
+[2026-05-19 00:55:39,767] INFO clasificacion: Ruta completada. Carro regresando a base (0,0).
+[2026-05-19 00:55:44,399] INFO clasificacion: Carro llegó a base (0,0).
+[2026-05-19 01:10:52,148] INFO clasificacion: Ubicación A1-N1 liberada.
+[2026-05-19 01:10:52,151] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-05-19 01:10:52,152] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-05-19 01:10:52,155] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-05-19 01:10:52,190] INFO clasificacion: Ubicación A1-N1 liberada.
