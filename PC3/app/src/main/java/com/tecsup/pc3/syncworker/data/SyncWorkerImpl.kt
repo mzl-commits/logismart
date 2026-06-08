@@ -24,7 +24,14 @@ class SyncWorkerImpl /* @AssistedInject */ constructor(
         if (tripStatus != "in_progress" && tripStatus != "pending_end") {
             return Result.success()
         }
+// Simulación: val unsyncedPoints = gpsPointRepository.getUnsyncedPoints(activeTrip.id)
+        val unsyncedPoints = listOf<Any>() // Reemplazar Any por GpsPoint
+        if (unsyncedPoints.isEmpty()) {
+            return Result.success()
+        }
 
+        // Simulación: val localDistanceKm = unsyncedPoints.sumOf { it.distance }
+        val localDistanceKm = 0.0
         return Result.success()
     }
 }
