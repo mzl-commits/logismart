@@ -6,9 +6,9 @@ import javax.inject.Inject
 
 class SyncManagerImpl @Inject constructor(
     private val workManager: WorkManager
-) /* : SyncManager */ { // Descomenta la interfaz cuando la tengas
+) : SyncManager {
 
-    fun enqueuePeriodicSync() { // override
+    override fun enqueuePeriodicSync() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
@@ -24,7 +24,7 @@ class SyncManagerImpl @Inject constructor(
         )
     }
 
-    fun enqueueImmediateSync() { // override
+    override fun enqueueImmediateSync() {
         val request = OneTimeWorkRequestBuilder<SyncWorkerImpl>()
             .setBackoffCriteria(
                 BackoffPolicy.EXPONENTIAL,
