@@ -19,7 +19,11 @@ class SyncWorkerImpl /* @AssistedInject */ constructor(
         // Simulación temporal para que no marque error hasta que tengas los repositorios
         val isConnected = true // connectivityMonitor.isConnected.first()
         if (!isConnected) return Result.success()
-
+        /*
+                val isConnected = kotlinx.coroutines.withTimeoutOrNull(5000) {
+                    connectivityMonitor.isConnected.filterNotNull().first()
+                } ?: false
+                */
         val tripStatus = "in_progress" // tripRepository.getActiveTrip()?.status
         if (tripStatus != "in_progress" && tripStatus != "pending_end") {
             return Result.success()
