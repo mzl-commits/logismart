@@ -33,5 +33,18 @@ class SyncWorkerImpl /* @AssistedInject */ constructor(
         // Simulación: val localDistanceKm = unsyncedPoints.sumOf { it.distance }
         val localDistanceKm = 0.0
         return Result.success()
+
+        /* val batchRequest = SyncBatchRequest(points = unsyncedPoints, current_local_distance_km = localDistanceKm)
+        try {
+            val response = mobileApi.sync(activeTrip.id, batchRequest)
+            if (response.isSuccessful) {
+                gpsPointRepository.markAsSynced(unsyncedPoints.map { it.id })
+            } else {
+                android.util.Log.e("SyncWorker", "Error HTTP: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SyncWorker", "Timeout/Error: ${e.message}")
+        }
+        */
     }
 }
