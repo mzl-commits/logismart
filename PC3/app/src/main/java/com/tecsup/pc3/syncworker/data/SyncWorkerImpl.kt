@@ -27,6 +27,18 @@ class SyncWorkerImpl /* @AssistedInject */ constructor(
 // Simulación: val unsyncedPoints = gpsPointRepository.getUnsyncedPoints(activeTrip.id)
         val unsyncedPoints = listOf<Any>() // Reemplazar Any por GpsPoint
         if (unsyncedPoints.isEmpty()) {
+            /*
+        if (tripStatus == "pending_end") {
+            try {
+                val endResponse = mobileApi.endTrip(activeTrip.id)
+                if (endResponse.isSuccessful) {
+                    tripRepository.updateTripStatus(activeTrip.id, "completed")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SyncWorker", "Fallo al cerrar viaje: ${e.message}")
+            }
+        }
+        */
             return Result.success()
         }
 
