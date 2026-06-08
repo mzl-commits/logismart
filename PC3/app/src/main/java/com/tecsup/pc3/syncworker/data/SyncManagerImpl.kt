@@ -25,7 +25,13 @@ class SyncManagerImpl @Inject constructor(
     }
 
     fun enqueueImmediateSync() { // override
-        val request = OneTimeWorkRequestBuilder<SyncWorkerImpl>().build()
+        val request = OneTimeWorkRequestBuilder<SyncWorkerImpl>()
+            .setBackoffCriteria(
+                BackoffPolicy.EXPONENTIAL,
+                WorkRequest.MIN_BACKOFF_MILLIS,
+                TimeUnit.MILLISECONDS
+            )
+            .build()
         workManager.enqueue(request)
     }
 }
