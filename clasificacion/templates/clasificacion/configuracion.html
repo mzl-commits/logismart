@@ -124,8 +124,9 @@
     </div>
 </div>
 
-<div class="space-y-6 fade-in">
-    <!-- ── PANEL DE TELEMETRÍA AGV (FULL-WIDTH) ─────────────────── -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 fade-in">
+    <!-- Columna Izquierda (Telemetria + Desglose) -->
+    <div class="lg:col-span-8 space-y-6">
     <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden">
         <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center justify-between bg-slate-900/30">
             <div class="flex items-center gap-2">
@@ -240,11 +241,8 @@
         </div>
     </div>
 
-    <!-- ── SECCIÓN DE DESGLOSE Y CAPACIDAD (GRID INFERIOR) ──────────────── -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- ── Tabla de medidas (Columna Izquierda - 7 cols) ─────────── -->
-        <div class="lg:col-span-7">
-        <div class="bg-surface rounded-2xl border border-slate-800/60 p-0 overflow-hidden fade-in fade-d2">
+    <!-- Tabla de medidas -->
+    <div class="bg-surface rounded-2xl border border-slate-800/60 p-0 overflow-hidden fade-in fade-d2">
             <div class="px-6 py-4 border-b border-slate-800/60 font-semibold flex items-center gap-2 text-white"><i class="bi bi-grid-3x3 text-sky-400"></i> Desglose por medida registrada</div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -289,11 +287,11 @@
                 </table>
             </div>
         </div>
-        </div> <!-- Closes lg:col-span-7 -->
+    </div> <!-- Closes Columna Izquierda (8 cols) -->
 
-        <!-- ── Panel de capacidad (Columna Derecha - 5 cols) ────────── -->
-        <div class="lg:col-span-5">
-        <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden">
+    <!-- Columna Derecha: Capacidad Calculada (4 cols) -->
+    <div class="lg:col-span-4">
+        <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden h-full">
             <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center gap-2 bg-slate-900/30">
                 <i class="bi bi-box text-sky-400"></i> Capacidad calculada
             </div>
@@ -380,8 +378,7 @@
                 </div>
             </div>
         </div>
-        </div> <!-- Closes lg:col-span-5 -->
-    </div>
+    </div> <!-- Closes Columna Derecha (4 cols) -->
 </div>
 
 <!-- Modal de Configuración de Parámetros -->
