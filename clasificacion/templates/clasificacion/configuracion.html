@@ -240,83 +240,9 @@
         </div>
     </div>
 
-    <!-- ── SECCIÓN DE CAPACIDAD Y DESGLOSE (GRID INFERIOR) ──────────────── -->
+    <!-- ── SECCIÓN DE DESGLOSE Y CAPACIDAD (GRID INFERIOR) ──────────────── -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- ── Panel de capacidad (Columna Izquierda - 5 cols) ───────── -->
-        <div class="lg:col-span-5">
-        <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center gap-2 bg-slate-900/30">
-                <i class="bi bi-box text-sky-400"></i> Capacidad calculada
-            </div>
-            <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
-                        <div class="text-2xl font-black text-white" id="disp-largo">{{ config.largo_cm }}</div>
-                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Largo (cm)</div>
-                    </div>
-                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
-                        <div class="text-2xl font-black text-white" id="disp-ancho">{{ config.ancho_cm }}</div>
-                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Ancho (cm)</div>
-                    </div>
-                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
-                        <div class="text-2xl font-black text-white" id="disp-alto">{{ config.alto_cm }}</div>
-                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Alto (cm)</div>
-                    </div>
-                </div>
-                
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
-                    <span class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Volumen total del carro</span>
-                    <span class="text-2xl font-black text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]" id="disp-vol">{{ cart_vol }} cm³</span>
-                </div>
-                
-                <div class="h-px bg-slate-800/60 w-full mb-6"></div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col items-center relative overflow-hidden group">
-                        <div class="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div class="text-4xl font-black text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)] z-10" id="res-pequenas">{{ resumen.pequenas }}</div>
-                        <div class="text-center mt-2 z-10">
-                            <span class="text-sm font-bold text-slate-300">📦 Pequeñas</span><br>
-                            <span class="text-[10px] text-slate-500">≤ 8,000 cm³</span>
-                        </div>
-                        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden z-10">
-                            <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" id="bar-pequenas" style="width:100%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col items-center relative overflow-hidden group">
-                        <div class="absolute inset-0 bg-sky-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div class="text-4xl font-black text-sky-400 drop-shadow-[0_0_12px_rgba(56,189,248,0.3)] z-10" id="res-medianas">{{ resumen.medianas }}</div>
-                        <div class="text-center mt-2 z-10">
-                            <span class="text-sm font-bold text-slate-300">🗃️ Medianas</span><br>
-                            <span class="text-[10px] text-slate-500">8,001 – 64,000 cm³</span>
-                        </div>
-                        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden z-10">
-                            <div class="h-full bg-sky-500 rounded-full transition-all duration-500" id="bar-medianas" style="width:100%"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col items-center relative overflow-hidden group">
-                        <div class="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                        <div class="text-4xl font-black text-indigo-400 drop-shadow-[0_0_12px_rgba(99,102,241,0.3)] z-10" id="res-grandes">{{ resumen.grandes }}</div>
-                        <div class="text-center mt-2 z-10">
-                            <span class="text-sm font-bold text-slate-300">📫 Grandes</span><br>
-                            <span class="text-[10px] text-slate-500">> 64,000 cm³</span>
-                        </div>
-                        <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden z-10">
-                            <div class="h-full bg-indigo-500 rounded-full transition-all duration-500" id="bar-grandes" style="width:100%"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="text-xs text-slate-500 mt-4 flex items-center gap-1.5">
-                    <i class="bi bi-info-circle"></i>
-                    Basado en la medida más pequeña de cada tipo. El límite real también depende del peso máximo ({{ config.peso_maximo_kg }} kg).
-                </div>
-            </div>
-        </div>
-        </div> <!-- Closes lg:col-span-5 -->
-
-        <!-- Tabla de medidas (Columna Derecha - 7 cols) -->
+        <!-- ── Tabla de medidas (Columna Izquierda - 7 cols) ─────────── -->
         <div class="lg:col-span-7">
         <div class="bg-surface rounded-2xl border border-slate-800/60 p-0 overflow-hidden fade-in fade-d2">
             <div class="px-6 py-4 border-b border-slate-800/60 font-semibold flex items-center gap-2 text-white"><i class="bi bi-grid-3x3 text-sky-400"></i> Desglose por medida registrada</div>
@@ -364,6 +290,97 @@
             </div>
         </div>
         </div> <!-- Closes lg:col-span-7 -->
+
+        <!-- ── Panel de capacidad (Columna Derecha - 5 cols) ────────── -->
+        <div class="lg:col-span-5">
+        <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center gap-2 bg-slate-900/30">
+                <i class="bi bi-box text-sky-400"></i> Capacidad calculada
+            </div>
+            <div class="p-6">
+                <!-- Dimensiones superiores -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
+                        <div class="text-2xl font-black text-white" id="disp-largo">{{ config.largo_cm }}</div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Largo (cm)</div>
+                    </div>
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
+                        <div class="text-2xl font-black text-white" id="disp-ancho">{{ config.ancho_cm }}</div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Ancho (cm)</div>
+                    </div>
+                    <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
+                        <div class="text-2xl font-black text-white" id="disp-alto">{{ config.alto_cm }}</div>
+                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Alto (cm)</div>
+                    </div>
+                </div>
+                
+                <!-- Resumen de volumen y peso máximo -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col justify-center">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Volumen Total</span>
+                        <span class="text-xl font-extrabold text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.3)]" id="disp-vol">{{ cart_vol }} cm³</span>
+                    </div>
+                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col justify-center">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Peso Máximo</span>
+                        <span class="text-xl font-extrabold text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]" id="disp-peso-max">{{ config.peso_maximo_kg }} kg</span>
+                    </div>
+                </div>
+
+                <!-- Cajas por tipo apiladas verticalmente para mayor altura visual -->
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                    <!-- Pequeñas -->
+                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="flex items-center justify-between z-10 mb-3">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-300">📦 Pequeñas</span>
+                                <span class="text-[11px] text-slate-500">Volumen ≤ 8,000 cm³</span>
+                            </div>
+                            <div class="text-4xl font-black text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)]" id="res-pequenas">{{ resumen.pequenas }}</div>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden z-10">
+                            <div class="h-full bg-emerald-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" id="bar-pequenas" style="width:100%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Medianas -->
+                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-sky-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="flex items-center justify-between z-10 mb-3">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-300">🗃️ Medianas</span>
+                                <span class="text-[11px] text-slate-500">8,001 – 64,000 cm³</span>
+                            </div>
+                            <div class="text-4xl font-black text-sky-400 drop-shadow-[0_0_12px_rgba(56,189,248,0.3)]" id="res-medianas">{{ resumen.medianas }}</div>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden z-10">
+                            <div class="h-full bg-sky-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(56,189,248,0.5)]" id="bar-medianas" style="width:100%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Grandes -->
+                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-5 flex flex-col justify-between relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="flex items-center justify-between z-10 mb-3">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-slate-300">📫 Grandes</span>
+                                <span class="text-[11px] text-slate-500">Volumen > 64,000 cm³</span>
+                            </div>
+                            <div class="text-4xl font-black text-indigo-400 drop-shadow-[0_0_12px_rgba(99,102,241,0.3)]" id="res-grandes">{{ resumen.grandes }}</div>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden z-10">
+                            <div class="h-full bg-indigo-500 rounded-full transition-all duration-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]" id="bar-grandes" style="width:100%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-xs text-slate-500 mt-4 flex items-center gap-1.5">
+                    <i class="bi bi-info-circle"></i>
+                    Basado en la medida más pequeña de cada tipo. El límite real también depende del peso máximo ({{ config.peso_maximo_kg }} kg).
+                </div>
+            </div>
+        </div>
+        </div> <!-- Closes lg:col-span-5 -->
     </div>
 </div>
 
