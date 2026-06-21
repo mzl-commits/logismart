@@ -51,18 +51,24 @@
             <table class="w-full text-left border-collapse">
                 <thead class="sticky top-0 bg-slate-950/95 backdrop-blur z-10">
                     <tr class="border-b border-slate-800/60 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
-                        <th class="px-6 py-4">RUC/ID</th>
+                        <th class="hidden sm:table-cell px-6 py-4">RUC/ID</th>
                         <th class="px-6 py-4">Razón Social</th>
-                        <th class="px-6 py-4">Contacto</th>
+                        <th class="hidden sm:table-cell px-6 py-4">Contacto</th>
                         <th class="px-6 py-4"></th>
                     </tr>
                 </thead>
                 <tbody class="text-sm">
                     {% for p in proveedores %}
                     <tr class="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
-                        <td class="px-6 py-3 text-slate-500">{{ p.id_proveedor }}</td>
-                        <td class="px-6 py-3 font-semibold text-white">{{ p.razon_social }}</td>
-                        <td class="px-6 py-3 text-xs">
+                        <td class="hidden sm:table-cell px-6 py-3 text-slate-500">{{ p.id_proveedor }}</td>
+                        <td class="px-6 py-3">
+                            <div class="font-semibold text-white">{{ p.razon_social }}</div>
+                            <div class="text-xs text-slate-500 mt-1 sm:hidden">
+                                <span>RUC: {{ p.id_proveedor }}</span>
+                                <span>· {{ p.contacto_nombre }} ({{ p.contacto_telefono }})</span>
+                            </div>
+                        </td>
+                        <td class="hidden sm:table-cell px-6 py-3 text-xs">
                             <div class="text-slate-300">{{ p.contacto_nombre }}</div>
                             <div class="text-slate-500">{{ p.contacto_telefono }}</div>
                         </td>
@@ -89,17 +95,23 @@
                 <thead class="sticky top-0 bg-slate-950/95 backdrop-blur z-10">
                     <tr class="border-b border-slate-800/60 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
                         <th class="px-6 py-4">Placa</th>
-                        <th class="px-6 py-4">Marca / Modelo</th>
-                        <th class="px-6 py-4">Capacidad</th>
+                        <th class="hidden sm:table-cell px-6 py-4">Marca / Modelo</th>
+                        <th class="hidden sm:table-cell px-6 py-4">Capacidad</th>
                         <th class="px-6 py-4"></th>
                     </tr>
                 </thead>
                 <tbody class="text-sm">
                     {% for v in vehiculos %}
                     <tr class="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
-                        <td class="px-6 py-3 font-semibold text-white">{{ v.placa }}</td>
-                        <td class="px-6 py-3 text-slate-300">{{ v.marca }}</td>
-                        <td class="px-6 py-3 text-slate-500">{{ v.capacidad_kg }} kg</td>
+                        <td class="px-6 py-3">
+                            <div class="font-semibold text-white">{{ v.placa }}</div>
+                            <div class="text-xs text-slate-500 mt-1 sm:hidden">
+                                <span>{{ v.marca }}</span>
+                                <span>· {{ v.capacidad_kg }} kg</span>
+                            </div>
+                        </td>
+                        <td class="hidden sm:table-cell px-6 py-3 text-slate-300">{{ v.marca }}</td>
+                        <td class="hidden sm:table-cell px-6 py-3 text-slate-500">{{ v.capacidad_kg }} kg</td>
                         <td class="px-6 py-3 text-right">
                             <button class="text-slate-500 hover:text-red-400 p-2 rounded-lg hover:bg-red-400/10 transition-colors" onclick="eliminarRegistro('/api/vehiculos/{{ v.id_vehiculo }}/', 'Vehículo {{ v.placa }}')"><i class="bi bi-trash"></i></button>
                         </td>

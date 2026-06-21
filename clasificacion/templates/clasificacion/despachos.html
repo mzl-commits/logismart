@@ -27,8 +27,8 @@
                                 <input class="form-check-input mt-0 cursor-pointer w-4 h-4 rounded border-slate-600 bg-slate-800 focus:ring-sky-500 focus:ring-offset-slate-900" type="checkbox" id="checkAll" onchange="toggleAll(this)">
                             </th>
                             <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Caja</th>
-                            <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Peso</th>
-                            <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Ubicación</th>
+                            <th class="hidden sm:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Peso</th>
+                            <th class="hidden sm:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Ubicación</th>
                         </tr>
                     </thead>
                     <tbody id="tabla-almacenadas" class="divide-y divide-slate-800/40">
@@ -40,9 +40,13 @@
                             <td class="px-4 py-3">
                                 <div class="font-medium text-slate-200 text-base">{{ caja.producto }}</div>
                                 <div class="text-xs text-slate-500 mt-0.5">{{ caja.id }} <span class="mx-1">·</span> {{ caja.categoria }}</div>
+                                <div class="text-xs text-slate-400 flex flex-wrap gap-x-2 mt-1 sm:hidden">
+                                    <span>{{ caja.peso_kg }} kg</span>
+                                    <span>· Ubic: {{ caja.id_ubicacion }}</span>
+                                </div>
                             </td>
-                            <td class="px-4 py-3 text-slate-300">{{ caja.peso_kg }} kg</td>
-                            <td class="px-4 py-3">
+                            <td class="hidden sm:table-cell px-4 py-3 text-slate-300">{{ caja.peso_kg }} kg</td>
+                            <td class="hidden sm:table-cell px-4 py-3">
                                 <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-500/20">
                                     {{ caja.id_ubicacion }}
                                 </span>

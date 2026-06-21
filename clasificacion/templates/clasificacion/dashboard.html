@@ -3,22 +3,22 @@
 
 {% block content %}
 <!-- Header -->
-<div class="flex items-center justify-between mb-6 fade-in">
+<div class="flex flex-col sm:flex-row gap-4 justify-between sm:items-center mb-6 fade-in">
     <div>
         <h2 class="text-2xl font-bold text-white flex items-center gap-3">
             <i class="bi bi-speedometer2 text-sky-400"></i> Dashboard
         </h2>
         <p class="text-slate-500 text-sm mt-1">Cajas activas · Almacén · Historial</p>
     </div>
-    <div class="text-right">
-        <a href="/nueva-caja/" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5 no-underline">
+    <div>
+        <a href="/nueva-caja/" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5 no-underline w-full sm:w-auto">
             <i class="bi bi-plus-lg"></i> Nueva caja
         </a>
     </div>
 </div>
 
 <!-- Stats -->
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     <div class="fade-in relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-blue-950/80 to-blue-900/20 border border-blue-800/30 group hover:border-blue-700/50 transition-colors">
         <div class="text-4xl font-extrabold text-white">{{ total_cajas }}</div>
         <div class="text-sm font-medium text-blue-300/60 mt-1">Total cajas</div>
@@ -56,11 +56,11 @@
             <span>{% if pct_ocupacion >= 90 %}⚠️ Crítico{% elif pct_ocupacion >= 70 %}Capacidad alta{% else %}Normal{% endif %}</span>
         </div>
     </div>
-    <div class="bg-surface rounded-2xl border border-slate-800/60 p-6 flex items-center justify-center gap-6">
-        <div style="max-width:110px; max-height:110px;">
+    <div class="bg-surface rounded-2xl border border-slate-800/60 p-6 flex flex-col sm:flex-row items-center justify-center gap-6">
+        <div style="max-width:110px; max-height:110px; width: 110px; height: 110px;">
             <canvas id="donutOcupacion"></canvas>
         </div>
-        <div class="text-center">
+        <div class="text-center sm:text-left">
             <div class="text-3xl font-extrabold {% if pct_ocupacion >= 90 %}text-red-500{% elif pct_ocupacion >= 70 %}text-amber-500{% else %}text-emerald-400{% endif %}">{{ pct_ocupacion }}%</div>
             <div class="text-xs text-slate-500 mt-1">Ocupación</div>
         </div>
@@ -101,11 +101,11 @@
                 <thead>
                     <tr class="border-b border-slate-800/60">
                         <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-6 py-4">Producto</th>
-                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Categoría</th>
-                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Peso</th>
+                        <th class="hidden md:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Categoría</th>
+                        <th class="hidden md:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Peso</th>
                         <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Prioridad</th>
                         <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Estado</th>
-                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Ubicación</th>
+                        <th class="hidden md:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Ubicación</th>
                         <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Acción</th>
                     </tr>
                 </thead>
@@ -115,9 +115,16 @@
                         <td class="px-6 py-3">
                             <div class="font-medium text-slate-200 text-base">{{ caja.producto }}{% if caja.es_fragil %} <span title="Frágil">🔷</span>{% endif %}</div>
                             <div class="text-xs text-slate-500">{{ caja.id }}</div>
+                            <div class="text-xs text-slate-400 flex flex-wrap gap-x-2 mt-1 md:hidden">
+                                <span>Cat: {{ caja.categoria }}</span>
+                                <span>· {{ caja.peso_kg }} kg</span>
+                                {% if caja.estado != 'pendiente' %}
+                                <span>· Ubic: {{ caja.id_ubicacion|default:"—" }}</span>
+                                {% endif %}
+                            </div>
                         </td>
-                        <td class="px-4 py-3 text-sm text-slate-400">{{ caja.categoria }}</td>
-                        <td class="px-4 py-3 text-sm text-slate-300">{{ caja.peso_kg }} kg</td>
+                        <td class="hidden md:table-cell px-4 py-3 text-sm text-slate-400">{{ caja.categoria }}</td>
+                        <td class="hidden md:table-cell px-4 py-3 text-sm text-slate-300">{{ caja.peso_kg }} kg</td>
                         <td class="px-4 py-3">
                             <span class="px-2.5 py-1 rounded-md text-xs font-semibold 
                                 {% if caja.prioridad == 'urgente' %}bg-red-500/15 text-red-400 border border-red-500/20 animate-pulse
@@ -136,7 +143,7 @@
                                 {{ caja.get_estado_display }}
                             </span>
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="hidden md:table-cell px-4 py-3">
                             {% if caja.estado == 'pendiente' %}
                                 <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20" id="rec-{{ caja.id }}">—</span>
                             {% elif caja.id_ubicacion %}
@@ -163,7 +170,7 @@
                     </tr>
                 {% empty %}
                     <tr><td colspan="7" class="text-center text-slate-500 py-8">
-                        <i class="bi bi-inbox text-4xl block mb-2 opacity-30"></i>No hay cajas activas.
+                         <i class="bi bi-inbox text-4xl block mb-2 opacity-30"></i>No hay cajas activas.
                     </td></tr>
                 {% endfor %}
                 </tbody>

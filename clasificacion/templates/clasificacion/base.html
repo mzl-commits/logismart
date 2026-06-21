@@ -134,7 +134,8 @@
         </a>
     </div>
 
-    <div class="flex items-center gap-4">
+    <!-- Desktop Right Content -->
+    <div class="hidden md:flex items-center gap-4">
         <!-- Search -->
         <div class="relative">
             <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#5A636A] text-sm pointer-events-none"></i>
@@ -160,7 +161,70 @@
             <i class="bi bi-plus-lg"></i> Nueva Caja
         </a>
     </div>
+
+    <!-- Mobile Right Content / Hamburger Menu -->
+    <div class="flex md:hidden items-center gap-4">
+        <div class="flex items-center gap-1.5 text-xs text-[#5A636A]">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-dot inline-block"></span>
+            <span id="mobile-nav-pending-badge" class="bg-amber-500 text-[#0D1F23] text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+        </div>
+        <button onclick="toggleMobileMenu()" class="text-light hover:text-white text-2xl transition-colors focus:outline-none">
+            <i class="bi bi-list"></i>
+        </button>
+    </div>
 </nav>
+
+<!-- Mobile Menu Drawer -->
+<div id="mobile-menu" class="fixed inset-y-0 right-0 z-[1060] w-72 bg-gradient-to-b from-[#0D1F23] to-[#132E35] border-l border-[#2D4A53]/60 shadow-2xl p-6 transform translate-x-full transition-transform duration-300 ease-in-out">
+    <div class="flex items-center justify-between mb-8">
+        <span class="font-bold text-lg text-white flex items-center gap-2">📦 Navegación</span>
+        <button onclick="toggleMobileMenu()" class="text-light hover:text-white text-xl focus:outline-none"><i class="bi bi-x-lg"></i></button>
+    </div>
+    
+    <div class="flex flex-col gap-3">
+        <a href="/" class="px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/' %}text-white bg-[#2D4A53]/60 border border-[#69818D]/20{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+        <a href="/almacen/" class="px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/almacen/' %}text-white bg-[#2D4A53]/60 border border-[#69818D]/20{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+            <i class="bi bi-grid-3x3-gap"></i> Almacén
+        </a>
+        <a href="/despachos/" class="px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/despachos/' %}text-[#AFB3B7] bg-[#2D4A53]/60 border border-[#69818D]/20{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+            <i class="bi bi-truck"></i> Despachos
+        </a>
+        <a href="/configuracion/" class="px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/configuracion/' %}text-white bg-[#2D4A53]/60 border border-[#69818D]/20{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+            <i class="bi bi-robot"></i> Robot AGV
+        </a>
+        <a href="/administracion/" class="px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/administracion/' %}text-[#AFB3B7] bg-[#2D4A53]/40{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+            <i class="bi bi-people"></i> Administración
+        </a>
+        
+        <div class="h-px bg-[#2D4A53]/60 my-4"></div>
+        
+        <!-- Mobile Search -->
+        <div class="relative mb-2">
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#5A636A] text-sm pointer-events-none"></i>
+            <input type="text" id="mobile-search" placeholder="Buscar caja..." autocomplete="off"
+                   oninput="buscarCajasMobile(this.value)"
+                   onfocus="if(this.value.length>=2)document.getElementById('mobile-search-results').classList.add('show')"
+                   onblur="setTimeout(()=>document.getElementById('mobile-search-results').classList.remove('show'),200)"
+                   class="w-full bg-[#0D1F23]/60 border border-[#2D4A53]/60 rounded-lg text-sm pl-9 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#69818D]/30 focus:border-[#69818D]/60 text-white placeholder-[#5A636A]">
+            <div class="search-results absolute top-full left-0 right-0 mt-2 bg-surface border border-[#2D4A53] rounded-xl max-h-48 overflow-y-auto z-[1070] shadow-2xl" id="mobile-search-results"></div>
+        </div>
+
+        <!-- Mobile API Doc -->
+        <a href="/api/docs/" target="_blank" class="px-4 py-2 text-[#5A636A] hover:text-[#AFB3B7] text-sm no-underline flex items-center gap-2 transition-colors">
+            <i class="bi bi-terminal"></i> Documentación API
+        </a>
+        
+        <!-- Mobile Add Button -->
+        <a href="/nueva-caja/" class="bg-gradient-to-r from-[#2D4A53] to-[#69818D] hover:from-[#69818D] hover:to-[#2D4A53] text-white text-sm font-semibold px-4 py-3 rounded-xl flex items-center justify-center gap-2 mt-4 shadow-lg shadow-[#69818D]/20 transition-all no-underline">
+            <i class="bi bi-plus-lg"></i> Nueva Caja
+        </a>
+    </div>
+</div>
+
+<!-- Mobile Menu Backdrop -->
+<div id="mobile-menu-backdrop" onclick="toggleMobileMenu()" class="fixed inset-0 z-[1055] bg-black/60 backdrop-blur-sm hidden transition-opacity duration-300"></div>
 
 <main class="max-w-[1440px] mx-auto px-6 py-6">
     {% block content %}{% endblock %}
@@ -314,10 +378,24 @@ async function actualizarBadgePendientes() {
         const res = await fetch('/api/cajas/?estado=pendiente&page_size=1');
         const data = await res.json();
         const count = data.count ?? 0;
-        document.getElementById('nav-pending-count').textContent = count;
+        
+        const countEl = document.getElementById('nav-pending-count');
+        if (countEl) countEl.textContent = count;
+        
         const badge = document.getElementById('nav-pending-badge');
-        if (count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
-        else badge.classList.add('hidden');
+        if (badge) {
+            if (count > 0) { badge.textContent = count; badge.classList.remove('hidden'); }
+            else badge.classList.add('hidden');
+        }
+        
+        const mobileBadge = document.getElementById('mobile-nav-pending-badge');
+        if (mobileBadge) {
+            if (count > 0) { mobileBadge.textContent = count; mobileBadge.classList.remove('hidden'); }
+            else mobileBadge.classList.add('hidden');
+        }
+        
+        const mobileCountEl = document.getElementById('mobile-nav-pending-count');
+        if (mobileCountEl) mobileCountEl.textContent = count;
     } catch {}
 }
 document.addEventListener('DOMContentLoaded', () => { actualizarBadgePendientes(); setInterval(actualizarBadgePendientes, 10000); });
@@ -351,6 +429,51 @@ async function buscarCajas(query) {
             box.classList.add('show');
         } catch { box.innerHTML = '<div class="p-5 text-center text-slate-500 text-sm">Error de búsqueda</div>'; box.classList.add('show'); }
     }, 300);
+}
+
+// ── Búsqueda global en móvil ──────────────────────────────────────────────────
+async function buscarCajasMobile(query) {
+    const box = document.getElementById('mobile-search-results');
+    if (query.length < 2) { box.classList.remove('show'); return; }
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/cajas/?search=${encodeURIComponent(query)}&page_size=10`);
+            const data = await res.json();
+            const items = data.results || data || [];
+            if (!items.length) {
+                box.innerHTML = '<div class="p-4 text-center text-slate-500 text-xs"><i class="bi bi-inbox mr-2"></i>Sin resultados</div>';
+            } else {
+                const statusBadge = (e) => {
+                    const colors = { pendiente:'bg-amber-500/20 text-amber-400', en_transito:'bg-[#2D4A53]/60 text-[#AFB3B7]', almacenada:'bg-emerald-500/20 text-emerald-400', despachada:'bg-[#5A636A]/20 text-[#5A636A]' };
+                    return `<span class="px-2 py-0.5 rounded text-[10px] font-semibold ${colors[e]||'bg-slate-600'}">${e}</span>`;
+                };
+                box.innerHTML = items.map(c => `
+                    <div class="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-[#2D4A53]/20 transition-colors text-xs border-b border-white/[.04] last:border-b-0" onclick="window.location.href='/'">
+                        <span class="font-bold text-[#69818D]">${c.id.substring(0, 8)}...</span>
+                        <span class="flex-1 text-[#AFB3B7] truncate">${c.producto || '—'}</span>
+                        ${statusBadge(c.estado)}
+                    </div>
+                `).join('');
+            }
+            box.classList.add('show');
+        } catch { box.innerHTML = '<div class="p-4 text-center text-slate-500 text-xs">Error</div>'; box.classList.add('show'); }
+    }, 300);
+}
+
+// ── Mobile Menu Toggle ────────────────────────────────────────────────────────
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobile-menu');
+    const backdrop = document.getElementById('mobile-menu-backdrop');
+    if (menu.classList.contains('translate-x-full')) {
+        menu.classList.remove('translate-x-full');
+        backdrop.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    } else {
+        menu.classList.add('translate-x-full');
+        backdrop.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
 }
 </script>
 {% block extra_js %}{% endblock %}
