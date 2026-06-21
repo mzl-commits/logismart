@@ -97,7 +97,10 @@ def nueva_caja(request):
 
 
 def configuracion(request):
-    config = ConfigCarro.get_config()
+    carro_id = int(request.GET.get('carro_id', 1))
+    if carro_id not in [1, 2]:
+        carro_id = 1
+    config = ConfigCarro.get_config(carro_id)
     medidas = list(Medida.objects.all())
     cart_vol = config.volumen_cm3
     cart_peso = float(config.peso_maximo_kg)
@@ -134,6 +137,7 @@ def configuracion(request):
 
     return render(request, 'clasificacion/configuracion.html', {
         'config': config,
+        'carro_id': carro_id,
         'breakdown': breakdown,
         'resumen': resumen,
         'cart_vol': round(cart_vol),

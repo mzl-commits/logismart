@@ -48,7 +48,8 @@ class Command(BaseCommand):
                 payload = json.loads(msg.payload.decode('utf-8'))
                 self.stdout.write(self.style.NOTICE(f"Received MQTT payload: {payload}"))
                 
-                carro, _ = EstadoCarro.objects.get_or_create(id=1)
+                carro_id = int(payload.get("carro_id", 1))
+                carro, _ = EstadoCarro.objects.get_or_create(id=carro_id)
                 action = payload.get("action")
                 
                 if action == "avanzar":
@@ -63,13 +64,13 @@ class Command(BaseCommand):
                             if carro.estado == 'regresando':
                                 carro.estado = 'esperando'
                                 carro.caja_id = None
-                                _publicar_mqtt_comando({'action': 'stop'})
+                                _publicar_mqtt_comando({'action': 'stop', 'carro_id': carro_id})
                             else:
                                 carro.estado = 'llego'
                         carro.save()
-                        self.stdout.write(self.style.SUCCESS(f"Carro avanzó a ({carro.pos_x}, {carro.pos_y}). Estado: {carro.estado}"))
+                        self.stdout.write(self.style.SUCCESS(f"Carro {carro_id} avanzó a ({carro.pos_x}, {carro.pos_y}). Estado: {carro.estado}"))
                     else:
-                        self.stdout.write(self.style.WARNING("Llamada a avanzar pero la ruta está vacía."))
+                        self.stdout.write(self.style.WARNING(f"Llamada a avanzar para carro {carro_id} pero la ruta está vacía."))
                 
                 elif action == "confirmar_parada":
                     # Lógica de confirmar parada
@@ -100,7 +101,7 @@ class Command(BaseCommand):
                         siguiente_idx = carro.parada_actual + 1
                         if siguiente_idx >= len(paradas):
                             # Fin de paradas -> regresar a base
-                            config = ConfigCarro.get_config()
+                            config = ConfigCarro.get_config(carro_id)
                             bx, by = config.pos_base_x, config.pos_base_y
                             if carro.pos_x != bx or carro.pos_y != by:
                                 ruta_regreso = RutaService.generar_ruta(carro.pos_x, carro.pos_y, bx, by)
@@ -114,14 +115,15 @@ class Command(BaseCommand):
                                     'destino_x': bx,
                                     'destino_y': by,
                                     'ruta': ruta_regreso,
-                                    'caja_id': None
+                                    'caja_id': None,
+                                    'carro_id': carro_id
                                 })
                                 self.stdout.write(self.style.SUCCESS(f"Ruta completada. Regresando a base en ({bx}, {by})."))
                             else:
                                 carro.estado = 'esperando'
                                 carro.ruta = []
                                 carro.save()
-                                _publicar_mqtt_comando({'action': 'stop'})
+                                _publicar_mqtt_comando({'action': 'stop', 'carro_id': carro_id})
                                 self.stdout.write(self.style.SUCCESS("Ruta completada. Carro ya estaba en base."))
                         else:
                             # Avanzar a la siguiente parada
@@ -139,7 +141,8 @@ class Command(BaseCommand):
                                 'destino_x': siguiente['x'],
                                 'destino_y': siguiente['y'],
                                 'ruta': ruta,
-                                'caja_id': siguiente['caja_id']
+                                'caja_id': siguiente['caja_id'],
+                                'carro_id': carro_id
                             })
                             self.stdout.write(self.style.SUCCESS(f"Avanzando a siguiente parada: {siguiente}"))
                     else:

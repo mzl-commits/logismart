@@ -84,8 +84,8 @@ def _registrar_historial(caja, estado_anterior, usuario_id):
         logger.error("Usuario id=%s no encontrado para caja %s.", usuario_id, caja.id)
 
 
-def _get_or_create_carro():
-    carro, _ = EstadoCarro.objects.get_or_create(id=1, defaults=_CARRO_DEFAULTS)
+def _get_or_create_carro(carro_id=1):
+    carro, _ = EstadoCarro.objects.get_or_create(id=carro_id, defaults=_CARRO_DEFAULTS)
     return carro
 
 
@@ -200,7 +200,8 @@ class CajaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', 1))
+        carro = _get_or_create_carro(carro_id)
         paradas_ordenadas = RutaService.optimizar_paradas(carro.pos_x, carro.pos_y, paradas)
         primera = paradas_ordenadas[0]
         ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, primera['x'], primera['y'])
@@ -275,7 +276,8 @@ class CajaViewSet(viewsets.ModelViewSet):
             OptimizadorUbicaciones.ocupar_ubicacion(mejor_ubi)
             _registrar_historial(caja, estado_anterior, usuario_id)
 
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', 1))
+        carro = _get_or_create_carro(carro_id)
         ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, mejor_ubi.coord_x, mejor_ubi.coord_y)
         carro.paradas = [{'caja_id': caja.id, 'producto': caja.producto,
                           'x': mejor_ubi.coord_x, 'y': mejor_ubi.coord_y,
@@ -380,23 +382,32 @@ class CategoriaViewSet(viewsets.ModelViewSet):
 
 
 class ConfigCarroViewSet(viewsets.ModelViewSet):
-    """Singleton de configuración del carro. Siempre trabaja con id=1."""
+    """Configuración de carros. Soporta carro_id dinámico."""
     serializer_class = ConfigCarroSerializer
 
     def get_queryset(self):
         return ConfigCarro.objects.all()
 
     def get_object(self):
-        return ConfigCarro.get_config()
+        pk = self.kwargs.get('pk')
+        if pk:
+            try:
+                return ConfigCarro.objects.get(pk=pk)
+            except ConfigCarro.DoesNotExist:
+                return ConfigCarro.get_config(int(pk))
+        carro_id = int(self.request.query_params.get('carro_id', 1))
+        return ConfigCarro.get_config(carro_id)
 
     @action(detail=False, methods=['get'])
     def actual(self, request):
-        config = ConfigCarro.get_config()
+        carro_id = int(request.query_params.get('carro_id', 1))
+        config = ConfigCarro.get_config(carro_id)
         return Response(ConfigCarroSerializer(config).data)
 
     @action(detail=False, methods=['patch', 'put'])
     def actualizar(self, request):
-        config = ConfigCarro.get_config()
+        carro_id = int(request.query_params.get('carro_id', 1))
+        config = ConfigCarro.get_config(carro_id)
         serializer = ConfigCarroSerializer(config, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -429,7 +440,8 @@ class DespachoViewSet(viewsets.ModelViewSet):
 class EstadoCarroViewSet(viewsets.ViewSet):
 
     def list(self, request):
-        carro = _get_or_create_carro()
+        carro_id = int(request.query_params.get('carro_id', 1))
+        carro = _get_or_create_carro(carro_id)
         return Response(EstadoCarroSerializer(carro).data)
 
     @action(detail=False, methods=['post'])
@@ -439,7 +451,8 @@ class EstadoCarroViewSet(viewsets.ViewSet):
         - Marca la caja como almacenada.
         - Avanza a la siguiente parada (o finaliza si era la última).
         """
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
         paradas = carro.paradas or []
         usuario_id = request.data.get('id_usuario')
 
@@ -465,7 +478,7 @@ class EstadoCarroViewSet(viewsets.ViewSet):
 
         if siguiente_idx >= len(paradas):
             # Todas las paradas completadas — regresar a base
-            config = ConfigCarro.get_config()
+            config = ConfigCarro.get_config(carro_id)
             bx, by = config.pos_base_x, config.pos_base_y
             if carro.pos_x != bx or carro.pos_y != by:
                 ruta_regreso = RutaService.generar_ruta(carro.pos_x, carro.pos_y, bx, by)
@@ -480,13 +493,14 @@ class EstadoCarroViewSet(viewsets.ViewSet):
                     'destino_x': bx,
                     'destino_y': by,
                     'ruta': ruta_regreso,
-                    'caja_id': None
+                    'caja_id': None,
+                    'carro_id': carro_id
                 })
             else:
                 carro.estado = 'esperando'
                 carro.ruta = []
                 # Publicar comando stop por MQTT
-                _publicar_mqtt_comando({'action': 'stop'})
+                _publicar_mqtt_comando({'action': 'stop', 'carro_id': carro_id})
             carro.paradas = []
             carro.parada_actual = 0
             carro.caja_id = None
@@ -515,7 +529,8 @@ class EstadoCarroViewSet(viewsets.ViewSet):
             'destino_x': siguiente['x'],
             'destino_y': siguiente['y'],
             'ruta': ruta,
-            'caja_id': siguiente['caja_id']
+            'caja_id': siguiente['caja_id'],
+            'carro_id': carro_id
         })
 
         esp32_resultado = _enviar_esp32(siguiente['x'], siguiente['y'])
@@ -532,7 +547,8 @@ class EstadoCarroViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def avanzar(self, request):
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
         ruta = carro.ruta or []
         if ruta:
             siguiente = ruta.pop(0)
@@ -549,7 +565,7 @@ class EstadoCarroViewSet(viewsets.ViewSet):
                     carro.caja_id = None
                     logger.info("Carro llegó a base (%d,%d).", carro.pos_x, carro.pos_y)
                     # Publicar stop por MQTT
-                    _publicar_mqtt_comando({'action': 'stop'})
+                    _publicar_mqtt_comando({'action': 'stop', 'carro_id': carro_id})
                 else:
                     carro.estado = 'llego'
             carro.save()
@@ -557,7 +573,8 @@ class EstadoCarroViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def mover(self, request):
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
         destino_x = int(request.data.get('destino_x', 0))
         destino_y = int(request.data.get('destino_y', 0))
         ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, destino_x, destino_y)
@@ -574,27 +591,30 @@ class EstadoCarroViewSet(viewsets.ViewSet):
             'destino_x': destino_x,
             'destino_y': destino_y,
             'ruta': ruta,
-            'caja_id': request.data.get('caja_id')
+            'caja_id': request.data.get('caja_id'),
+            'carro_id': carro_id
         })
         
         return Response({'mensaje': 'Ruta generada', 'ruta': ruta})
 
     @action(detail=False, methods=['post'])
     def reset(self, request):
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
         for k, v in _CARRO_DEFAULTS.items():
             setattr(carro, k, v)
         carro.caja_id = None
         carro.save()
         
         # Publicar comando reset por MQTT
-        _publicar_mqtt_comando({'action': 'reset'})
+        _publicar_mqtt_comando({'action': 'reset', 'carro_id': carro_id})
         
         return Response({'mensaje': 'Carro reiniciado'})
 
     @action(detail=False, methods=['post', 'patch'])
     def telemetria(self, request):
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
         campos = [
             'sensor_opt_izq_ext', 'sensor_opt_izq_int', 'sensor_opt_der_int', 'sensor_opt_der_ext',
             'sensor_obstaculo_frontal', 'sensor_obstaculo_trasero', 'motor_izq_vel', 'motor_der_vel'

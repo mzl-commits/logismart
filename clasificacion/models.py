@@ -184,12 +184,13 @@ class ConfigCarro(models.Model):
         return float(self.largo_cm) * float(self.ancho_cm) * float(self.alto_cm)
 
     @classmethod
-    def get_config(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
+    def get_config(cls, carro_id=1):
+        obj, _ = cls.objects.get_or_create(pk=carro_id, defaults={'nombre': f'Carro {carro_id}'})
         return obj
 
     def save(self, *args, **kwargs):
-        self.pk = 1  # Singleton: siempre id=1
+        if not self.pk:
+            self.pk = 1
         super().save(*args, **kwargs)
 
     def __str__(self):

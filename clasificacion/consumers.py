@@ -34,7 +34,8 @@ class CarroConsumer(AsyncWebsocketConsumer):
         try:
             data = json.loads(text_data)
             if data.get("action") == "get_state":
-                state = await self.get_current_state()
+                carro_id = int(data.get("carro_id", 1))
+                state = await self.get_current_state(carro_id)
                 await self.send(text_data=json.dumps({
                     "type": "state_update",
                     "data": state
@@ -50,8 +51,8 @@ class CarroConsumer(AsyncWebsocketConsumer):
         }))
 
     @database_sync_to_async
-    def get_current_state(self):
-        carro, _ = EstadoCarro.objects.get_or_create(id=1, defaults={
+    def get_current_state(self, carro_id=1):
+        carro, _ = EstadoCarro.objects.get_or_create(id=carro_id, defaults={
             'pos_x': 0, 'pos_y': 0,
             'destino_x': 0, 'destino_y': 0,
             'ruta': [], 'estado': 'esperando',
