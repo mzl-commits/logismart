@@ -41,6 +41,8 @@ ALLOWED_HOSTS = _get_env('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1').
 
 # ─── Aplicaciones ─────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -93,6 +95,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'almacen_config.wsgi.application'
+ASGI_APPLICATION = 'almacen_config.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 
 # ─── Configuración ESP32 ──────────────────────────────────────────────────────
