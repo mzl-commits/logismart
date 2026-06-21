@@ -1,4 +1,5 @@
 {% extends 'clasificacion/base.html' %}
+{% load l10n %}
 {% block title %}Configuración del Carro — LogiSmart{% endblock %}
 
 {% block extra_css %}
@@ -109,124 +110,129 @@
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 fade-in">
     <div>
         <h2 class="text-2xl font-bold mb-1 text-white"><i class="bi bi-cpu me-2 text-sky-400"></i>Telemetría y Configuración</h2>
-        <p class="text-sm text-slate-400 mb-0">Monitoreo de sensores en tiempo real y parámetros físicos</p>
+        <p class="text-sm text-slate-400 mb-0">Monitoreo de sensores en tiempo real y capacidad de carga</p>
     </div>
     <div class="flex flex-wrap items-center gap-3">
-        <!-- Selector de Carro -->
-        <div class="flex items-center gap-1.5 bg-slate-900/60 p-1 border border-slate-800 rounded-xl">
-            <a href="?carro_id=1" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 {% if carro_id == 1 %}bg-sky-500 text-white shadow-lg shadow-sky-500/20{% else %}text-slate-400 hover:text-white{% endif %}">
-                <i class="bi bi-robot"></i> Carro 1
-            </a>
-            <a href="?carro_id=2" class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 {% if carro_id == 2 %}bg-sky-500 text-white shadow-lg shadow-sky-500/20{% else %}text-slate-400 hover:text-white{% endif %}">
-                <i class="bi bi-robot"></i> Carro 2
-            </a>
-        </div>
+        <!-- Botón Añadir Carro (Mocked) -->
+        <button class="bg-slate-800/40 border border-slate-800 text-slate-500 text-sm font-semibold px-4 py-2 rounded-lg cursor-not-allowed flex items-center gap-2" title="Límite de 1 vehículo alcanzado. Contacta al administrador para añadir más.">
+            <i class="bi bi-plus-lg"></i> Añadir Carro
+        </button>
         <!-- Botón Modal -->
-        <button class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-slate-700 shadow-md" onclick="abrirModal()">
-            <i class="bi bi-sliders"></i> Parámetros
+        <button class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-slate-700 shadow-md animate-pulse" onclick="abrirModal()">
+            <i class="bi bi-sliders"></i> Ajustar Parámetros
         </button>
     </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 fade-in">
-    <!-- ── COLUMNA PRINCIPAL: TELEMETRÍA ─────────────────────────── -->
-    <div class="lg:col-span-8">
-        <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center justify-between bg-slate-900/30">
-                <div class="flex items-center gap-2">
-                    <i class="bi bi-cpu text-sky-400 animate-pulse"></i> Telemetría del AGV (MQTT) — {{ config.nombre }}
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-900/80 text-slate-400 border border-slate-800" id="ws-status">
-                        <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-slate-500"></span> Desconectado
-                    </span>
-                    <label class="relative inline-flex items-center cursor-pointer ml-1" title="Simular comportamiento de sensores cuando el carro esté en marcha">
-                        <input type="checkbox" id="simulado-toggle" class="sr-only peer" checked>
-                        <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-500 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600 peer-checked:after:bg-white"></div>
-                        <span class="ml-1 text-[10px] font-medium text-slate-400">Simulación</span>
-                    </label>
-                </div>
+<div class="space-y-6 fade-in">
+    <!-- ── PANEL DE TELEMETRÍA AGV (FULL-WIDTH) ─────────────────── -->
+    <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center justify-between bg-slate-900/30">
+            <div class="flex items-center gap-2">
+                <i class="bi bi-cpu text-sky-400 animate-pulse"></i> Telemetría del AGV (MQTT) — {{ config.nombre }}
             </div>
-            <div class="p-6">
-                <div class="agv-container">
-                    <div class="agv-chassis">
-                        <!-- Ruedas -->
-                        <div class="wheel wheel-left">
-                            <div class="wheel-tread" id="wheel-l-tread"></div>
-                        </div>
-                        <div class="wheel wheel-right">
-                            <div class="wheel-tread" id="wheel-r-tread"></div>
-                        </div>
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-900/80 text-slate-400 border border-slate-800" id="ws-status">
+                    <span class="w-1.5 h-1.5 mr-1.5 rounded-full bg-slate-500"></span> Desconectado
+                </span>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <!-- Columna Izquierda: Chasis AGV (4 cols) -->
+                <div class="lg:col-span-4 flex flex-col items-center justify-center border-b lg:border-b-0 lg:border-r border-slate-800/60 pb-6 lg:pb-0 lg:pr-6">
+                    <div class="agv-container">
+                        <div class="agv-chassis">
+                            <!-- Ruedas -->
+                            <div class="wheel wheel-left">
+                                <div class="wheel-tread" id="wheel-l-tread"></div>
+                            </div>
+                            <div class="wheel wheel-right">
+                                <div class="wheel-tread" id="wheel-r-tread"></div>
+                            </div>
 
-                        <!-- Sensor Obstáculo Frontal -->
-                        <div class="absolute -top-1.5 left-1/2 -translate-x-1/2" title="Sensor Obstáculo Frontal">
-                            <div id="sns-obs-front" class="sensor-dot w-3 h-3"></div>
-                        </div>
+                            <!-- Sensor Obstáculo Frontal -->
+                            <div class="absolute -top-1.5 left-1/2 -translate-x-1/2" title="Sensor Obstáculo Frontal">
+                                <div id="sns-obs-front" class="sensor-dot w-3 h-3"></div>
+                            </div>
 
-                        <!-- 4 Sensores Ópticos de Línea -->
-                        <!-- Alineación (Frontales) -->
-                        <div class="absolute top-4 left-[56px] flex flex-col items-center" title="Sensor Óptico Izquierdo Interior (Alineación)">
-                            <div id="sns-opt-2" class="sensor-dot"></div>
-                            <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SI-Int</span>
-                        </div>
-                        <div class="absolute top-4 right-[56px] flex flex-col items-center" title="Sensor Óptico Derecho Interior (Alineación)">
-                            <div id="sns-opt-3" class="sensor-dot"></div>
-                            <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SD-Int</span>
-                        </div>
+                            <!-- 4 Sensores Ópticos de Línea -->
+                            <!-- Alineación (Frontales) -->
+                            <div class="absolute top-4 left-[56px] flex flex-col items-center" title="Sensor Óptico Izquierdo Interior (Alineación)">
+                                <div id="sns-opt-2" class="sensor-dot"></div>
+                                <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SI-Int</span>
+                            </div>
+                            <div class="absolute top-4 right-[56px] flex flex-col items-center" title="Sensor Óptico Derecho Interior (Alineación)">
+                                <div id="sns-opt-3" class="sensor-dot"></div>
+                                <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SD-Int</span>
+                            </div>
 
-                        <!-- Contadores de Nodos (Laterales Asimétricos) -->
-                        <!-- Izquierdo: detrás/abajo de la llanta izquierda -->
-                        <div class="absolute bottom-[58px] left-[6px] flex flex-col items-center" title="Sensor Óptico Izquierdo Exterior (Detección de Nodos)">
-                            <div id="sns-opt-1" class="sensor-dot"></div>
-                            <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SI-Ext</span>
-                        </div>
-                        <!-- Derecho: justo arriba/adelante de la llanta derecha -->
-                        <div class="absolute top-[58px] right-[6px] flex flex-col items-center" title="Sensor Óptico Derecho Exterior (Detección de Nodos)">
-                            <div id="sns-opt-4" class="sensor-dot"></div>
-                            <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SD-Ext</span>
-                        </div>
+                            <!-- Contadores de Nodos (Laterales Asimétricos) -->
+                            <!-- Izquierdo: detrás/abajo de la llanta izquierda -->
+                            <div class="absolute bottom-[58px] left-[6px] flex flex-col items-center" title="Sensor Óptico Izquierdo Exterior (Detección de Nodos)">
+                                <div id="sns-opt-1" class="sensor-dot"></div>
+                                <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SI-Ext</span>
+                            </div>
+                            <!-- Derecho: justo arriba/adelante de la llanta derecha -->
+                            <div class="absolute top-[58px] right-[6px] flex flex-col items-center" title="Sensor Óptico Derecho Exterior (Detección de Nodos)">
+                                <div id="sns-opt-4" class="sensor-dot"></div>
+                                <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SD-Ext</span>
+                            </div>
 
-                        <!-- Cuerpo del carro details -->
-                        <span class="text-[9px] font-black text-slate-500 tracking-wider">LOGISMART AGV</span>
-                        <div class="text-[10px] font-black text-white px-2 py-0.5 rounded bg-slate-900/90 border border-slate-800" id="agv-state">ESPERANDO</div>
-                        <div class="text-xl font-extrabold text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.3)] mt-1" id="agv-coords">(0, 0)</div>
-                        <div class="text-[9px] text-slate-400 mt-1" id="agv-dest">Base: ({{ config.pos_base_x }}, {{ config.pos_base_y }})</div>
+                            <!-- Cuerpo del carro details -->
+                            <span class="text-[9px] font-black text-slate-500 tracking-wider">LOGISMART AGV</span>
+                            <div class="text-[10px] font-black text-white px-2 py-0.5 rounded bg-slate-900/90 border border-slate-800" id="agv-state">ESPERANDO</div>
+                            <div class="text-xl font-extrabold text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.3)] mt-1" id="agv-coords">(0, 0)</div>
+                            <div class="text-[9px] text-slate-400 mt-1" id="agv-dest">Base: ({{ config.pos_base_x }}, {{ config.pos_base_y }})</div>
 
-                        <!-- Sensor Obstáculo Trasero -->
-                        <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2" title="Sensor Obstáculo Trasero">
-                            <div id="sns-obs-back" class="sensor-dot w-3 h-3"></div>
+                            <!-- Sensor Obstáculo Trasero -->
+                            <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2" title="Sensor Obstáculo Trasero">
+                                <div id="sns-obs-back" class="sensor-dot w-3 h-3"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4 mt-2">
-                    <!-- Motor Izquierdo -->
-                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-bold text-slate-400">Motor Izq</span>
-                            <span class="text-xs font-extrabold text-sky-400" id="motor-izq-txt">1500 us</span>
-                        </div>
-                        <div class="text-[10px] text-slate-500 mb-2 flex justify-between">
-                            <span id="motor-izq-dir" class="font-semibold">PARADO</span>
-                            <span id="motor-izq-pct" class="font-semibold">0%</span>
-                        </div>
-                        <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
-                            <div class="h-full bg-sky-500 rounded-full transition-all duration-300" id="motor-izq-bar" style="width: 50%"></div>
-                        </div>
+                <!-- Columna Derecha: Motores y Diagnóstico (8 cols) -->
+                <div class="lg:col-span-8 space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-800/40 pb-2">
+                        <span class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Diagnóstico de Motores y Simulación</span>
+                        <label class="relative inline-flex items-center cursor-pointer" title="Simular comportamiento de sensores cuando el carro esté en marcha">
+                            <input type="checkbox" id="simulado-toggle" class="sr-only peer" checked>
+                            <div class="w-7 h-4 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-400 after:border-slate-500 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600 peer-checked:after:bg-white"></div>
+                            <span class="ml-1 text-[10px] font-medium text-slate-400">Simulación</span>
+                        </label>
                     </div>
 
-                    <!-- Motor Derecho -->
-                    <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-3">
-                        <div class="flex items-center justify-between mb-1">
-                            <span class="text-xs font-bold text-slate-400">Motor Der</span>
-                            <span class="text-xs font-extrabold text-sky-400" id="motor-der-txt">1500 us</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Motor Izquierdo -->
+                        <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-bold text-slate-400">Motor Izquierdo</span>
+                                <span class="text-xs font-extrabold text-sky-400" id="motor-izq-txt">1500 us</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 mb-2 flex justify-between">
+                                <span id="motor-izq-dir" class="font-semibold">PARADO</span>
+                                <span id="motor-izq-pct" class="font-semibold">0%</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
+                                <div class="h-full bg-sky-500 rounded-full transition-all duration-300" id="motor-izq-bar" style="width: 50%"></div>
+                            </div>
                         </div>
-                        <div class="text-[10px] text-slate-500 mb-2 flex justify-between">
-                            <span id="motor-der-dir" class="font-semibold">PARADO</span>
-                            <span id="motor-der-pct" class="font-semibold">0%</span>
-                        </div>
-                        <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
-                            <div class="h-full bg-sky-500 rounded-full transition-all duration-300" id="motor-der-bar" style="width: 50%"></div>
+
+                        <!-- Motor Derecho -->
+                        <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-bold text-slate-400">Motor Derecho</span>
+                                <span class="text-xs font-extrabold text-sky-400" id="motor-der-txt">1500 us</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 mb-2 flex justify-between">
+                                <span id="motor-der-dir" class="font-semibold">PARADO</span>
+                                <span id="motor-der-pct" class="font-semibold">0%</span>
+                            </div>
+                            <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
+                                <div class="h-full bg-sky-500 rounded-full transition-all duration-300" id="motor-der-bar" style="width: 50%"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -234,9 +240,11 @@
         </div>
     </div>
 
-    <!-- ── Panel de capacidad (Columna Secundaria) ───────────────── -->
-    <div class="lg:col-span-4">
-        <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden mb-6">
+    <!-- ── SECCIÓN DE CAPACIDAD Y DESGLOSE (GRID INFERIOR) ──────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- ── Panel de capacidad (Columna Izquierda - 5 cols) ───────── -->
+        <div class="lg:col-span-5">
+        <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden">
             <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center gap-2 bg-slate-900/30">
                 <i class="bi bi-box text-sky-400"></i> Capacidad calculada
             </div>
@@ -306,9 +314,11 @@
                 </div>
             </div>
         </div>
+        </div> <!-- Closes lg:col-span-5 -->
 
-        <!-- Tabla de medidas -->
-        <div class="bg-surface rounded-2xl border border-slate-800/60 p-0 overflow-hidden fade-in fade-d2 mt-6">
+        <!-- Tabla de medidas (Columna Derecha - 7 cols) -->
+        <div class="lg:col-span-7">
+        <div class="bg-surface rounded-2xl border border-slate-800/60 p-0 overflow-hidden fade-in fade-d2">
             <div class="px-6 py-4 border-b border-slate-800/60 font-semibold flex items-center gap-2 text-white"><i class="bi bi-grid-3x3 text-sky-400"></i> Desglose por medida registrada</div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -353,6 +363,7 @@
                 </table>
             </div>
         </div>
+        </div> <!-- Closes lg:col-span-7 -->
     </div>
 </div>
 
@@ -378,17 +389,17 @@
             <div class="mb-4">
                 <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Dimensiones (cm) — Largo × Ancho × Alto</label>
                 <div class="flex items-center gap-3">
-                    <input type="number" step="0.1" min="1" class="w-full bg-slate-950 border border-slate-800/80 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-largo" value="{{ config.largo_cm }}" placeholder="L" oninput="recalcular()">
+                    <input type="number" step="0.1" min="1" class="w-full bg-slate-950 border border-slate-800/80 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-largo" value="{{ config.largo_cm|unlocalize }}" placeholder="L" oninput="recalcular()">
                     <span class="text-slate-600">×</span>
-                    <input type="number" step="0.1" min="1" class="w-full bg-slate-950 border border-slate-800/80 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-ancho" value="{{ config.ancho_cm }}" placeholder="A" oninput="recalcular()">
+                    <input type="number" step="0.1" min="1" class="w-full bg-slate-950 border border-slate-800/80 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-ancho" value="{{ config.ancho_cm|unlocalize }}" placeholder="A" oninput="recalcular()">
                     <span class="text-slate-600">×</span>
-                    <input type="number" step="0.1" min="1" class="w-full bg-slate-950 border border-slate-800/80 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-alto" value="{{ config.alto_cm }}" placeholder="H" oninput="recalcular()">
+                    <input type="number" step="0.1" min="1" class="w-full bg-slate-950 border border-slate-800/80 rounded-xl px-4 py-3 text-white text-center focus:outline-none focus:border-sky-500 transition-all" id="cfg-alto" value="{{ config.alto_cm|unlocalize }}" placeholder="H" oninput="recalcular()">
                 </div>
             </div>
 
             <div class="mb-4">
                 <label class="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Peso máximo (kg)</label>
-                <input type="number" step="0.5" min="1" class="w-full bg-slate-950 border border-slate-800/80 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 transition-all" id="cfg-peso" value="{{ config.peso_maximo_kg }}" oninput="recalcular()">
+                <input type="number" step="0.5" min="1" class="w-full bg-slate-950 border border-slate-800/80 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 transition-all" id="cfg-peso" value="{{ config.peso_maximo_kg|unlocalize }}" oninput="recalcular()">
             </div>
 
             <div class="mb-4">
