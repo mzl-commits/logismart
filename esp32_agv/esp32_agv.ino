@@ -1,81 +1,71 @@
 /**
- * LogiSmart AGV - Firmware para ESP32
+ * LogiSmart AGV - Firmware para ESP32 (MQTT Enabled)
  * 
  * Este firmware controla un carro transportador autónomo (AGV) utilizando:
  * - 2 Servomotores de rotación continua (Ruedas izquierda/derecha)
  * - 4 Sensores infrarrojos ópticos (Line Tracking & Intersecciones)
- * - Conexión WiFi para integrarse con la API REST de LogiSmart
- * - Soporte alternativo de control Serial para simulación o cableado directo
+ * - Conexión WiFi y Broker MQTT (Mosquitto) para telemetría y control en tiempo real.
  * 
  * Librerías necesarias en Arduino IDE:
  * - ESP32Servo (para el control de los servomotores)
+ * - PubSubClient (para el cliente MQTT)
  */
 
 #include <WiFi.h>
-#include <HTTPClient.h>
+#include <PubSubClient.h>
 #include <ESP32Servo.h>
 
 // ==========================================
-// 1. CONFIGURACIÓN DE RED Y SERVIDOR
+// 1. CONFIGURACIÓN DE RED Y MQTT
 // ==========================================
 const char* ssid = "TU_WIFI_SSID";
 const char* password = "TU_WIFI_PASSWORD";
-const char* server_url = "http://192.168.1.100:8000"; // IP y puerto del servidor Django
+const char* mqtt_server = "38.250.116.213"; // IP del broker Mosquitto en VPS
+const int mqtt_port = 1883;
+const char* mqtt_user = "yuri";
+const char* mqtt_pass = "Montescoli3";
+
+const char* topic_telemetry = "logismart/carro/telemetria";
+const char* topic_command = "logismart/carro/comando";
+
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
 
 // ==========================================
 // 2. CONFIGURACIÓN DE HARDWARE (PINS)
 // ==========================================
-// CONFIG_MODO_SENSORES determina cómo se distribuyen tus 4 sensores:
-// MODO_A: 2 para seguimiento de línea y 2 para detección de obstáculos (frontal y trasero). ¡Recomendado!
-// MODO_B: 4 para seguimiento de línea e intersecciones completas (sin sensor de obstáculos físico).
 #define MODO_A 1
 #define MODO_B 2
-#define CONFIG_MODO_SENSORES MODO_A
+#define CONFIG_MODO_SENSORES MODO_B  // Usamos MODO_B por defecto (4 sensores ópticos de línea)
 
 #define PIN_SERVO_IZQ    18
 #define PIN_SERVO_DER    19
 
-// Asignación de Pines según el Modo
-#if CONFIG_MODO_SENSORES == MODO_A
-  #define PIN_SEN_L_INNER        32  // Sensor Izquierdo Seguimiento de Línea
-  #define PIN_SEN_R_INNER        33  // Sensor Derecho Seguimiento de Línea
-  #define PIN_SEN_OBSTACLE_FRONT 34  // Sensor de Obstáculo Frontal (Detiene el carro)
-  #define PIN_SEN_OBSTACLE_BACK  35  // Sensor de Obstáculo Trasero (Opcional/Seguridad)
-  
-  // En MODO_A no hay sensores de cruce externos físicos
-  #define PIN_SEN_L_OUTER        -1
-  #define PIN_SEN_R_OUTER        -1
-#else
-  #define PIN_SEN_L_OUTER        34  // Sensor Izquierdo Exterior (Cruces)
-  #define PIN_SEN_L_INNER        32  // Sensor Izquierdo Interior (Línea)
-  #define PIN_SEN_R_INNER        33  // Sensor Derecho Interior (Línea)
-  #define PIN_SEN_R_OUTER        35  // Sensor Derecho Exterior (Cruces)
-  
-  #define PIN_SEN_OBSTACLE_FRONT -1
-  #define PIN_SEN_OBSTACLE_BACK  -1
-#endif
+#define PIN_SEN_L_OUTER        34  // Sensor Izquierdo Exterior (Cruces/Nodos)
+#define PIN_SEN_L_INNER        32  // Sensor Izquierdo Interior (Alineación)
+#define PIN_SEN_R_INNER        33  // Sensor Derecho Interior (Alineación)
+#define PIN_SEN_R_OUTER        35  // Sensor Derecho Exterior (Cruces/Nodos)
+
+#define PIN_SEN_OBSTACLE_FRONT 26  // Sensor de Obstáculo Frontal
+#define PIN_SEN_OBSTACLE_BACK  27  // Sensor de Obstáculo Trasero
 
 #define PIN_BUZZER       25  // Zumbador piezoeléctrico para alertas
 #define PIN_LED_STATUS   2   // LED integrado del ESP32
 
-// Configuración de umbral óptico (digital o analógico)
+// Configuración de umbral óptico
 #define SENSORS_ARE_ANALOG true
-#define UMBRAL_LINEA       2000  // Valor analógico de corte (línea negra vs fondo claro)
-#define ESTADO_LÍNEA       HIGH  // HIGH si el sensor lee 1 en negro (digital)
+#define UMBRAL_LINEA       2000  // Valor analógico de corte
+#define ESTADO_LÍNEA       HIGH  // HIGH si el sensor lee 1 en negro
 
 // Configuración de Sensores de Proximidad de Obstáculos
-#define OBSTACLE_ACTIVE_STATE LOW   // LOW si el sensor se activa en BAJO (común en módulos ópticos de obstáculos)
+#define OBSTACLE_ACTIVE_STATE LOW   // LOW si el sensor se activa en BAJO
 
 // ==========================================
 // 3. VELOCIDADES Y CALIBRACIÓN DE SERVOS
 // ==========================================
-// Los servos de rotación continua toman microsegundos para velocidad:
-// - 1500 us: Parado
-// - 1000 us: Velocidad máxima hacia atrás
-// - 2000 us: Velocidad máxima hacia adelante
 #define SERVO_STOP_US    1500
-#define VEL_AVANCE_IZQ   1600   // Ajustar según alineación del carro (hacia adelante)
-#define VEL_AVANCE_DER   1400   // El motor derecho suele ir en sentido opuesto físicamente
+#define VEL_AVANCE_IZQ   1600   // Hacia adelante
+#define VEL_AVANCE_DER   1400   // Sentido opuesto físicamente
 #define VEL_GIRO_IZQ     1400   
 #define VEL_GIRO_DER     1400   
 
@@ -83,13 +73,13 @@ const char* server_url = "http://192.168.1.100:8000"; // IP y puerto del servido
 // 4. ESTADOS Y VARIABLES DE NAVEGACIÓN
 // ==========================================
 enum State {
-  STATE_ESPERANDO,   // Esperando comandos o ruta activa del servidor
-  STATE_SIGUIENDO,   // Avanzando en línea recta siguiendo la pista
-  STATE_GIRANDO_IZQ, // Ejecutando giro de 90° a la izquierda
-  STATE_GIRANDO_DER, // Ejecutando giro de 90° a la derecha
-  STATE_GIRO_180,    // Ejecutando giro de 180°
-  STATE_OBSTACULO,   // Detenido por proximidad de obstáculo
-  STATE_LLEGO        // Llegó a una parada para entrega/recogida
+  STATE_ESPERANDO,   // Esperando comandos
+  STATE_SIGUIENDO,   // Avanzando en línea recta
+  STATE_GIRANDO_IZQ, // Giro de 90° a la izquierda
+  STATE_GIRANDO_DER, // Giro de 90° a la derecha
+  STATE_GIRO_180,    // Giro de 180°
+  STATE_OBSTACULO,   // Detenido por obstáculo
+  STATE_LLEGO        // Llegó a parada
 };
 
 enum Heading {
@@ -100,14 +90,19 @@ enum Heading {
 };
 
 State estadoActual = STATE_ESPERANDO;
-Heading orientacionActual = EAST; // Orientación inicial al arrancar el carro
+Heading orientacionActual = EAST; 
 
 int posX = 0;
 int posY = 0;
 int destX = 0;
 int destY = 0;
 
-// Estructuras para lectura de la ruta
+// Estructuras locales de ruta
+int rutaX[50];
+int rutaY[50];
+int rutaLength = 0;
+int indexRuta = 0;
+
 int proximoX = 0;
 int proximoY = 0;
 bool tieneSiguienteNodo = false;
@@ -115,11 +110,21 @@ bool tieneSiguienteNodo = false;
 Servo servoIzq;
 Servo servoDer;
 
+// Velocidades de motores guardadas para telemetría
+int currentVelIzq = SERVO_STOP_US;
+int currentVelDer = SERVO_STOP_US;
+
 State estadoPrevio = STATE_ESPERANDO;
 unsigned long obstaculoDespejadoTiempo = 0;
+unsigned long ultimoReporteTelemetria = 0;
 
-unsigned long ultimoFiltroRuta = 0;
-const int intervaloPolling = 1500; // Milisegundos entre peticiones de estado al servidor
+// Variables de sensores para telemetría
+bool sOpt1 = false;
+bool sOpt2 = false;
+bool sOpt3 = false;
+bool sOpt4 = false;
+bool obsFront = false;
+bool obsBack = false;
 
 // ==========================================
 // 5. FUNCIONES DE LECTURA DE SENSORES
@@ -138,40 +143,20 @@ bool leeSensorObstaculo(int pin) {
   return digitalRead(pin) == OBSTACLE_ACTIVE_STATE;
 }
 
-// Estructura de lectura rápida de línea
-struct LineReading {
-  bool lOuter;
-  bool lInner;
-  bool rInner;
-  bool rOuter;
-};
-
-LineReading leerSensores() {
-  LineReading lr;
-  lr.lOuter = leeSensor(PIN_SEN_L_OUTER);
-  lr.lInner = leeSensor(PIN_SEN_L_INNER);
-  lr.rInner = leeSensor(PIN_SEN_R_INNER);
-  lr.rOuter = leeSensor(PIN_SEN_R_OUTER);
-
-  // En MODO_A (2 sensores de seguimiento de línea), simulamos la detección de intersección.
-  // La intersección se detecta cuando ambos sensores de seguimiento de línea (lInner y rInner)
-  // pisan la línea transversal negra simultáneamente.
-  if (CONFIG_MODO_SENSORES == MODO_A) {
-    if (lr.lInner && lr.rInner) {
-      lr.lOuter = true;
-      lr.rOuter = true;
-    }
-  }
-  return lr;
+void actualizarLecturaSensores() {
+  sOpt1 = leeSensor(PIN_SEN_L_OUTER);
+  sOpt2 = leeSensor(PIN_SEN_L_INNER);
+  sOpt3 = leeSensor(PIN_SEN_R_INNER);
+  sOpt4 = leeSensor(PIN_SEN_R_OUTER);
+  
+  obsFront = leeSensorObstaculo(PIN_SEN_OBSTACLE_FRONT);
+  obsBack  = leeSensorObstaculo(PIN_SEN_OBSTACLE_BACK);
 }
 
 void verificarObstaculos() {
-  if (CONFIG_MODO_SENSORES != MODO_A) return;
+  bool obstaculoDelante = obsFront;
+  bool obstaculoDetras  = obsBack;
 
-  bool obstaculoDelante = leeSensorObstaculo(PIN_SEN_OBSTACLE_FRONT);
-  bool obstaculoDetras  = leeSensorObstaculo(PIN_SEN_OBSTACLE_BACK);
-
-  // Detener el carro si detecta un obstáculo en el frente mientras se mueve
   bool obstaculoDetectado = false;
   if (estadoActual == STATE_SIGUIENDO || estadoActual == STATE_GIRANDO_IZQ || 
       estadoActual == STATE_GIRANDO_DER || estadoActual == STATE_GIRO_180) {
@@ -186,23 +171,24 @@ void verificarObstaculos() {
       estadoActual = STATE_OBSTACULO;
       pararMotores();
       sonarBip(450);
-      Serial.println("[SEGURIDAD] ¡OBSTÁCULO DETECTADO! Deteniendo motores inmediatamente.");
+      Serial.println("[SEGURIDAD] ¡OBSTÁCULO DETECTADO! Motores detenidos.");
+      enviarTelemetriaMQTT(false); // Forzar reporte inmediato
     }
   } else {
-    // Si ya está detenido por obstáculo, verificar si se despejó el frente y detrás
     if (!obstaculoDelante && !obstaculoDetras) {
       if (obstaculoDespejadoTiempo == 0) {
         obstaculoDespejadoTiempo = millis();
-      } else if (millis() - obstaculoDespejadoTiempo > 1500) { // Debounce de seguridad de 1.5s
+      } else if (millis() - obstaculoDespejadoTiempo > 1500) { // Debounce de 1.5s
         estadoActual = estadoPrevio;
         obstaculoDespejadoTiempo = 0;
-        Serial.println("[SEGURIDAD] Obstáculo despejado. Reanudando marcha.");
+        Serial.println("[SEGURIDAD] Obstáculo despejado. Reanudando.");
         sonarBip(100);
         delay(50);
         sonarBip(100);
+        enviarTelemetriaMQTT(false); // Forzar reporte inmediato
       }
     } else {
-      obstaculoDespejadoTiempo = 0; // Si vuelve a aparecer, reiniciar temporizador
+      obstaculoDespejadoTiempo = 0;
     }
   }
 }
@@ -211,37 +197,45 @@ void verificarObstaculos() {
 // 6. FUNCIONES DE MOVIMIENTO DE MOTORES
 // ==========================================
 void pararMotores() {
-  servoIzq.writeMicroseconds(SERVO_STOP_US);
-  servoDer.writeMicroseconds(SERVO_STOP_US);
+  currentVelIzq = SERVO_STOP_US;
+  currentVelDer = SERVO_STOP_US;
+  servoIzq.writeMicroseconds(currentVelIzq);
+  servoDer.writeMicroseconds(currentVelDer);
 }
 
 void avanzarRecto() {
-  servoIzq.writeMicroseconds(VEL_AVANCE_IZQ);
-  servoDer.writeMicroseconds(VEL_AVANCE_DER);
+  currentVelIzq = VEL_AVANCE_IZQ;
+  currentVelDer = VEL_AVANCE_DER;
+  servoIzq.writeMicroseconds(currentVelIzq);
+  servoDer.writeMicroseconds(currentVelDer);
 }
 
 void corregirDerecha() {
-  // Ajuste suave: rueda izquierda avanza, rueda derecha reduce o frena
-  servoIzq.writeMicroseconds(VEL_AVANCE_IZQ + 50);
-  servoDer.writeMicroseconds(SERVO_STOP_US);
+  currentVelIzq = VEL_AVANCE_IZQ + 50;
+  currentVelDer = SERVO_STOP_US;
+  servoIzq.writeMicroseconds(currentVelIzq);
+  servoDer.writeMicroseconds(currentVelDer);
 }
 
 void corregirIzquierda() {
-  // Ajuste suave: rueda derecha avanza, rueda izquierda reduce o frena
-  servoIzq.writeMicroseconds(SERVO_STOP_US);
-  servoDer.writeMicroseconds(VEL_AVANCE_DER - 50);
+  currentVelIzq = SERVO_STOP_US;
+  currentVelDer = VEL_AVANCE_DER - 50;
+  servoIzq.writeMicroseconds(currentVelIzq);
+  servoDer.writeMicroseconds(currentVelDer);
 }
 
 void girarIzqEje() {
-  // Rueda izquierda atrás, rueda derecha adelante
-  servoIzq.writeMicroseconds(1300);
-  servoDer.writeMicroseconds(1300);
+  currentVelIzq = 1300;
+  currentVelDer = 1300;
+  servoIzq.writeMicroseconds(currentVelIzq);
+  servoDer.writeMicroseconds(currentVelDer);
 }
 
 void girarDerEje() {
-  // Rueda izquierda adelante, rueda derecha atrás
-  servoIzq.writeMicroseconds(1700);
-  servoDer.writeMicroseconds(1700);
+  currentVelIzq = 1700;
+  currentVelDer = 1700;
+  servoIzq.writeMicroseconds(currentVelIzq);
+  servoDer.writeMicroseconds(currentVelDer);
 }
 
 // ==========================================
@@ -250,20 +244,17 @@ void girarDerEje() {
 void setup() {
   Serial.begin(115200);
   
-  // Pines de sensores como entrada
-  if (PIN_SEN_L_OUTER != -1) pinMode(PIN_SEN_L_OUTER, INPUT);
-  if (PIN_SEN_L_INNER != -1) pinMode(PIN_SEN_L_INNER, INPUT);
-  if (PIN_SEN_R_INNER != -1) pinMode(PIN_SEN_R_INNER, INPUT);
-  if (PIN_SEN_R_OUTER != -1) pinMode(PIN_SEN_R_OUTER, INPUT);
+  pinMode(PIN_SEN_L_OUTER, INPUT);
+  pinMode(PIN_SEN_L_INNER, INPUT);
+  pinMode(PIN_SEN_R_INNER, INPUT);
+  pinMode(PIN_SEN_R_OUTER, INPUT);
   
-  if (PIN_SEN_OBSTACLE_FRONT != -1) pinMode(PIN_SEN_OBSTACLE_FRONT, INPUT);
-  if (PIN_SEN_OBSTACLE_BACK != -1) pinMode(PIN_SEN_OBSTACLE_BACK, INPUT);
+  pinMode(PIN_SEN_OBSTACLE_FRONT, INPUT);
+  pinMode(PIN_SEN_OBSTACLE_BACK, INPUT);
   
-  // Salidas adicionales
   pinMode(PIN_BUZZER, OUTPUT);
   pinMode(PIN_LED_STATUS, OUTPUT);
 
-  // Adjuntar servos
   servoIzq.attach(PIN_SERVO_IZQ);
   servoDer.attach(PIN_SERVO_DER);
   pararMotores();
@@ -271,11 +262,18 @@ void setup() {
   digitalWrite(PIN_LED_STATUS, LOW);
   sonarBip(200);
 
-  // Inicializar Conexión WiFi
+  // Conectar WiFi
+  conectarWiFi();
+
+  // Configurar MQTT
+  mqttClient.setServer(mqtt_server, mqtt_port);
+  mqttClient.setCallback(mqttCallback);
+}
+
+void conectarWiFi() {
   Serial.println("\nConectando a WiFi...");
   WiFi.begin(ssid, password);
   
-  // Esperar un máximo de 10 segundos por conexión
   int intentos = 0;
   while (WiFi.status() != WL_CONNECTED && intentos < 20) {
     delay(500);
@@ -286,153 +284,169 @@ void setup() {
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\n¡Conectado a WiFi!");
-    Serial.print("Dirección IP: ");
-    Serial.println(WiFi.localIP());
-    digitalWrite(PIN_LED_STATUS, HIGH); // LED fijo = WiFi Conectado
+    digitalWrite(PIN_LED_STATUS, HIGH);
     sonarBip(100);
-    delay(100);
+    delay(50);
     sonarBip(100);
   } else {
-    Serial.println("\nNo se pudo conectar a WiFi. Operando en modo offline/Serial.");
-    digitalWrite(PIN_LED_STATUS, LOW); // LED apagado = Modo Serial/Offline
+    Serial.println("\nError de conexión WiFi. Operando offline.");
+    digitalWrite(PIN_LED_STATUS, LOW);
   }
 }
 
 // ==========================================
-// 8. COMUNICACIÓN CON LA API DE LOGISMART
+// 8. COMUNICACIÓN MQTT
 // ==========================================
+void conectarMQTT() {
+  while (!mqttClient.connected()) {
+    if (WiFi.status() != WL_CONNECTED) {
+      conectarWiFi();
+    }
+    Serial.print("Conectando al Broker MQTT...");
+    // ID único del cliente
+    String clientID = "ESP32_AGV_" + String(random(0, 1000));
+    if (mqttClient.connect(clientID.c_str(), mqtt_user, mqtt_pass)) {
+      Serial.println("¡Conectado!");
+      mqttClient.subscribe(topic_command);
+      Serial.printf("Suscrito a: %s\n", topic_command);
+      sonarBip(150);
+    } else {
+      Serial.print("Falló con estado: ");
+      Serial.print(mqttClient.state());
+      Serial.println(". Retrying in 5s...");
+      delay(5000);
+    }
+  }
+}
 
-void obtenerEstadoServidor() {
-  if (WiFi.status() != WL_CONNECTED) return;
+const char* getEstadoString(State state) {
+  switch (state) {
+    case STATE_ESPERANDO:   return "esperando";
+    case STATE_SIGUIENDO:   return "moviendo";
+    case STATE_GIRANDO_IZQ: return "moviendo";
+    case STATE_GIRANDO_DER: return "moviendo";
+    case STATE_GIRO_180:    return "moviendo";
+    case STATE_OBSTACULO:   return "moviendo"; // se mantiene como ruta activa
+    case STATE_LLEGO:       return "llego";
+    default:                return "esperando";
+  }
+}
 
-  HTTPClient http;
-  String url = String(server_url) + "/api/estado-carro/";
-  http.begin(url);
-  
-  int httpCode = http.GET();
-  if (httpCode == HTTP_CODE_OK) {
-    String payload = http.getString();
-    Serial.println("Estado recibido: " + payload);
-    
-    // Parseo simple de JSON (para evitar dependencias grandes)
-    // Buscamos: "estado":"..."
-    int idxEstado = payload.indexOf("\"estado\":\"");
-    if (idxEstado != -1) {
-      int start = idxEstado + 10;
-      int end = payload.indexOf("\"", start);
-      String backendEstado = payload.substring(start, end);
+void enviarTelemetriaMQTT(bool timerCheck) {
+  if (timerCheck && (millis() - ultimoReporteTelemetria < 200)) {
+    return; // limite de tasa (max 5Hz en loop ordinario)
+  }
+  ultimoReporteTelemetria = millis();
+
+  if (!mqttClient.connected()) return;
+
+  char payload[350];
+  snprintf(payload, sizeof(payload),
+    "{\"sensor_opt_izq_ext\":%s,\"sensor_opt_izq_int\":%s,\"sensor_opt_der_int\":%s,\"sensor_opt_der_ext\":%s,"
+    "\"sensor_obstaculo_frontal\":%s,\"sensor_obstaculo_trasero\":%s,\"motor_izq_vel\":%d,\"motor_der_vel\":%d,"
+    "\"pos_x\":%d,\"pos_y\":%d,\"estado\":\"%s\"}",
+    sOpt1 ? "true" : "false", sOpt2 ? "true" : "false", sOpt3 ? "true" : "false", sOpt4 ? "true" : "false",
+    obsFront ? "true" : "false", obsBack ? "true" : "false", currentVelIzq, currentVelDer,
+    posX, posY, getEstadoString(estadoActual)
+  );
+
+  mqttClient.publish(topic_telemetry, payload);
+}
+
+void notificarAccionMQTT(const char* actionName) {
+  if (!mqttClient.connected()) return;
+  char payload[100];
+  snprintf(payload, sizeof(payload), "{\"action\":\"%s\"}", actionName);
+  mqttClient.publish(topic_telemetry, payload);
+}
+
+// Callback de comandos recibidos
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  String message = "";
+  for (int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+  Serial.printf("Comando MQTT recibido en %s: %s\n", topic, message.c_str());
+
+  // Parsear comandos simples
+  if (message.indexOf("\"action\":\"reset\"") != -1) {
+    Serial.println("Comando: Reset");
+    pararMotores();
+    posX = 0; posY = 0;
+    destX = 0; destY = 0;
+    rutaLength = 0;
+    indexRuta = 0;
+    tieneSiguienteNodo = false;
+    estadoActual = STATE_ESPERANDO;
+    sonarBip(200);
+    enviarTelemetriaMQTT(false);
+  }
+  else if (message.indexOf("\"action\":\"stop\"") != -1) {
+    Serial.println("Comando: Stop");
+    pararMotores();
+    tieneSiguienteNodo = false;
+    estadoActual = STATE_ESPERANDO;
+    sonarBip(200);
+    enviarTelemetriaMQTT(false);
+  }
+  else if (message.indexOf("\"action\":\"mover\"") != -1) {
+    // Parsear destino X e Y
+    int destXIdx = message.indexOf("\"destino_x\":");
+    int destYIdx = message.indexOf("\"destino_y\":");
+    if (destXIdx != -1 && destYIdx != -1) {
+      int commaX = message.indexOf(",", destXIdx);
+      int closeBraceY = message.indexOf("}", destYIdx);
+      if (closeBraceY == -1) closeBraceY = message.indexOf(",", destYIdx);
       
-      // Leer posición actual reportada por el servidor
-      posX = obtenerValorIntJSON(payload, "pos_x");
-      posY = obtenerValorIntJSON(payload, "pos_y");
-      destX = obtenerValorIntJSON(payload, "destino_x");
-      destY = obtenerValorIntJSON(payload, "destino_y");
+      destX = message.substring(destXIdx + 12, commaX).toInt();
+      destY = message.substring(destYIdx + 12, closeBraceY).toInt();
+    }
 
-      if (backendEstado == "moviendo" || backendEstado == "regresando") {
-        // El servidor tiene una ruta activa. Extraemos el siguiente nodo
-        // Buscamos dentro del array "ruta" el primer elemento: [{"x":X,"y":Y}]
-        int idxRuta = payload.indexOf("\"ruta\":[");
-        if (idxRuta != -1) {
-          int startRuta = idxRuta + 8;
-          int endRuta = payload.indexOf("]", startRuta);
-          String rutaStr = payload.substring(startRuta, endRuta);
-          
-          if (rutaStr.length() > 5) {
-            // Hay coordenadas pendientes en la ruta
-            proximoX = obtenerValorIntJSON(rutaStr, "x");
-            proximoY = obtenerValorIntJSON(rutaStr, "y");
-            tieneSiguienteNodo = true;
-            
-            if (estadoActual == STATE_ESPERANDO) {
-              Serial.printf("Comenzando movimiento hacia proximo nodo (%d, %d)\n", proximoX, proximoY);
-              planificarSiguientePaso();
-            }
-          } else {
-            tieneSiguienteNodo = false;
-          }
+    // Parsear array de ruta: "ruta":[{"x":X,"y":Y}]
+    rutaLength = 0;
+    int idx = message.indexOf("\"ruta\":[");
+    if (idx != -1) {
+      idx += 8;
+      while (true) {
+        int xIdx = message.indexOf("\"x\":", idx);
+        if (xIdx == -1) break;
+        int commaIdx = message.indexOf(",", xIdx);
+        int yIdx = message.indexOf("\"y\":", commaIdx);
+        int braceIdx = message.indexOf("}", yIdx);
+        
+        int xVal = message.substring(xIdx + 4, commaIdx).toInt();
+        int yVal = message.substring(yIdx + 4, braceIdx).toInt();
+        
+        if (rutaLength < 50) {
+          rutaX[rutaLength] = xVal;
+          rutaY[rutaLength] = yVal;
+          rutaLength++;
         }
-      } else if (backendEstado == "llego") {
-        if (estadoActual != STATE_LLEGO) {
-          estadoActual = STATE_LLEGO;
-          pararMotores();
-          Serial.println("Carro llegó al destino de parada. Esperando confirmación...");
-          sonarBip(500);
-        }
-      } else {
-        estadoActual = STATE_ESPERANDO;
-        pararMotores();
+        idx = braceIdx;
       }
     }
-  } else {
-    Serial.printf("[HTTP] GET falló, error: %d\n", httpCode);
+
+    indexRuta = 0;
+    if (rutaLength > 0) {
+      proximoX = rutaX[0];
+      proximoY = rutaY[0];
+      tieneSiguienteNodo = true;
+      estadoActual = STATE_SIGUIENDO;
+      Serial.printf("Nueva ruta MQTT: %d nodos. Destino: (%d, %d). Proximo: (%d, %d)\n", 
+                    rutaLength, destX, destY, proximoX, proximoY);
+      sonarBip(100);
+      planificarSiguientePaso();
+    } else {
+      tieneSiguienteNodo = false;
+      estadoActual = STATE_ESPERANDO;
+    }
+    enviarTelemetriaMQTT(false);
   }
-  http.end();
-}
-
-void notificarAvanceServidor() {
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  HTTPClient http;
-  String url = String(server_url) + "/api/estado-carro/avanzar/";
-  http.begin(url);
-  http.addHeader("Content-Type", "application/json");
-
-  int httpCode = http.POST("{}");
-  if (httpCode == HTTP_CODE_OK || httpCode == 201) {
-    String payload = http.getString();
-    Serial.println("Avance confirmado por servidor: " + payload);
-    sonarBip(150);
-  } else {
-    Serial.printf("[HTTP] POST avanzar falló, error: %d\n", httpCode);
-  }
-  http.end();
-}
-
-void notificarConfirmarParada() {
-  if (WiFi.status() != WL_CONNECTED) return;
-
-  HTTPClient http;
-  String url = String(server_url) + "/api/estado-carro/confirmar_parada/";
-  http.begin(url);
-  http.addHeader("Content-Type", "application/json");
-
-  // Envía operador id por defecto 1
-  String payload = "{\"id_usuario\": 1}";
-  int httpCode = http.POST(payload);
-  if (httpCode == HTTP_CODE_OK) {
-    Serial.println("Parada confirmada exitosamente.");
-    sonarBip(100);
-    delay(100);
-    sonarBip(100);
-    estadoActual = STATE_ESPERANDO;
-  } else {
-    Serial.printf("[HTTP] POST confirmar_parada falló, error: %d\n", httpCode);
-  }
-  http.end();
-}
-
-// Auxiliar de parsing de JSON básico
-int obtenerValorIntJSON(String json, String key) {
-  int idx = json.indexOf("\"" + key + "\":");
-  if (idx == -1) {
-    // Intentar sin comillas en la key (formato simplificado)
-    idx = json.indexOf(key + ":");
-    if (idx == -1) return 0;
-    int start = idx + key.length() + 1;
-    int end = json.indexOf(",", start);
-    if (end == -1) end = json.indexOf("}", start);
-    return json.substring(start, end).toInt();
-  }
-  int start = idx + key.length() + 3;
-  int end = json.indexOf(",", start);
-  if (end == -1) end = json.indexOf("}", start);
-  return json.substring(start, end).toInt();
 }
 
 // ==========================================
 // 9. LÓGICA DE NAVEGACIÓN Y GIROS (ALGORITMO)
 // ==========================================
-
 void planificarSiguientePaso() {
   if (!tieneSiguienteNodo) {
     estadoActual = STATE_ESPERANDO;
@@ -440,7 +454,6 @@ void planificarSiguientePaso() {
     return;
   }
 
-  // Determinar dirección requerida para ir de (posX, posY) a (proximoX, proximoY)
   Heading direccionRequerida = orientacionActual;
 
   if (proximoX > posX) {
@@ -453,26 +466,17 @@ void planificarSiguientePaso() {
     direccionRequerida = SOUTH;
   }
 
-  // Calcular la diferencia de giro
   int giro = (direccionRequerida - orientacionActual + 4) % 4;
 
   if (giro == 0) {
-    // Mismo sentido: Seguir de frente
-    Serial.println("Acción: Seguir recto.");
     estadoActual = STATE_SIGUIENDO;
   } else if (giro == 1) {
-    // Girar a la derecha
-    Serial.println("Acción: Girar a la derecha.");
     estadoActual = STATE_GIRANDO_DER;
     iniciarGiro(true);
   } else if (giro == 3) {
-    // Girar a la izquierda
-    Serial.println("Acción: Girar a la izquierda.");
     estadoActual = STATE_GIRANDO_IZQ;
     iniciarGiro(false);
   } else if (giro == 2) {
-    // Giro de 180 grados
-    Serial.println("Acción: Giro 180°.");
     estadoActual = STATE_GIRO_180;
     iniciarGiro180();
   }
@@ -482,27 +486,21 @@ void planificarSiguientePaso() {
 
 void iniciarGiro(bool derecha) {
   sonarBip(80);
-  
-  // 1. Avanzar un poco para posicionar el eje de las ruedas en la intersección
   avanzarRecto();
   delay(250);
   
-  // 2. Comenzar la rotación
   if (derecha) {
     girarDerEje();
   } else {
     girarIzqEje();
   }
   
-  // 3. Esperar a salir de la línea actual
   delay(300); 
   
-  // 4. Seguir rotando hasta que los sensores del medio vuelvan a detectar la línea
   unsigned long timeout = millis();
   while (millis() - timeout < 2500) {
-    LineReading lr = leerSensores();
-    if (lr.lInner || lr.rInner) {
-      // Línea encontrada
+    actualizarLecturaSensores();
+    if (sOpt2 || sOpt3) {
       break;
     }
     delay(10);
@@ -518,14 +516,13 @@ void iniciarGiro180() {
   delay(100);
   sonarBip(80);
 
-  // Girar en el eje
   girarDerEje();
-  delay(600); // Dar suficiente tiempo para rotar y salir de la línea
+  delay(600);
 
   unsigned long timeout = millis();
   while (millis() - timeout < 3500) {
-    LineReading lr = leerSensores();
-    if (lr.lInner || lr.rInner) {
+    actualizarLecturaSensores();
+    if (sOpt2 || sOpt3) {
       break;
     }
     delay(10);
@@ -540,125 +537,96 @@ void iniciarGiro180() {
 // 10. BUCLE DE CONTROL PRINCIPAL (LOOP)
 // ==========================================
 void loop() {
-  // Verificar sensores de obstáculo antes de continuar
+  // Asegurar conexión a MQTT
+  if (!mqttClient.connected()) {
+    conectarMQTT();
+  }
+  mqttClient.loop();
+
+  // Actualizar lecturas y verificar obstáculos
+  actualizarLecturaSensores();
   verificarObstaculos();
 
   if (estadoActual == STATE_OBSTACULO) {
-    // Si hay un obstáculo, emitir pitidos de advertencia intermitentes y esperar
     static unsigned long ultimoPitido = 0;
     if (millis() - ultimoPitido > 750) {
       ultimoPitido = millis();
       sonarBip(120);
-      Serial.println("[OBSTÁCULO] Carro bloqueado. Esperando que se libere el frente...");
+      Serial.println("[OBSTÁCULO] Carro bloqueado en ruta.");
+      enviarTelemetriaMQTT(false);
     }
     delay(40);
-    return; // No realizar ninguna acción de movimiento ni polling de red
+    return;
   }
 
-  // --- MODO WIRELESS WIFI ---
-  if (WiFi.status() == WL_CONNECTED) {
+  if (estadoActual == STATE_LLEGO) {
+    // Simular parada física de entrega
+    static unsigned long tiempoLlegada = 0;
+    if (tiempoLlegada == 0) {
+      tiempoLlegada = millis();
+      pararMotores();
+      sonarBip(500);
+      Serial.println("Llegamos a parada. Iniciando descarga...");
+      enviarTelemetriaMQTT(false);
+    }
     
-    // Polling periódico para obtener la ruta
-    if (estadoActual == STATE_ESPERANDO && (millis() - ultimoFiltroRuta > intervaloPolling)) {
-      ultimoFiltroRuta = millis();
-      obtenerEstadoServidor();
+    if (millis() - tiempoLlegada > 5000) { // Esperar 5 segundos
+      Serial.println("Descarga completada. Solicitando confirmación de parada...");
+      notificarAccionMQTT("confirmar_parada");
+      tiempoLlegada = 0;
+      estadoActual = STATE_ESPERANDO; // El worker enviará la siguiente ruta
     }
-
-    if (estadoActual == STATE_LLEGO) {
-      // Simular espera de 5 segundos en la parada física, luego autoconfirmar recogida/entrega
-      // En un caso real, esto podría ser activado por un sensor de peso o pulsador
-      delay(5000);
-      notificarConfirmarParada();
-      obtenerEstadoServidor();
-    }
-
-    if (estadoActual == STATE_SIGUIENDO) {
-      LineReading lr = leerSensores();
-
-      // Detección de intersección: línea horizontal cruzada
-      // Se activa cuando los sensores exteriores detectan negro
-      if (lr.lOuter && lr.rOuter) {
-        pararMotores();
-        Serial.printf("Intersección detectada. Llegamos al nodo (%d, %d)\n", proximoX, proximoY);
-        
-        // Notificar al servidor que avanzamos un nodo en la ruta
-        notificarAvanceServidor();
-        
-        // Obtener el siguiente nodo del servidor de inmediato
-        obtenerEstadoServidor();
-        
-        if (estadoActual != STATE_LLEGO) {
-          planificarSiguientePaso();
-        }
-      }
-      else {
-        // Algoritmo de seguimiento de línea básico
-        if (lr.lInner && lr.rInner) {
-          avanzarRecto();
-        } 
-        else if (lr.lInner && !lr.rInner) {
-          corregirIzquierda();
-        } 
-        else if (!lr.lInner && lr.rInner) {
-          corregirDerecha();
-        }
-        else {
-          // Pérdida temporal: avanzar despacio buscando la pista
-          servoIzq.writeMicroseconds(VEL_AVANCE_IZQ - 30);
-          servoDer.writeMicroseconds(VEL_AVANCE_DER + 30);
-        }
-      }
-    }
+    delay(100);
+    return;
   }
-  
-  // --- MODO TESTING SERIAL (CABLE/SIMULADOR) ---
-  else {
-    // Si no hay WiFi, lee coordenadas del puerto Serial (formato: "X,Y\n")
-    if (Serial.available() > 0) {
-      String input = Serial.readStringUntil('\n');
-      input.trim();
+
+  if (estadoActual == STATE_SIGUIENDO) {
+    // Detección de intersección: ambos sensores externos pisan negro
+    if (sOpt1 && sOpt4) {
+      pararMotores();
+      posX = proximoX;
+      posY = proximoY;
+      Serial.printf("Llegamos al nodo (%d, %d)\n", posX, posY);
       
-      int comaIdx = input.indexOf(',');
-      if (comaIdx != -1) {
-        proximoX = input.substring(0, comaIdx).toInt();
-        proximoY = input.substring(comaIdx + 1).toInt();
+      // Notificar al Django worker que avanzamos un nodo
+      notificarAccionMQTT("avanzar");
+      
+      indexRuta++;
+      if (indexRuta < rutaLength) {
+        proximoX = rutaX[indexRuta];
+        proximoY = rutaY[indexRuta];
         tieneSiguienteNodo = true;
-        estadoActual = STATE_SIGUIENDO;
-        
-        Serial.printf("Comando Serial recibido: Moviendo a (%d, %d)\n", proximoX, proximoY);
         planificarSiguientePaso();
-      }
-    }
-
-    if (estadoActual == STATE_SIGUIENDO) {
-      LineReading lr = leerSensores();
-
-      if (lr.lOuter && lr.rOuter) {
-        pararMotores();
-        posX = proximoX;
-        posY = proximoY;
+      } else {
         tieneSiguienteNodo = false;
-        estadoActual = STATE_ESPERANDO;
-        
-        // Responder al servidor serial
-        Serial.println("ARRIVED");
-        sonarBip(300);
+        estadoActual = STATE_LLEGO; // llegó a destino final de esta ruta
+      }
+      enviarTelemetriaMQTT(false); // Reporte inmediato
+    }
+    else {
+      // Algoritmo de alineación a la línea
+      if (sOpt2 && sOpt3) {
+        avanzarRecto();
       } 
+      else if (sOpt2 && !sOpt3) {
+        corregirIzquierda();
+      } 
+      else if (!sOpt2 && sOpt3) {
+        corregirDerecha();
+      }
       else {
-        if (lr.lInner && lr.rInner) avanzarRecto();
-        else if (lr.lInner && !lr.rInner) corregirIzquierda();
-        else if (!lr.lInner && lr.rInner) corregirDerecha();
-        else avanzarRecto();
+        // Pérdida temporal
+        servoIzq.writeMicroseconds(VEL_AVANCE_IZQ - 30);
+        servoDer.writeMicroseconds(VEL_AVANCE_DER + 30);
       }
     }
   }
 
-  delay(20); // Retardo del bucle de control para estabilidad
+  // Reportar telemetría en tiempo real
+  enviarTelemetriaMQTT(true);
+  delay(20);
 }
 
-// ==========================================
-// 11. FUNCIONES COMPLEMENTARIAS
-// ==========================================
 void sonarBip(int duracionMs) {
   digitalWrite(PIN_BUZZER, HIGH);
   delay(duracionMs);

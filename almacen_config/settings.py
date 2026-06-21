@@ -199,3 +199,13 @@ LOGGING = {
         },
     },
 }
+
+# ─── Configuración MQTT ───────────────────────────────────────────────────────
+MQTT_CONFIG = {
+    'BROKER': _get_env('MQTT_BROKER', default='38.250.116.213'),  # Por defecto el broker del VPS
+    'PORT': int(_get_env('MQTT_PORT', default=1883)),
+    'USER': _get_env('MQTT_USER', default='yuri'),
+    'PASS': _get_env('MQTT_PASS', default='Montescoli3'),
+    'TOPIC_TELEMETRIA': 'logismart/carro/telemetria',
+    'TOPIC_COMANDO': 'logismart/carro/comando',
+}

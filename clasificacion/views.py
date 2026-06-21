@@ -41,7 +41,31 @@ _CARRO_DEFAULTS = {
     'destino_x': 0, 'destino_y': 0,
     'ruta': [], 'estado': 'esperando',
     'paradas': [], 'parada_actual': 0,
+    'sensor_opt_izq_ext': False,
+    'sensor_opt_izq_int': False,
+    'sensor_opt_der_int': False,
+    'sensor_opt_der_ext': False,
+    'sensor_obstaculo_frontal': False,
+    'sensor_obstaculo_trasero': False,
+    'motor_izq_vel': 1500,
+    'motor_der_vel': 1500,
 }
+
+def _publicar_mqtt_comando(payload):
+    import paho.mqtt.client as mqtt
+    import json
+    from django.conf import settings
+    try:
+        mqtt_cfg = settings.MQTT_CONFIG
+        client = mqtt.Client()
+        if mqtt_cfg['USER'] and mqtt_cfg['PASS']:
+            client.username_pw_set(mqtt_cfg['USER'], mqtt_cfg['PASS'])
+        client.connect(mqtt_cfg['BROKER'], mqtt_cfg['PORT'], 10)
+        client.publish(mqtt_cfg['TOPIC_COMANDO'], json.dumps(payload))
+        client.disconnect()
+        logger.info("Publicado comando MQTT a %s: %s", mqtt_cfg['TOPIC_COMANDO'], payload)
+    except Exception as e:
+        logger.error("Error al publicar comando MQTT: %s", e)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -449,9 +473,20 @@ class EstadoCarroViewSet(viewsets.ViewSet):
                 carro.destino_x = bx
                 carro.destino_y = by
                 carro.ruta = ruta_regreso
+                
+                # Publicar comando mover a base por MQTT
+                _publicar_mqtt_comando({
+                    'action': 'mover',
+                    'destino_x': bx,
+                    'destino_y': by,
+                    'ruta': ruta_regreso,
+                    'caja_id': None
+                })
             else:
                 carro.estado = 'esperando'
                 carro.ruta = []
+                # Publicar comando stop por MQTT
+                _publicar_mqtt_comando({'action': 'stop'})
             carro.paradas = []
             carro.parada_actual = 0
             carro.caja_id = None
@@ -473,6 +508,15 @@ class EstadoCarroViewSet(viewsets.ViewSet):
         carro.estado = 'moviendo'
         carro.caja_id = siguiente['caja_id']
         carro.save()
+
+        # Publicar comando mover a siguiente parada por MQTT
+        _publicar_mqtt_comando({
+            'action': 'mover',
+            'destino_x': siguiente['x'],
+            'destino_y': siguiente['y'],
+            'ruta': ruta,
+            'caja_id': siguiente['caja_id']
+        })
 
         esp32_resultado = _enviar_esp32(siguiente['x'], siguiente['y'])
         logger.info("Avanzando a parada %d → %s", siguiente_idx, siguiente['ubicacion_nombre'])
@@ -504,6 +548,8 @@ class EstadoCarroViewSet(viewsets.ViewSet):
                     carro.estado = 'esperando'  # llegó a base → listo
                     carro.caja_id = None
                     logger.info("Carro llegó a base (%d,%d).", carro.pos_x, carro.pos_y)
+                    # Publicar stop por MQTT
+                    _publicar_mqtt_comando({'action': 'stop'})
                 else:
                     carro.estado = 'llego'
             carro.save()
@@ -521,6 +567,16 @@ class EstadoCarroViewSet(viewsets.ViewSet):
         carro.estado = 'moviendo'
         carro.caja_id = request.data.get('caja_id')
         carro.save()
+        
+        # Publicar comando mover por MQTT
+        _publicar_mqtt_comando({
+            'action': 'mover',
+            'destino_x': destino_x,
+            'destino_y': destino_y,
+            'ruta': ruta,
+            'caja_id': request.data.get('caja_id')
+        })
+        
         return Response({'mensaje': 'Ruta generada', 'ruta': ruta})
 
     @action(detail=False, methods=['post'])
@@ -530,4 +586,26 @@ class EstadoCarroViewSet(viewsets.ViewSet):
             setattr(carro, k, v)
         carro.caja_id = None
         carro.save()
+        
+        # Publicar comando reset por MQTT
+        _publicar_mqtt_comando({'action': 'reset'})
+        
         return Response({'mensaje': 'Carro reiniciado'})
+
+    @action(detail=False, methods=['post', 'patch'])
+    def telemetria(self, request):
+        carro = _get_or_create_carro()
+        campos = [
+            'sensor_opt_izq_ext', 'sensor_opt_izq_int', 'sensor_opt_der_int', 'sensor_opt_der_ext',
+            'sensor_obstaculo_frontal', 'sensor_obstaculo_trasero', 'motor_izq_vel', 'motor_der_vel'
+        ]
+        for c in campos:
+            if c in request.data:
+                val = request.data[c]
+                if c in ['motor_izq_vel', 'motor_der_vel']:
+                    val = int(val)
+                else:
+                    val = str(val).lower() == 'true'
+                setattr(carro, c, val)
+        carro.save()
+        return Response(EstadoCarroSerializer(carro).data)

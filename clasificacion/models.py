@@ -271,6 +271,18 @@ class EstadoCarro(models.Model):
     parada_actual = models.IntegerField(default=0)
     actualizado_en = models.DateTimeField(auto_now=True)
 
+    # Telemetría de sensores
+    sensor_opt_izq_ext = models.BooleanField(default=False)
+    sensor_opt_izq_int = models.BooleanField(default=False)
+    sensor_opt_der_int = models.BooleanField(default=False)
+    sensor_opt_der_ext = models.BooleanField(default=False)
+    sensor_obstaculo_frontal = models.BooleanField(default=False)
+    sensor_obstaculo_trasero = models.BooleanField(default=False)
+
+    # Telemetría de motores (us: 1000 - 2000, 1500 = detenido)
+    motor_izq_vel = models.IntegerField(default=1500)
+    motor_der_vel = models.IntegerField(default=1500)
+
     class Meta:
         db_table = 'estado_carro'
 
