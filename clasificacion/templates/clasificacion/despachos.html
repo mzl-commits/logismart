@@ -103,9 +103,15 @@
                         {% endfor %}
                     </select>
                 </div>
+                {% if user.is_superuser %}
                 <button class="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all" id="btn-despachar" onclick="despacharSeleccion(this)" disabled>
                     <i class="bi bi-truck text-lg"></i> Confirmar Despacho
                 </button>
+                {% else %}
+                <button class="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:hover:bg-sky-600 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 transition-all" id="btn-despachar" onclick="solicitarDespacho(this)" disabled>
+                    <i class="bi bi-file-earmark-plus text-lg"></i> Solicitar Despacho
+                </button>
+                {% endif %}
             </div>
         </div>
 
@@ -203,5 +209,43 @@ async function despacharSeleccion(btn) {
         setTimeout(() => location.reload(), 1500);
     }
 }
+
+async function solicitarDespacho(btn) {
+    const usuarioId = document.getElementById('des-usuario').value;
+    const placa = document.getElementById('des-placa').value.trim();
+    const destino = document.getElementById('des-destino').value.trim();
+    const seleccionadas = Array.from(document.querySelectorAll('.caja-checkbox:checked')).map(c => c.value);
+
+    if (!usuarioId) return mostrarToast('Selecciona un usuario responsable.', 'warning');
+    if (!placa) return mostrarToast('Ingresa la placa del transporte.', 'warning');
+    if (!destino) return mostrarToast('Ingresa el destino final.', 'warning');
+    if (seleccionadas.length === 0) return mostrarToast('Selecciona al menos una caja.', 'warning');
+
+    btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/solicitudes-despacho/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({
+                cajas_ids: seleccionadas,
+                operador_responsable: usuarioId,
+                transporte_placa: placa,
+                destino: destino
+            })
+        });
+        if (res.ok) {
+            mostrarToast('Solicitud de despacho enviada correctamente.', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            const data = await res.json();
+            mostrarToast(Object.values(data).flat().join(', ') || 'Error al enviar solicitud', 'danger');
+        }
+    } catch {
+        mostrarToast('Error de red al enviar la solicitud', 'danger');
+    } finally {
+        btnCargando(btn, false);
+    }
+}
 </script>
+
 {% endblock %}

@@ -4,7 +4,7 @@ from rest_framework import serializers
 from .models import (
     Caja, Ubicacion, Medida, Proveedor,
     Usuario, HistorialMovimientos, Despacho, EstadoCarro, Categoria, ConfigCarro,
-    Vehiculo, Destino
+    Vehiculo, Destino, SolicitudDespacho
 )
 
 class VehiculoSerializer(serializers.ModelSerializer):
@@ -87,4 +87,10 @@ class DespachoSerializer(serializers.ModelSerializer):
 class EstadoCarroSerializer(serializers.ModelSerializer):
     class Meta:
         model = EstadoCarro
+        fields = '__all__'
+
+
+class SolicitudDespachoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SolicitudDespacho
         fields = '__all__'

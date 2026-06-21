@@ -6,7 +6,7 @@ from .views import (
     CajaViewSet, UbicacionViewSet, MedidaViewSet,
     ProveedorViewSet, UsuarioViewSet, HistorialViewSet,
     DespachoViewSet, EstadoCarroViewSet, CategoriaViewSet, ConfigCarroViewSet,
-    VehiculoViewSet, DestinoViewSet
+    VehiculoViewSet, DestinoViewSet, SolicitudDespachoViewSet
 )
 
 router = DefaultRouter()
@@ -23,6 +23,7 @@ router.register(r'categorias', CategoriaViewSet)
 router.register(r'config-carro', ConfigCarroViewSet, basename='config-carro')
 router.register(r'vehiculos', VehiculoViewSet)
 router.register(r'destinos', DestinoViewSet)
+router.register(r'solicitudes-despacho', SolicitudDespachoViewSet, basename='solicitudes-despacho')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -9,13 +9,13 @@ from rest_framework.response import Response
 from .models import (
     Caja, Ubicacion, Medida, Proveedor, Usuario,
     HistorialMovimientos, Despacho, EstadoCarro, Categoria, ConfigCarro,
-    Vehiculo, Destino
+    Vehiculo, Destino, SolicitudDespacho
 )
 from .serializers import (
     CajaSerializer, UbicacionSerializer, MedidaSerializer,
     ProveedorSerializer, UsuarioSerializer, HistorialSerializer,
     DespachoSerializer, EstadoCarroSerializer, CategoriaSerializer, ConfigCarroSerializer,
-    VehiculoSerializer, DestinoSerializer
+    VehiculoSerializer, DestinoSerializer, SolicitudDespachoSerializer
 )
 
 class VehiculoViewSet(viewsets.ModelViewSet):
@@ -629,3 +629,70 @@ class EstadoCarroViewSet(viewsets.ViewSet):
                 setattr(carro, c, val)
         carro.save()
         return Response(EstadoCarroSerializer(carro).data)
+
+
+class SolicitudDespachoViewSet(viewsets.ModelViewSet):
+    queryset = SolicitudDespacho.objects.all().order_by('-fecha_solicitud')
+    serializer_class = SolicitudDespachoSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(usuario_solicita=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def aprobar(self, request, pk=None):
+        if not request.user.is_superuser:
+            return Response({'error': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+        
+        solicitud = self.get_object()
+        if solicitud.estado != 'pendiente':
+            return Response({'error': 'La solicitud ya ha sido procesada.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        cajas = Caja.objects.filter(id__in=solicitud.cajas_ids)
+        if not cajas.exists():
+            return Response({'error': 'No se encontraron las cajas asociadas.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        errores = []
+        with transaction.atomic():
+            for caja in cajas:
+                if caja.estado != 'almacenada':
+                    errores.append(f"Caja {caja.id} no está almacenada (estado: {caja.estado})")
+                    continue
+                
+                estado_anterior = caja.estado
+                ubicacion_anterior = caja.id_ubicacion
+                
+                caja.estado = 'despachada'
+                caja.id_ubicacion = None
+                caja.save()
+                
+                if ubicacion_anterior:
+                    OptimizadorUbicaciones.liberar_ubicacion(ubicacion_anterior)
+                    
+                _registrar_historial(caja, estado_anterior, solicitud.operador_responsable.id_usuario)
+                
+                Despacho.objects.create(
+                    id_caja=caja,
+                    id_usuario_despacho=solicitud.operador_responsable,
+                    destino=solicitud.destino,
+                    transporte_placa=solicitud.transporte_placa
+                )
+            
+            solicitud.estado = 'aprobada'
+            solicitud.save()
+            
+        if errores:
+            return Response({'mensaje': 'Aprobada con advertencias', 'errores': errores})
+        return Response({'mensaje': 'Solicitud aprobada y despacho procesado con éxito.'})
+
+    @action(detail=True, methods=['post'])
+    def rechazar(self, request, pk=None):
+        if not request.user.is_superuser:
+            return Response({'error': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+        
+        solicitud = self.get_object()
+        if solicitud.estado != 'pendiente':
+            return Response({'error': 'La solicitud ya ha sido procesada.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        solicitud.estado = 'rechazada'
+        solicitud.save()
+        return Response({'mensaje': 'Solicitud rechazada.'})

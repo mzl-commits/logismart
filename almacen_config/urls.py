@@ -1,7 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from clasificacion.views_frontend import dashboard, almacen_visual, nueva_caja, configuracion, despachos, administracion
+from clasificacion.views_frontend import (
+    dashboard, almacen_visual, nueva_caja, configuracion, 
+    despachos, administracion, login_view, logout_view
+)
 
 urlpatterns = [
     path('', dashboard, name='dashboard'),
@@ -10,8 +13,10 @@ urlpatterns = [
     path('configuracion/', configuracion, name='configuracion'),
     path('despachos/', despachos, name='despachos'),
     path('administracion/', administracion, name='administracion'),
+    path('login/', login_view, name='login'),
+    path('logout/', logout_view, name='logout'),
     path('admin/', admin.site.urls),
     path('api/', include('clasificacion.urls')),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-]
+]

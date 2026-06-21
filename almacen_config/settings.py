@@ -209,3 +209,6 @@ MQTT_CONFIG = {
     'TOPIC_TELEMETRIA': 'logismart/carro/telemetria',
     'TOPIC_COMANDO': 'logismart/carro/comando',
 }
+
+LOGIN_URL = '/login/'
+

@@ -126,12 +126,14 @@
         <a href="/despachos/" class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors {% if request.path == '/despachos/' %}text-[#AFB3B7] bg-[#2D4A53]/40{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
             <i class="bi bi-truck"></i> Despachos
         </a>
+        {% if user.is_superuser %}
         <a href="/configuracion/" class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors {% if request.path == '/configuracion/' %}text-[#AFB3B7] bg-[#2D4A53]/40{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
             <i class="bi bi-robot"></i> Robot AGV
         </a>
         <a href="/administracion/" class="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors {% if request.path == '/administracion/' %}text-[#AFB3B7] bg-[#2D4A53]/40{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
             <i class="bi bi-people"></i> Administración
         </a>
+        {% endif %}
     </div>
 
     <!-- Desktop Right Content -->
@@ -157,9 +159,22 @@
             <span id="nav-pending-badge" class="hidden bg-amber-500 text-[#0D1F23] text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">0</span>
         </div>
 
+        {% if user.is_authenticated %}
+        <div class="flex items-center gap-2 text-sm bg-[#2D4A53]/30 border border-[#2D4A53]/55 px-3 py-1.5 rounded-lg text-[#AFB3B7]">
+            <i class="bi bi-person-fill text-[#69818D]"></i>
+            <span class="font-semibold">{{ user.username }}</span>
+            <span class="text-xs text-[#5A636A] bg-[#0D1F23]/60 px-1.5 py-0.5 rounded">{% if user.is_superuser %}Admin{% else %}Control{% endif %}</span>
+            <a href="{% url 'logout' %}" class="text-[#5A636A] hover:text-red-400 ml-1 transition-colors" title="Cerrar Sesión">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+        </div>
+        {% endif %}
+
+        {% if user.is_superuser %}
         <a href="/nueva-caja/" class="bg-gradient-to-r from-[#2D4A53] to-[#69818D] hover:from-[#69818D] hover:to-[#2D4A53] text-[#AFB3B7] hover:text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-[#69818D]/20 hover:shadow-[#69818D]/30 transition-all hover:-translate-y-0.5 no-underline">
             <i class="bi bi-plus-lg"></i> Nueva Caja
         </a>
+        {% endif %}
     </div>
 
     <!-- Mobile Right Content / Hamburger Menu -->
@@ -191,12 +206,14 @@
         <a href="/despachos/" class="px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/despachos/' %}text-[#AFB3B7] bg-[#2D4A53]/60 border border-[#69818D]/20{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
             <i class="bi bi-truck"></i> Despachos
         </a>
+        {% if user.is_superuser %}
         <a href="/configuracion/" class="px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/configuracion/' %}text-white bg-[#2D4A53]/60 border border-[#69818D]/20{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
             <i class="bi bi-robot"></i> Robot AGV
         </a>
         <a href="/administracion/" class="px-4 py-3 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/administracion/' %}text-[#AFB3B7] bg-[#2D4A53]/40{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
             <i class="bi bi-people"></i> Administración
         </a>
+        {% endif %}
         
         <div class="h-px bg-[#2D4A53]/60 my-4"></div>
         
@@ -217,9 +234,25 @@
         </a>
         
         <!-- Mobile Add Button -->
+        {% if user.is_superuser %}
         <a href="/nueva-caja/" class="bg-gradient-to-r from-[#2D4A53] to-[#69818D] hover:from-[#69818D] hover:to-[#2D4A53] text-white text-sm font-semibold px-4 py-3 rounded-xl flex items-center justify-center gap-2 mt-4 shadow-lg shadow-[#69818D]/20 transition-all no-underline">
             <i class="bi bi-plus-lg"></i> Nueva Caja
         </a>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+        <div class="h-px bg-[#2D4A53]/60 my-4"></div>
+        <div class="flex items-center justify-between bg-[#2D4A53]/30 border border-[#2D4A53]/55 p-3 rounded-xl">
+            <div class="flex items-center gap-2 text-sm text-[#AFB3B7]">
+                <i class="bi bi-person-fill text-[#69818D]"></i>
+                <span class="font-semibold">{{ user.username }}</span>
+                <span class="text-[10px] text-[#5A636A] bg-[#0D1F23]/60 px-1.5 py-0.5 rounded">{% if user.is_superuser %}Admin{% else %}Control{% endif %}</span>
+            </div>
+            <a href="{% url 'logout' %}" class="text-[#5A636A] hover:text-red-400 transition-colors">
+                <i class="bi bi-box-arrow-right text-lg"></i>
+            </a>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -398,7 +431,17 @@ async function actualizarBadgePendientes() {
         if (mobileCountEl) mobileCountEl.textContent = count;
     } catch {}
 }
-document.addEventListener('DOMContentLoaded', () => { actualizarBadgePendientes(); setInterval(actualizarBadgePendientes, 10000); });
+document.addEventListener('DOMContentLoaded', () => { 
+    actualizarBadgePendientes(); 
+    setInterval(actualizarBadgePendientes, 10000); 
+    
+    // Mostrar toast si hay error de acceso
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('error') === 'no_access') {
+        mostrarToast('No tienes permisos para acceder a esta sección.', 'warning', 'Acceso Denegado');
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
 
 // ── Búsqueda global de cajas ──────────────────────────────────────────────────
 let searchTimer = null;

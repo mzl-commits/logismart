@@ -289,3 +289,26 @@ class EstadoCarro(models.Model):
 
     def __str__(self):
         return f"Carro ({self.pos_x},{self.pos_y}) -> ({self.destino_x},{self.destino_y}) [{self.estado}]"
+
+
+class SolicitudDespacho(models.Model):
+    ESTADOS = [
+        ('pendiente', 'Pendiente'),
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+    ]
+    id_solicitud = models.AutoField(primary_key=True)
+    cajas_ids = models.JSONField(default=list)  # Lista de IDs de cajas
+    usuario_solicita = models.ForeignKey('auth.User', on_delete=models.PROTECT, db_column='id_usuario_solicita')
+    operador_responsable = models.ForeignKey(Usuario, on_delete=models.PROTECT, db_column='id_operador_responsable')
+    destino = models.CharField(max_length=200)
+    transporte_placa = models.CharField(max_length=20)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'solicitud_despacho'
+        ordering = ['-fecha_solicitud']
+
+    def __str__(self):
+        return f"Solicitud {self.id_solicitud} ({self.estado})"

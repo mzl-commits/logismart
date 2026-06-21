@@ -9,6 +9,69 @@
     </div>
 </div>
 
+{% if solicitudes_pendientes %}
+<div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden mb-6 fade-in">
+    <div class="px-6 py-4 border-b border-slate-800/60 font-semibold text-white flex items-center gap-2 bg-slate-900/30">
+        <i class="bi bi-exclamation-triangle text-amber-500 animate-pulse"></i>
+        <span>Solicitudes de Despacho Pendientes</span>
+        <span class="bg-amber-500 text-slate-950 text-xs px-2 py-0.5 rounded-full font-bold ml-2">{{ solicitudes_pendientes|length }}</span>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-sm">
+            <thead>
+                <tr class="border-b border-slate-800/60 bg-slate-900/10 text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                    <th class="px-6 py-4">Solicitante</th>
+                    <th class="px-6 py-4">Cajas a Despachar</th>
+                    <th class="px-6 py-4">Transporte / Destino</th>
+                    <th class="px-6 py-4">Operador Propuesto</th>
+                    <th class="px-6 py-4 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sol in solicitudes_pendientes %}
+                <tr class="border-b border-slate-800/30 hover:bg-slate-800/20 transition-colors">
+                    <td class="px-6 py-4 text-slate-300">
+                        <div class="font-semibold text-white">{{ sol.usuario_solicita.username }}</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">{{ sol.fecha_solicitud|date:"d/m/Y H:i" }}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-wrap gap-1.5 max-w-md">
+                            {% for cid in sol.cajas_ids %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20" title="Caja ID: {{ cid }}">
+                                <i class="bi bi-box me-1"></i>{{ cid }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-300">
+                        <div class="font-medium text-white"><i class="bi bi-truck text-sky-400 mr-1.5"></i>{{ sol.transporte_placa }}</div>
+                        <div class="text-xs text-slate-400 mt-1"><i class="bi bi-geo-alt text-[#69818D] mr-1.5"></i>{{ sol.destino }}</div>
+                    </td>
+                    <td class="px-6 py-4 text-slate-300">
+                        <span class="px-2 py-1 rounded-md text-xs font-semibold bg-slate-800 text-slate-300">
+                            {{ sol.operador_responsable.nombre }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <button class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow shadow-emerald-500/10"
+                                    onclick="procesarSolicitudDespacho(this, {{ sol.id_solicitud }}, 'aprobar')">
+                                <i class="bi bi-check-lg"></i> Aprobar
+                            </button>
+                            <button class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/20 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1"
+                                    onclick="procesarSolicitudDespacho(this, {{ sol.id_solicitud }}, 'rechazar')">
+                                <i class="bi bi-x-lg"></i> Rechazar
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
     <!-- Panel Usuarios -->
     <div class="bg-surface border border-slate-800/60 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[450px] fade-in">
@@ -326,6 +389,34 @@ async function guardarProveedor(btn) {
         else { const d = await res.json(); mostrarToast(Object.values(d).flat().join(', ') || 'Error', 'danger'); }
     } catch { mostrarToast('Error de red', 'danger'); }
     finally { btnCargando(btn, false); }
+}
+
+async function procesarSolicitudDespacho(btn, id, accion) {
+    const verb = accion === 'aprobar' ? 'aprobar' : 'rechazar';
+    const confirmMsg = accion === 'aprobar' 
+        ? '¿Estás seguro de aprobar esta solicitud de despacho? Se registrará la salida de las cajas y se liberarán sus ubicaciones.'
+        : '¿Estás seguro de rechazar esta solicitud de despacho?';
+        
+    if (!confirm(confirmMsg)) return;
+
+    btnCargando(btn, true);
+    try {
+        const res = await fetch(`/api/solicitudes-despacho/${id}/${verb}/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') }
+        });
+        const data = await res.json();
+        if (res.ok) {
+            mostrarToast(data.mensaje || 'Procesado con éxito', 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            mostrarToast(data.error || 'Error al procesar solicitud', 'danger');
+        }
+    } catch {
+        mostrarToast('Error de red al procesar solicitud', 'danger');
+    } finally {
+        btnCargando(btn, false);
+    }
 }
 </script>
 {% endblock %}
