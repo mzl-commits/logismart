@@ -203,23 +203,26 @@
                         </div>
 
                         <!-- 4 Sensores Ópticos de Línea -->
-                        <div class="absolute top-4 left-0 right-0 flex justify-around px-3">
-                            <div class="flex flex-col items-center" title="Sensor Óptico Izquierdo Exterior (Detección de Nodos)">
-                                <div id="sns-opt-1" class="sensor-dot"></div>
-                                <span class="text-[8px] text-slate-500 mt-1 font-semibold">SI-Ext</span>
-                            </div>
-                            <div class="flex flex-col items-center" title="Sensor Óptico Izquierdo Interior (Alineación)">
-                                <div id="sns-opt-2" class="sensor-dot"></div>
-                                <span class="text-[8px] text-slate-500 mt-1 font-semibold">SI-Int</span>
-                            </div>
-                            <div class="flex flex-col items-center" title="Sensor Óptico Derecho Interior (Alineación)">
-                                <div id="sns-opt-3" class="sensor-dot"></div>
-                                <span class="text-[8px] text-slate-500 mt-1 font-semibold">SD-Int</span>
-                            </div>
-                            <div class="flex flex-col items-center" title="Sensor Óptico Derecho Exterior (Detección de Nodos)">
-                                <div id="sns-opt-4" class="sensor-dot"></div>
-                                <span class="text-[8px] text-slate-500 mt-1 font-semibold">SD-Ext</span>
-                            </div>
+                        <!-- Alineación (Frontales) -->
+                        <div class="absolute top-4 left-[56px] flex flex-col items-center" title="Sensor Óptico Izquierdo Interior (Alineación)">
+                            <div id="sns-opt-2" class="sensor-dot"></div>
+                            <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SI-Int</span>
+                        </div>
+                        <div class="absolute top-4 right-[56px] flex flex-col items-center" title="Sensor Óptico Derecho Interior (Alineación)">
+                            <div id="sns-opt-3" class="sensor-dot"></div>
+                            <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SD-Int</span>
+                        </div>
+
+                        <!-- Contadores de Nodos (Laterales Asimétricos) -->
+                        <!-- Izquierdo: detrás/abajo de la llanta izquierda -->
+                        <div class="absolute bottom-[58px] left-[6px] flex flex-col items-center" title="Sensor Óptico Izquierdo Exterior (Detección de Nodos)">
+                            <div id="sns-opt-1" class="sensor-dot"></div>
+                            <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SI-Ext</span>
+                        </div>
+                        <!-- Derecho: justo arriba/adelante de la llanta derecha -->
+                        <div class="absolute top-[58px] right-[6px] flex flex-col items-center" title="Sensor Óptico Derecho Exterior (Detección de Nodos)">
+                            <div id="sns-opt-4" class="sensor-dot"></div>
+                            <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SD-Ext</span>
                         </div>
 
                         <!-- Cuerpo del carro details -->
