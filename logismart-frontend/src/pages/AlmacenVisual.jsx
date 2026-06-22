@@ -62,11 +62,16 @@ function CeldaUbi({ u, esCar, enRuta, parada, onClick }) {
   }
 
   return (
-    <div className={base} style={{ width: 90, minHeight: 76, ...style }} onClick={onClick} title={`${u.pasillo}${u.estante}-N${u.nivel}`}>
+    <div 
+      className={base} 
+      style={{ width: '100%', minWidth: '95px', minHeight: '82px', ...style }} 
+      onClick={onClick} 
+      title={`${u.pasillo}${u.estante}-N${u.nivel}`}
+    >
       {/* badge parada */}
       {parada && (
         <div className={`
-          absolute -top-2 -right-2 w-5 h-5 rounded-full text-[9px] font-black flex items-center justify-center
+          absolute -top-2 -right-2 w-5.5 h-5.5 rounded-full text-[9px] font-black flex items-center justify-center
           border-2 border-slate-950 z-10
           ${parada.esCurrent ? 'bg-emerald-400 text-emerald-950 shadow-[0_0_8px_rgba(52,211,153,0.6)]' :
             parada.esHecha   ? 'bg-slate-600 text-slate-300' :
@@ -82,12 +87,12 @@ function CeldaUbi({ u, esCar, enRuta, parada, onClick }) {
       )}
 
       {/* carro emoji */}
-      {esCar && <span className="text-xl mb-0.5 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">🤖</span>}
+      {esCar && <span className="text-2xl mb-0.5 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">🤖</span>}
 
       {/* label ubicación */}
-      <div className={`text-[11px] font-black leading-tight tracking-wide ${esCar ? 'text-cyan-200' : ocupada ? 'text-slate-300' : 'text-emerald-300'}`}>
+      <div className={`text-xs md:text-sm font-black leading-tight tracking-wide ${esCar ? 'text-cyan-200' : ocupada ? 'text-slate-300' : 'text-emerald-300'}`}>
         {u.pasillo}{u.estante}<br />
-        <span className="text-[10px] font-semibold opacity-70">N{u.nivel}</span>
+        <span className="text-[11px] md:text-xs font-semibold opacity-70">N{u.nivel}</span>
       </div>
 
       {/* dot ocupación */}
@@ -286,7 +291,7 @@ export default function AlmacenVisual() {
                     </div>
 
                     {/* Estantes del pasillo */}
-                    <div className="flex flex-wrap gap-2 pl-12">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3.5 pl-12">
                       {Object.keys(porEstante).sort((a, b) => a - b).map(est => {
                         const niveles = [...porEstante[est]].sort((a, b) => b.nivel - a.nivel); // nivel alto arriba
                         return (

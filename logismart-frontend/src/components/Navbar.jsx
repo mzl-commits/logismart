@@ -1,12 +1,29 @@
 import { NavLink } from 'react-router-dom';
-import { Package, Search, Terminal, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { getCajas } from '../api/endpoints';
+import { Package, Search, Terminal, Plus, Menu, X, ShieldAlert, Star, ChevronDown, User, LogOut } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { getCajas, getCurrentUser } from '../api/endpoints';
 
 export default function Navbar() {
   const [pendientes, setPendientes] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+  const [user, setUser] = useState(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
+    // Obtener información del usuario logueado en la sesión
+    getCurrentUser()
+      .then(res => {
+        if (res.data && res.data.is_authenticated) {
+          setUser(res.data);
+        } else {
+          window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+        }
+      })
+      .catch(() => {
+        window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+      });
+
     // Simular el badge de cajas pendientes
     getCajas()
       .then(res => {
@@ -14,52 +31,111 @@ export default function Navbar() {
         setPendientes(data.filter(c => c.estado === 'pendiente').length);
       })
       .catch(console.error);
+
+    // Event listener para cerrar el dropdown de Admin al hacer clic afuera
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setAdminOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
+  const closeMenu = () => {
+    setMobileMenuOpen(false);
+    setAdminOpen(false);
+  };
+
   return (
-    <nav className="sticky top-0 z-50 h-[68px] bg-gradient-to-r from-[#0D1F23] via-[#132E35] to-[#0D1F23] border-b border-[#2D4A53]/60 backdrop-blur-xl px-6 flex items-center justify-between">
-      <NavLink to="/" className="flex items-center gap-3 group no-underline">
-        <div className="w-10 h-10 bg-gradient-to-br from-[#2D4A53] to-[#69818D] rounded-xl flex items-center justify-center text-white text-xl shadow-lg shadow-[#69818D]/20 group-hover:shadow-[#69818D]/40 transition-shadow">
-          📦
-        </div>
-        <span className="text-xl font-bold bg-gradient-to-r from-[#AFB3B7] to-[#69818D] bg-clip-text text-transparent">
-          LogiSmart
-        </span>
+    <nav className="sticky top-0 z-50 h-[68px] bg-gradient-to-r from-[#0D1F23] via-[#132E35] to-[#0D1F23] border-b border-[#2D4A53]/60 backdrop-blur-xl px-4 md:px-6 flex items-center justify-between gap-4">
+      {/* Brand logo */}
+      <NavLink to="/" className="flex items-center gap-3 group no-underline shrink-0" onClick={closeMenu}>
+        <img 
+          src="/logo.png?v=3" 
+          alt="LogiSmart" 
+          className="h-11 md:h-[52px] object-contain transition-transform group-hover:scale-[1.01]" 
+        />
       </NavLink>
 
-      <div className="hidden md:flex items-center gap-1">
-        <NavLink to="/" className={({ isActive }) => `px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`}>
+      {/* Desktop Navigation Links */}
+      <div className="hidden lg:flex items-center gap-1">
+        <NavLink to="/" className={({ isActive }) => `px-3.5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`}>
           <i className="bi bi-speedometer2"></i> Dashboard
         </NavLink>
-        <NavLink to="/almacen" className={({ isActive }) => `px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`}>
+        <NavLink to="/almacen" className={({ isActive }) => `px-3.5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`}>
           <i className="bi bi-grid-3x3-gap"></i> Almacén
         </NavLink>
-        <NavLink to="/despachos" className={({ isActive }) => `px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`}>
+        <NavLink to="/despachos" className={({ isActive }) => `px-3.5 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`}>
           <i className="bi bi-truck"></i> Despachos
         </NavLink>
-        <NavLink to="/configuracion" className={({ isActive }) => `px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`}>
-          <i className="bi bi-robot"></i> Robot AGV
-        </NavLink>
-        <NavLink to="/administracion" className={({ isActive }) => `px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`}>
-          <i className="bi bi-people"></i> Administración
-        </NavLink>
+
+        {/* Admin dropdown - solo superusuarios */}
+        {user?.is_superuser && (
+          <div className="relative admin-dropdown-wrap" ref={dropdownRef}>
+            <button 
+              onClick={() => setAdminOpen(!adminOpen)}
+              className={`px-3.5 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-colors text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20 focus:outline-none`}
+            >
+              <i className="bi bi-shield-lock"></i> Admin <ChevronDown size={12} className={`transition-transform duration-200 ${adminOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {adminOpen && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-[#132E35] border border-[#2D4A53]/80 rounded-xl shadow-2xl py-1.5 z-50">
+                <NavLink 
+                  to="/configuracion" 
+                  onClick={closeMenu}
+                  className={({ isActive }) => `flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors no-underline ${isActive ? 'text-white bg-[#2D4A53]/45' : 'text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30'}`}
+                >
+                  <i className="bi bi-robot"></i> Robot AGV
+                </NavLink>
+                <NavLink 
+                  to="/administracion" 
+                  onClick={closeMenu}
+                  className={({ isActive }) => `flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors no-underline ${isActive ? 'text-white bg-[#2D4A53]/45' : 'text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30'}`}
+                >
+                  <i className="bi bi-people"></i> Administración
+                </NavLink>
+                <div className="h-px bg-[#2D4A53]/60 mx-3 my-1"></div>
+                <a 
+                  href="/api/docs/" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  onClick={closeMenu}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline"
+                >
+                  <i className="bi bi-terminal"></i> Docs API
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Suscripción */}
+        <a 
+          href="/suscripcion/" 
+          className="ml-1 px-3.5 py-2 rounded-lg text-sm font-medium flex items-center gap-1.5 no-underline transition-all text-amber-500/70 hover:text-amber-300 hover:bg-amber-500/10"
+        >
+          <i className="bi bi-stars"></i> Suscripción
+        </a>
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Search placeholder */}
-        <div className="relative">
+      {/* Right Side Actions */}
+      <div className="flex items-center gap-3 md:gap-4 shrink-0">
+        {/* Search input - hidden on mobile/tablet */}
+        <div className="relative hidden xl:block">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A636A] pointer-events-none" />
-          <input type="text" placeholder="Buscar caja..." 
-                 className="bg-[#2D4A53]/40 border border-[#2D4A53]/60 rounded-lg text-sm pl-9 pr-4 py-2 w-48 focus:w-64 transition-all focus:outline-none focus:ring-2 focus:ring-[#69818D]/30 focus:border-[#69818D]/60 text-[#AFB3B7] placeholder-[#5A636A]" />
+          <input 
+            type="text" 
+            placeholder="Buscar caja..." 
+            className="bg-[#2D4A53]/40 border border-[#2D4A53]/60 rounded-lg text-sm pl-9 pr-4 py-2 w-40 focus:w-56 transition-all focus:outline-none focus:ring-2 focus:ring-[#69818D]/30 focus:border-[#69818D]/60 text-[#AFB3B7] placeholder-[#5A636A]" 
+          />
         </div>
 
-        <a href="http://localhost:8000/api/docs/" target="_blank" rel="noreferrer" className="text-[#5A636A] hover:text-[#AFB3B7] text-sm no-underline flex items-center gap-1 transition-colors">
-          <Terminal size={14} /> API
-        </a>
-
+        {/* Pendientes Badge */}
         <div className="flex items-center gap-2 text-sm text-[#5A636A]">
           <span className="w-2 h-2 rounded-full bg-emerald-500 live-dot inline-block"></span>
-          <span>{pendientes > 0 ? pendientes : '—'} pendientes</span>
+          <span className="hidden md:inline">{pendientes > 0 ? pendientes : '—'} pendientes</span>
           {pendientes > 0 && (
             <span className="bg-amber-500 text-[#0D1F23] text-[11px] font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
               {pendientes}
@@ -67,10 +143,93 @@ export default function Navbar() {
           )}
         </div>
 
-        <NavLink to="/cajas" className="bg-gradient-to-r from-[#2D4A53] to-[#69818D] hover:from-[#69818D] hover:to-[#2D4A53] text-[#AFB3B7] hover:text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-[#69818D]/20 hover:shadow-[#69818D]/30 transition-all hover:-translate-y-0.5 no-underline">
-          <Plus size={16} /> Nueva Caja
-        </NavLink>
+        {/* User profile chip con botón Logout */}
+        {user && (
+          <div className="hidden sm:flex items-center gap-2 text-xs bg-[#2D4A53]/35 border border-[#2D4A53]/60 px-3 py-1.5 rounded-xl text-[#AFB3B7]">
+            <User size={13} className="text-[#69818D]" />
+            <span className="font-semibold">{user.username}</span>
+            <span className="text-[9px] text-[#AFB3B7] bg-[#0D1F23]/60 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">
+              {user.is_superuser ? 'Admin' : 'Ctrl'}
+            </span>
+            <a 
+              href="/logout/" 
+              className="text-[#5A636A] hover:text-red-400 ml-1 transition-colors flex items-center justify-center" 
+              title="Cerrar sesión"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = '/logout/';
+              }}
+            >
+              <LogOut size={13} />
+            </a>
+          </div>
+        )}
+
+        {/* Nueva Caja Button - solo superusuarios */}
+        {user?.is_superuser && (
+          <NavLink to="/cajas" className="bg-gradient-to-r from-[#2D4A53] to-[#69818D] hover:from-[#69818D] hover:to-[#2D4A53] text-[#AFB3B7] hover:text-white text-sm font-semibold px-3 py-1.5 md:px-4 md:py-2 rounded-lg flex items-center gap-1.5 md:gap-2 shadow-lg shadow-[#69818D]/20 hover:shadow-[#69818D]/30 transition-all hover:-translate-y-0.5 no-underline">
+            <Plus size={16} />
+            <span className="hidden sm:inline">Nueva Caja</span>
+          </NavLink>
+        )}
+
+        {/* Hamburger toggle button - visible below lg */}
+        <button 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+          className="lg:hidden text-[#69818D] hover:text-[#AFB3B7] p-1.5 rounded-lg hover:bg-[#2D4A53]/20 focus:outline-none transition-colors"
+          aria-label="Menu"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </div>
+
+      {/* Mobile Drawer Dropdown Menu */}
+      {mobileMenuOpen && (
+        <div className="absolute top-[68px] left-0 right-0 bg-[#0D1F23] border-b border-[#2D4A53]/60 shadow-2xl flex flex-col p-4 gap-1.5 lg:hidden animate-slide-down z-50">
+          {/* Mobile search bar */}
+          <div className="relative mb-2 xl:hidden">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#5A636A] pointer-events-none" />
+            <input 
+              type="text" 
+              placeholder="Buscar caja..." 
+              className="bg-[#2D4A53]/40 border border-[#2D4A53]/60 rounded-lg text-sm pl-9 pr-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#69818D]/30 focus:border-[#69818D]/60 text-[#AFB3B7] placeholder-[#5A636A]" 
+            />
+          </div>
+
+          <NavLink to="/" className={({ isActive }) => `px-4 py-2.5 rounded-lg text-base font-medium flex items-center gap-3 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`} onClick={closeMenu}>
+            <i className="bi bi-speedometer2"></i> Dashboard
+          </NavLink>
+          <NavLink to="/almacen" className={({ isActive }) => `px-4 py-2.5 rounded-lg text-base font-medium flex items-center gap-3 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`} onClick={closeMenu}>
+            <i className="bi bi-grid-3x3-gap"></i> Almacén
+          </NavLink>
+          <NavLink to="/despachos" className={({ isActive }) => `px-4 py-2.5 rounded-lg text-base font-medium flex items-center gap-3 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`} onClick={closeMenu}>
+            <i className="bi bi-truck"></i> Despachos
+          </NavLink>
+
+          {/* Menú móvil admin - solo superusuarios */}
+          {user?.is_superuser && (
+            <>
+              <hr className="border-[#2D4A53]/30 my-2" />
+              <div className="text-[10px] font-bold text-slate-500 px-4 uppercase tracking-wider mb-1">Administración</div>
+              <NavLink to="/configuracion" className={({ isActive }) => `px-4 py-2.5 rounded-lg text-base font-medium flex items-center gap-3 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`} onClick={closeMenu}>
+                <i className="bi bi-robot"></i> Robot AGV
+              </NavLink>
+              <NavLink to="/administracion" className={({ isActive }) => `px-4 py-2.5 rounded-lg text-base font-medium flex items-center gap-3 no-underline transition-colors ${isActive ? 'text-[#AFB3B7] bg-[#2D4A53]/40' : 'text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20'}`} onClick={closeMenu}>
+                <i className="bi bi-people"></i> Administración
+              </NavLink>
+              <a href="/api/docs/" target="_blank" rel="noreferrer" className="text-[#69818D] hover:text-[#AFB3B7] text-base no-underline flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-[#2D4A53]/10 transition-colors" onClick={closeMenu}>
+                <i className="bi bi-terminal"></i> Docs API
+              </a>
+            </>
+          )}
+
+          <hr className="border-[#2D4A53]/30 my-2" />
+          
+          <a href="/suscripcion/" className="px-4 py-2.5 rounded-lg text-base font-medium flex items-center gap-3 no-underline transition-all text-amber-500 hover:bg-amber-500/10" onClick={closeMenu}>
+            <i className="bi bi-stars"></i> Suscripción
+          </a>
+        </div>
+      )}
     </nav>
   );
 }

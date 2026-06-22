@@ -61,3 +61,4 @@ export const getEstadoCarro  = ()       => api.get('carro/');
 export const avanzarCarro    = ()       => api.post('carro/avanzar/');
 export const resetCarro      = ()       => api.post('carro/reset/');
 export const confirmarParada = (data)   => api.post('carro/confirmar_parada/', data);
+export const getCurrentUser  = ()       => api.get('me/');

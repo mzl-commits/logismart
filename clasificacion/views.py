@@ -723,3 +723,22 @@ class SolicitudDespachoViewSet(viewsets.ModelViewSet):
         solicitud.estado = 'rechazada'
         solicitud.save()
         return Response({'mensaje': 'Solicitud rechazada.'})
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def current_user(request):
+    if request.user.is_authenticated:
+        return Response({
+            'is_authenticated': True,
+            'username': request.user.username,
+            'is_superuser': request.user.is_superuser,
+        })
+    return Response({
+        'is_authenticated': False,
+        'username': '',
+        'is_superuser': False,
+    })
