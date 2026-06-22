@@ -1,62 +1,119 @@
-# LogiSmart 📦🤖
+# LogiSmart
 
-> **Sistema Inteligente de Gestión Logística y Control de Vehículos Automatizados (AGV)**
+Sistema web para clasificacion, almacenamiento y despacho asistido por AGV.
+El proyecto combina Django, DRF, Channels, Redis, PostgreSQL, MQTT y un
+frontend web para operar un almacen inteligente con telemetria en tiempo real.
 
-![Estado](https://img.shields.io/badge/Estado-Producci%C3%B3n-success)
-![Versi%C3%B3n](https://img.shields.io/badge/Versi%C3%B3n-1.0.0-blue)
-![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django&logoColor=white)
+## Estado actual
 
-LogiSmart es una plataforma integral desarrollada en **Django** diseñada para modernizar la gestión de almacenes. El núcleo del sistema radica en su motor de toma de decisiones que optimiza el espacio de almacenamiento y automatiza el flujo logístico a través de la integración con **Robots AGV (Automated Guided Vehicles)** controlados por hardware externo (ESP32).
+- Backend principal en Django/ASGI.
+- Produccion desplegada detras de Nginx + Daphne.
+- Base de datos de produccion migrada a PostgreSQL.
+- Redis habilitado para Channels.
+- MQTT autenticado para comandos y telemetria del AGV.
+- Suscripciones Stripe conectadas en modo de prueba.
+- Endpoints internos protegidos por sesion.
+- API externa `v1` protegida con `X-API-Key`.
 
-## ✨ Características Principales
+## Modulos principales
 
-* **Control de Inventario Activo**: Gestión del ciclo de vida de cajas desde su estado *Pendiente* hasta su *Despacho* en vehículos designados.
-* **Smart Dispatch (API)**: Filtro inteligente y enrutamiento para que el Robot AGV recoja cajas según sus capacidades físicas máximas (peso y volumen configurables).
-* **Optimización de Almacén**: Algoritmos para asignar la mejor ubicación en estanterías según compatibilidad de categorías (químicos, frágiles, etc.) y peso soportado.
-* **Dashboard Gerencial**: Panel con gráficos interactivos (`Chart.js`), análisis de ocupación y seguimiento en tiempo real de operaciones.
-* **Integración Hardware (ESP32)**: Comunicación serial y endpoints REST documentados (`Swagger`) para que microcontroladores externos orquesten la recolección física.
-* **Gestión de Despachos y Flota**: Registro avanzado de salidas conectando cajas con vehículos y destinos preconfigurados.
+- `clasificacion/`: logica de negocio, API, vistas web, servicios AGV y MQTT.
+- `almacen_config/`: configuracion Django/ASGI.
+- `deploy/`: unidades `systemd` y configuracion Nginx de referencia.
+- `logismart-frontend/`: frontend complementario del proyecto.
+- `esp32_agv/`: firmware/documentacion del AGV.
 
-## 🛠️ Tecnologías Utilizadas
+## Arquitectura rapida
 
-* **Backend:** Python 3.12, Django 6.0, Django REST Framework.
-* **Base de Datos:** SQLite (Migrable a PostgreSQL).
-* **Documentación API:** drf-spectacular (Swagger UI).
-* **Frontend:** HTML5, CSS (Vanilla + Custom Props), Bootstrap 5, Chart.js.
+```text
+Browser / Cliente externo
+        |
+      Nginx (HTTPS)
+        |
+      Daphne (ASGI)
+        |
+  Django + DRF + Channels
+     |        |         |
+ Postgres   Redis     MQTT
+                         |
+                       ESP32 / AGV
+```
 
-## 🚀 Instalación y Despliegue Local
+## Puesta en marcha local
 
-1. **Clonar el repositorio**
-   ```bash
-   git clone https://github.com/tu-usuario/logismart.git
-   cd logismart
-   ```
+1. Crear entorno virtual e instalar dependencias.
+2. Copiar `.env.example` a `.env`.
+3. Configurar variables minimas.
+4. Ejecutar migraciones.
+5. Levantar el servidor.
 
-2. **Crear y activar el entorno virtual**
-   ```bash
-   python -m venv venv
-   # En Windows:
-   .\venv\Scripts\activate
-   # En macOS/Linux:
-   source venv/bin/activate
-   ```
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+copy .env.example .env
+python manage.py migrate
+python manage.py runserver
+```
 
-3. **Instalar dependencias**
-   ```bash
-   pip install -r requirements.txt
-   ```
-   *(Asegúrate de contar con Django, djangorestframework, drf-spectacular, corsheaders y pyserial)*
+En Linux/macOS:
 
-4. **Migrar la base de datos y correr el servidor**
-   ```bash
-   python manage.py makemigrations
-   python manage.py migrate
-   python manage.py runserver
-   ```
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python manage.py migrate
+python manage.py runserver
+```
 
-## 📖 Documentación de APIs
-La documentación interactiva de la API (útil para el desarrollador del Robot ESP32) se autogenera al iniciar el servidor. Puedes visualizarla en el navegador ingresando a:
-👉 `http://127.0.0.1:8000/api/docs/`
+## Variables importantes
 
----
-*Desarrollado para modernizar y potenciar la inteligencia logística.*
+Las variables completas estan en `.env.example`. Las mas relevantes son:
+
+- `DJANGO_SECRET_KEY`
+- `DJANGO_DEBUG`
+- `DJANGO_ALLOWED_HOSTS`
+- `DB_ENGINE`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`
+- `REDIS_URL`
+- `MQTT_BROKER`, `MQTT_PORT`, `MQTT_USER`, `MQTT_PASS`
+- `EXTERNAL_API_KEY`
+- `STRIPE_PUBLIC_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`
+
+## Seguridad aplicada
+
+- `DEBUG=False` en produccion.
+- `SECRET_KEY` obligatoria fuera de desarrollo.
+- Cookies seguras y redireccion HTTPS.
+- HSTS, `X-Content-Type-Options`, `Referrer-Policy` y `Permissions-Policy`.
+- API REST interna autenticada por sesion.
+- API externa protegida con comparacion de clave en tiempo constante.
+- WebSocket anonimo rechazado.
+- Credenciales sensibles eliminadas de defaults de codigo.
+
+## Operacion y despliegue
+
+- [docs/DEPLOYMENT.md](/C:/Users/Asus%20TUF%20F15/proyecto_logistica/docs/DEPLOYMENT.md)
+- [docs/SECURITY.md](/C:/Users/Asus%20TUF%20F15/proyecto_logistica/docs/SECURITY.md)
+- [docs/OPERATIONS.md](/C:/Users/Asus%20TUF%20F15/proyecto_logistica/docs/OPERATIONS.md)
+
+## Pruebas
+
+```bash
+python manage.py test -v 1
+```
+
+Estado verificado durante esta actualizacion:
+
+- Local: `28/28` tests OK.
+- Servidor con PostgreSQL y `DEBUG=False`: `28/28` tests OK.
+- `http://` redirige a `https://`.
+- `/api/cajas/` y `/api/v1/cajas` responden `403` sin credenciales.
+- `/api/v1/cajas` responde `200` con `X-API-Key` valida.
+
+## Pendientes recomendados
+
+- Rotar claves Stripe antes de pasar a produccion real.
+- Considerar TLS para MQTT si el AGV operara fuera de una red confiable.
+- Automatizar `pg_dump` con retencion.
+- Documentar versionado del firmware ESP32 junto con comandos MQTT soportados.

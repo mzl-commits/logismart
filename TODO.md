@@ -1,25 +1,20 @@
-# TODO - Mejora de asignación automática de cajas
+# Estado de mejoras pendientes
 
-## Fase 1 (hecho)
-- [x] Extender modelo `Ubicacion` con metadatos de estante:
-  - [x] `tipo_estante`
-  - [x] `capacidad_peso_kg`
-  - [x] `permite_fragil`
-  - [x] `permite_quimico`
-  - [x] `prioridad_categoria`
-- [x] Actualizar `serializers.py` para exponer nuevos campos.
-- [x] Actualizar `admin.py` para gestionar nuevos metadatos desde panel admin.
-- [x] Mejorar `services/optimizador.py`:
-  - [x] Validar compatibilidad de ubicación con caja/clasificación.
-  - [x] Calcular score logístico con nuevas reglas.
-  - [x] Devolver motivo y puntaje de recomendación.
-- [x] Actualizar `views.py` (`CajaViewSet.procesar`) para incluir explicación de recomendación en respuesta.
-- [x] Actualizar templates/frontend para mostrar metadatos y recomendación:
-  - [x] `templates/clasificacion/almacen_visual.html`
-- [x] Generar/aplicar migración de Django para nuevos campos.
+## Hecho
 
-## Fase 2 (actual)
-- [ ] Poblar/normalizar estantes con variedad real de tipos y reglas logísticas.
-- [ ] Crear endpoint de previsualización de recomendación al registrar caja.
-- [ ] Mostrar recomendación en frontend al registrar/visualizar caja pendiente.
-- [ ] Probar ruta crítica de endpoints y UI.
+- [x] Migracion de produccion desde SQLite a PostgreSQL.
+- [x] Redis configurado para Channels.
+- [x] Despliegue ASGI con Daphne y `systemd`.
+- [x] Endurecimiento de seguridad Django/DRF.
+- [x] API externa `v1` protegida con `X-API-Key`.
+- [x] WebSocket anonimo bloqueado.
+- [x] Servicio MQTT autenticado.
+- [x] Suscripcion Stripe corrigiendo error de template.
+- [x] Reserva atomica de ubicaciones para evitar dobles asignaciones.
+
+## Recomendado a corto plazo
+
+- [ ] Rotar credenciales Stripe antes de produccion real.
+- [ ] Automatizar `pg_dump` con politica de retencion.
+- [ ] Evaluar MQTT sobre TLS si el AGV saldra de la red local.
+- [ ] Versionar y documentar mejor el contrato de firmware ESP32.
