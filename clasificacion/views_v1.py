@@ -352,7 +352,7 @@ class DespachoV1CreateView(APIView):
 
         return Response({
             'ok': True,
-            'id_despacho': despacho.id,
+            'id_despacho': despacho.id_despacho,
             'id_caja': caja.id,
             'destino': despacho.destino,
             'transporte_placa': despacho.transporte_placa,
