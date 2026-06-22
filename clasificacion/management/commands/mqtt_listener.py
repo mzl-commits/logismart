@@ -11,17 +11,25 @@ from clasificacion.services.ruta_service import RutaService
 logger = logging.getLogger('clasificacion')
 
 def _publicar_mqtt_comando(payload):
+    import paho.mqtt.publish as publish
+    import json
     try:
         mqtt_cfg = settings.MQTT_CONFIG
-        client = mqtt.Client()
+        auth = None
         if mqtt_cfg['USER'] and mqtt_cfg['PASS']:
-            client.username_pw_set(mqtt_cfg['USER'], mqtt_cfg['PASS'])
-        client.connect(mqtt_cfg['BROKER'], mqtt_cfg['PORT'], 10)
-        client.publish(mqtt_cfg['TOPIC_COMANDO'], json.dumps(payload))
-        client.disconnect()
+            auth = {'username': mqtt_cfg['USER'], 'password': mqtt_cfg['PASS']}
+        
+        publish.single(
+            mqtt_cfg['TOPIC_COMANDO'],
+            payload=json.dumps(payload),
+            hostname=mqtt_cfg['BROKER'],
+            port=mqtt_cfg['PORT'],
+            auth=auth
+        )
         logger.info("Publicado comando MQTT a %s: %s", mqtt_cfg['TOPIC_COMANDO'], payload)
     except Exception as e:
         logger.error("Error al publicar comando MQTT: %s", e)
+
 
 class Command(BaseCommand):
     help = 'Daemon worker to listen for AGV telemetry via MQTT and update Django database.'
@@ -65,8 +73,12 @@ class Command(BaseCommand):
                                 carro.estado = 'esperando'
                                 carro.caja_id = None
                                 _publicar_mqtt_comando({'action': 'stop', 'carro_id': carro_id})
+                                self.stdout.write(self.style.SUCCESS(f"Carro {carro_id} llego a base. Detenido."))
                             else:
                                 carro.estado = 'llego'
+                                # Enviar stop para detener el carro físico en su destino
+                                _publicar_mqtt_comando({'action': 'stop', 'carro_id': carro_id})
+                                self.stdout.write(self.style.SUCCESS(f"Carro {carro_id} llego a destino de entrega. Enviado STOP."))
                         carro.save()
                         self.stdout.write(self.style.SUCCESS(f"Carro {carro_id} avanzó a ({carro.pos_x}, {carro.pos_y}). Estado: {carro.estado}"))
                     else:
