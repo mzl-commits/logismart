@@ -44,3 +44,4 @@
 [2026-05-11 11:47:07,735] INFO clasificacion: Caja CAJ-20260511-001 almacenada en parada 1.
 [2026-05-11 11:47:07,745] INFO clasificacion: Ruta completada. Carro regresando a base (0,0).
 [2026-05-11 11:47:12,138] INFO clasificacion: Carro llegó a base (0,0).
+[2026-06-21 18:45:36,506] INFO clasificacion: Ubicación A1-N1 liberada.

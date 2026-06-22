@@ -5,6 +5,9 @@ from clasificacion.views_frontend import (
     dashboard, almacen_visual, nueva_caja, configuracion, 
     despachos, administracion, login_view, logout_view
 )
+from clasificacion.views_subscription import (
+    suscripcion_view, crear_checkout_session, solicitar_cotizacion, stripe_webhook
+)
 
 urlpatterns = [
     path('', dashboard, name='dashboard'),
@@ -15,6 +18,10 @@ urlpatterns = [
     path('administracion/', administracion, name='administracion'),
     path('login/', login_view, name='login'),
     path('logout/', logout_view, name='logout'),
+    path('suscripcion/', suscripcion_view, name='suscripcion'),
+    path('suscripcion/checkout/', crear_checkout_session, name='checkout'),
+    path('suscripcion/cotizacion/', solicitar_cotizacion, name='cotizacion'),
+    path('suscripcion/webhook/', stripe_webhook, name='stripe_webhook'),
     path('admin/', admin.site.urls),
     path('api/', include('clasificacion.urls')),
     path('api/v1/', include('clasificacion.urls_v1')),   # Adaptador equipo externo

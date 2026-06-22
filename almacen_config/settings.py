@@ -217,3 +217,10 @@ MQTT_CONFIG = {
 
 LOGIN_URL = '/login/'
 
+# ─── Stripe ────────────────────────────────────────────────────────────────────
+# Reemplaza estos valores con tus claves reales de https://dashboard.stripe.com/apikeys
+# Modo TEST (empieza con sk_test_ / pk_test_) para pruebas sin cobro real.
+STRIPE_SECRET_KEY      = _get_env('STRIPE_SECRET_KEY',      default='sk_test_REEMPLAZA_CON_TU_CLAVE')
+STRIPE_PUBLISHABLE_KEY = _get_env('STRIPE_PUBLISHABLE_KEY', default='pk_test_REEMPLAZA_CON_TU_CLAVE')
+STRIPE_PRICE_ID        = _get_env('STRIPE_PRICE_ID',        default='')   # ID del precio mensual en Stripe Dashboard
+STRIPE_WEBHOOK_SECRET  = _get_env('STRIPE_WEBHOOK_SECRET',  default='')   # whsec_... del webhook configurado
