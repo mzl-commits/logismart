@@ -17,6 +17,7 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('admin/', admin.site.urls),
     path('api/', include('clasificacion.urls')),
+    path('api/v1/', include('clasificacion.urls_v1')),   # Adaptador equipo externo
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]
