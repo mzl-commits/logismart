@@ -52,20 +52,26 @@ _CARRO_DEFAULTS = {
 }
 
 def _publicar_mqtt_comando(payload):
-    import paho.mqtt.client as mqtt
+    import paho.mqtt.publish as publish
     import json
     from django.conf import settings
     try:
         mqtt_cfg = settings.MQTT_CONFIG
-        client = mqtt.Client()
+        auth = None
         if mqtt_cfg['USER'] and mqtt_cfg['PASS']:
-            client.username_pw_set(mqtt_cfg['USER'], mqtt_cfg['PASS'])
-        client.connect(mqtt_cfg['BROKER'], mqtt_cfg['PORT'], 10)
-        client.publish(mqtt_cfg['TOPIC_COMANDO'], json.dumps(payload))
-        client.disconnect()
+            auth = {'username': mqtt_cfg['USER'], 'password': mqtt_cfg['PASS']}
+        
+        publish.single(
+            mqtt_cfg['TOPIC_COMANDO'],
+            payload=json.dumps(payload),
+            hostname=mqtt_cfg['BROKER'],
+            port=mqtt_cfg['PORT'],
+            auth=auth
+        )
         logger.info("Publicado comando MQTT a %s: %s", mqtt_cfg['TOPIC_COMANDO'], payload)
     except Exception as e:
         logger.error("Error al publicar comando MQTT: %s", e)
+
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -89,11 +95,32 @@ def _get_or_create_carro(carro_id=1):
     return carro
 
 
-def _enviar_esp32(x, y):
+def _enviar_esp32(x, y, caja_id=None, carro_id=1, publish_mqtt=True):
     esp32 = ESP32Service()
     resultado = esp32.enviar_coordenadas(x, y)
     esp32.cerrar()
+
+    if publish_mqtt:
+        try:
+            from clasificacion.services.ruta_service import RutaService
+            carro = EstadoCarro.objects.filter(id=carro_id).first()
+            pos_x = carro.pos_x if carro else 0
+            pos_y = carro.pos_y if carro else 0
+            ruta = RutaService.generar_ruta(pos_x, pos_y, int(x), int(y))
+            
+            _publicar_mqtt_comando({
+                'action': 'mover',
+                'destino_x': int(x),
+                'destino_y': int(y),
+                'ruta': ruta,
+                'caja_id': caja_id,
+                'carro_id': carro_id
+            })
+        except Exception as e:
+            logger.error("Error al publicar comando MQTT en _enviar_esp32: %s", e)
+            
     return resultado
+
 
 
 # ── CajaViewSet ───────────────────────────────────────────────────────────────
@@ -215,7 +242,7 @@ class CajaViewSet(viewsets.ModelViewSet):
         carro.caja_id = primera['caja_id']
         carro.save()
 
-        esp32_resultado = _enviar_esp32(primera['x'], primera['y'])
+        esp32_resultado = _enviar_esp32(primera['x'], primera['y'], caja_id=primera['caja_id'], carro_id=carro_id)
         logger.info("Lote procesado: %d paradas, primera → %s", len(paradas_ordenadas), primera['ubicacion_nombre'])
 
         return Response({
@@ -290,7 +317,7 @@ class CajaViewSet(viewsets.ModelViewSet):
         carro.caja_id = caja.id
         carro.save()
 
-        esp32_resultado = _enviar_esp32(mejor_ubi.coord_x, mejor_ubi.coord_y)
+        esp32_resultado = _enviar_esp32(mejor_ubi.coord_x, mejor_ubi.coord_y, caja_id=caja.id, carro_id=carro_id)
         return Response({
             'mensaje': '✅ Caja procesada',
             'caja': CajaSerializer(caja).data,
@@ -533,7 +560,7 @@ class EstadoCarroViewSet(viewsets.ViewSet):
             'carro_id': carro_id
         })
 
-        esp32_resultado = _enviar_esp32(siguiente['x'], siguiente['y'])
+        esp32_resultado = _enviar_esp32(siguiente['x'], siguiente['y'], publish_mqtt=False)
         logger.info("Avanzando a parada %d → %s", siguiente_idx, siguiente['ubicacion_nombre'])
 
         return Response({

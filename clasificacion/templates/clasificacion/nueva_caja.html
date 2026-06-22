@@ -3,25 +3,116 @@
 
 {% block extra_css %}
 <style>
-/* Extendiendo Tailwind con las clases activas usadas en JS */
-.cat-btn { @apply border-2 border-slate-700 bg-surface rounded-xl p-3 text-center cursor-pointer transition-all select-none text-slate-400; }
-.cat-btn:hover { @apply border-indigo-500/50 bg-indigo-500/5 text-slate-200; }
-.cat-btn.active { @apply border-indigo-500 bg-indigo-500/15 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.15)]; }
+/* Extendiendo Tailwind con CSS nativo plano para compatibilidad con CDN */
+.cat-btn {
+    border: 2px solid #334155;
+    background-color: #132E35;
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    color: #94a3b8;
+}
+.cat-btn:hover {
+    border-color: rgba(99, 102, 241, 0.5);
+    background-color: rgba(99, 102, 241, 0.05);
+    color: #e2e8f0;
+}
+.cat-btn.active {
+    border-color: #6366f1;
+    background-color: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+}
 
-.prio-btn { @apply flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-700 bg-surface cursor-pointer transition-all text-sm font-semibold text-slate-400; }
-.prio-baja:hover { @apply border-slate-500 bg-slate-800/50 text-slate-200; }
-.prio-baja.active { @apply border-slate-400 bg-slate-500/20 text-slate-300; }
-.prio-media:hover { @apply border-sky-600 bg-sky-900/20 text-sky-200; }
-.prio-media.active { @apply border-sky-500 bg-sky-500/20 text-sky-400 shadow-[0_0_10px_rgba(14,165,233,0.15)]; }
-.prio-alta:hover { @apply border-amber-600 bg-amber-900/20 text-amber-200; }
-.prio-alta.active { @apply border-amber-500 bg-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.15)]; }
-.prio-urgente:hover { @apply border-red-600 bg-red-900/20 text-red-200; }
-.prio-urgente.active { @apply border-red-500 bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.15)]; }
+.prio-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #334155;
+    background-color: #132E35;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #94a3b8;
+}
+.prio-baja:hover {
+    border-color: #64748b;
+    background-color: rgba(30, 41, 59, 0.5);
+    color: #e2e8f0;
+}
+.prio-baja.active {
+    border-color: #94a3b8;
+    background-color: rgba(100, 116, 139, 0.2);
+    color: #cbd5e1;
+}
+.prio-media:hover {
+    border-color: #0284c7;
+    background-color: rgba(12, 74, 96, 0.2);
+    color: #bae6fd;
+}
+.prio-media.active {
+    border-color: #0ea5e9;
+    background-color: rgba(14, 165, 233, 0.2);
+    color: #38bdf8;
+    box-shadow: 0 0 10px rgba(14, 165, 233, 0.15);
+}
+.prio-alta:hover {
+    border-color: #d97706;
+    background-color: rgba(120, 53, 4, 0.2);
+    color: #fde68a;
+}
+.prio-alta.active {
+    border-color: #f59e0b;
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+}
+.prio-urgente:hover {
+    border-color: #dc2626;
+    background-color: rgba(127, 29, 29, 0.2);
+    color: #fecaca;
+}
+.prio-urgente.active {
+    border-color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+}
 
-.toggle-fragil { @apply w-12 h-6 bg-slate-800 rounded-full relative cursor-pointer transition-colors border border-slate-700; }
-.toggle-fragil.on { @apply bg-sky-500 border-sky-400; }
-.toggle-fragil::after { content: ''; @apply absolute top-[1px] left-[1px] w-[20px] h-[20px] bg-white rounded-full transition-all; }
-.toggle-fragil.on::after { @apply left-[25px]; }
+.toggle-fragil {
+    width: 3rem;
+    height: 1.5rem;
+    background-color: #1e293b;
+    border-radius: 9999px;
+    position: relative;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    border: 1px solid #334155;
+}
+.toggle-fragil.on {
+    background-color: #0ea5e9;
+    border-color: #38bdf8;
+}
+.toggle-fragil::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 20px;
+    height: 20px;
+    background-color: white;
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+}
+.toggle-fragil.on::after {
+    left: 25px;
+}
 </style>
 {% endblock %}
 
@@ -202,6 +293,9 @@ async function cargarIdSugerido() {
         chip.classList.remove('hidden');
         chip.onclick = () => { document.getElementById('campo-id').value = data.id_sugerido; };
         document.getElementById('campo-id').placeholder = data.id_sugerido;
+        if (!document.getElementById('campo-id').value) {
+            document.getElementById('campo-id').value = data.id_sugerido;
+        }
     } catch {}
 }
 
@@ -235,6 +329,7 @@ function toggleFragil(el) {
 // Selección por defecto
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.prio-btn[data-val="media"]')?.click();
+    document.querySelector('.cat-btn')?.click();
     cargarIdSugerido();
     cargarColaPendientes();
 });
@@ -294,7 +389,7 @@ document.getElementById('formCaja').addEventListener('submit', async (e) => {
     const categoria = document.getElementById('campo-categoria').value;
     const prioridad = document.getElementById('campo-prioridad').value;
     const peso = document.getElementById('campo-peso').value;
-    const cantidad = document.getElementById('campo-cantidad').value;
+    const cantidad = parseInt(document.getElementById('campo-cantidad').value) || 1;
     const fragil = document.getElementById('campo-fragil').value === 'true';
     const proveedor = document.getElementById('campo-proveedor').value;
     const medida = document.getElementById('campo-medida').value;

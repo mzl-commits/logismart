@@ -161,23 +161,23 @@
                             <!-- Alineación (Frontales) -->
                             <div class="absolute top-4 left-[56px] flex flex-col items-center" title="Sensor Óptico Izquierdo Interior (Alineación)">
                                 <div id="sns-opt-2" class="sensor-dot"></div>
-                                <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SI-Int</span>
+                                <span class="text-[8px] text-slate-400 mt-0.5 font-semibold">SI-Int</span>
                             </div>
                             <div class="absolute top-4 right-[56px] flex flex-col items-center" title="Sensor Óptico Derecho Interior (Alineación)">
                                 <div id="sns-opt-3" class="sensor-dot"></div>
-                                <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SD-Int</span>
+                                <span class="text-[8px] text-slate-400 mt-0.5 font-semibold">SD-Int</span>
                             </div>
 
                             <!-- Contadores de Nodos (Laterales Asimétricos) -->
                             <!-- Izquierdo: detrás/abajo de la llanta izquierda -->
                             <div class="absolute bottom-[58px] left-[6px] flex flex-col items-center" title="Sensor Óptico Izquierdo Exterior (Detección de Nodos)">
                                 <div id="sns-opt-1" class="sensor-dot"></div>
-                                <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SI-Ext</span>
+                                <span class="text-[8px] text-slate-400 mt-0.5 font-semibold">SI-Ext</span>
                             </div>
                             <!-- Derecho: justo arriba/adelante de la llanta derecha -->
                             <div class="absolute top-[58px] right-[6px] flex flex-col items-center" title="Sensor Óptico Derecho Exterior (Detección de Nodos)">
                                 <div id="sns-opt-4" class="sensor-dot"></div>
-                                <span class="text-[8px] text-slate-500 mt-0.5 font-semibold">SD-Ext</span>
+                                <span class="text-[8px] text-slate-400 mt-0.5 font-semibold">SD-Ext</span>
                             </div>
 
                             <!-- Cuerpo del carro details -->
@@ -212,7 +212,7 @@
                                 <span class="text-xs font-bold text-slate-400">Motor Izquierdo</span>
                                 <span class="text-xs font-extrabold text-sky-400" id="motor-izq-txt">1500 us</span>
                             </div>
-                            <div class="text-[10px] text-slate-500 mb-2 flex justify-between">
+                            <div class="text-[10px] text-slate-400 mb-2 flex justify-between">
                                 <span id="motor-izq-dir" class="font-semibold">PARADO</span>
                                 <span id="motor-izq-pct" class="font-semibold">0%</span>
                             </div>
@@ -227,7 +227,7 @@
                                 <span class="text-xs font-bold text-slate-400">Motor Derecho</span>
                                 <span class="text-xs font-extrabold text-sky-400" id="motor-der-txt">1500 us</span>
                             </div>
-                            <div class="text-[10px] text-slate-500 mb-2 flex justify-between">
+                            <div class="text-[10px] text-slate-400 mb-2 flex justify-between">
                                 <span id="motor-der-dir" class="font-semibold">PARADO</span>
                                 <span id="motor-der-pct" class="font-semibold">0%</span>
                             </div>
@@ -300,26 +300,26 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
                         <div class="text-2xl font-black text-white" id="disp-largo">{{ config.largo_cm }}</div>
-                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Largo (cm)</div>
+                        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Largo (cm)</div>
                     </div>
                     <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
                         <div class="text-2xl font-black text-white" id="disp-ancho">{{ config.ancho_cm }}</div>
-                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Ancho (cm)</div>
+                        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Ancho (cm)</div>
                     </div>
                     <div class="bg-slate-900/50 border border-slate-800 rounded-xl p-4 text-center">
                         <div class="text-2xl font-black text-white" id="disp-alto">{{ config.alto_cm }}</div>
-                        <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">Alto (cm)</div>
+                        <div class="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-1">Alto (cm)</div>
                     </div>
                 </div>
                 
                 <!-- Resumen de volumen y peso máximo -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col justify-center">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Volumen Total</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Volumen Total</span>
                         <span class="text-xl font-extrabold text-sky-400 drop-shadow-[0_0_8px_rgba(56,189,248,0.3)]" id="disp-vol">{{ cart_vol }} cm³</span>
                     </div>
                     <div class="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex flex-col justify-center">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Peso Máximo</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Peso Máximo</span>
                         <span class="text-xl font-extrabold text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]" id="disp-peso-max">{{ config.peso_maximo_kg }} kg</span>
                     </div>
                 </div>
@@ -332,7 +332,7 @@
                         <div class="flex items-center justify-between z-10 mb-3">
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-slate-300">📦 Pequeñas</span>
-                                <span class="text-[11px] text-slate-500">Volumen ≤ 8,000 cm³</span>
+                                <span class="text-[11px] text-slate-400">Volumen ≤ 8,000 cm³</span>
                             </div>
                             <div class="text-4xl font-black text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)]" id="res-pequenas">{{ resumen.pequenas }}</div>
                         </div>
@@ -347,7 +347,7 @@
                         <div class="flex items-center justify-between z-10 mb-3">
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-slate-300">🗃️ Medianas</span>
-                                <span class="text-[11px] text-slate-500">8,001 – 64,000 cm³</span>
+                                <span class="text-[11px] text-slate-400">8,001 – 64,000 cm³</span>
                             </div>
                             <div class="text-4xl font-black text-sky-400 drop-shadow-[0_0_12px_rgba(56,189,248,0.3)]" id="res-medianas">{{ resumen.medianas }}</div>
                         </div>
@@ -362,7 +362,7 @@
                         <div class="flex items-center justify-between z-10 mb-3">
                             <div class="flex flex-col">
                                 <span class="text-sm font-bold text-slate-300">📫 Grandes</span>
-                                <span class="text-[11px] text-slate-500">Volumen > 64,000 cm³</span>
+                                <span class="text-[11px] text-slate-400">Volumen > 64,000 cm³</span>
                             </div>
                             <div class="text-4xl font-black text-indigo-400 drop-shadow-[0_0_12px_rgba(99,102,241,0.3)]" id="res-grandes">{{ resumen.grandes }}</div>
                         </div>
@@ -372,7 +372,7 @@
                     </div>
                 </div>
                 
-                <div class="text-xs text-slate-500 mt-4 flex items-center gap-1.5">
+                <div class="text-xs text-slate-400 mt-4 flex items-center gap-1.5">
                     <i class="bi bi-info-circle"></i>
                     Basado en la medida más pequeña de cada tipo. El límite real también depende del peso máximo ({{ config.peso_maximo_kg }} kg).
                 </div>
@@ -382,7 +382,7 @@
 </div>
 
 <!-- Modal de Configuración de Parámetros -->
-<div id="modal-parametros" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4 transition-all duration-300">
+<div id="modal-parametros" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/85 backdrop-blur-sm p-4 transition-all duration-300">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform scale-95 transition-all duration-300">
         <!-- Header -->
         <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/20">
@@ -519,7 +519,7 @@ async function guardarConfig(btn) {
         max_paradas:    parseInt(document.getElementById('cfg-paradas').value),
         pos_base_x:     parseInt(document.getElementById('cfg-base-x').value),
         pos_base_y:     parseInt(document.getElementById('cfg-base-y').value),
-        notes:          document.getElementById('cfg-notas').value,
+        notas:          document.getElementById('cfg-notas').value,
     };
 
     if (!payload.nombre || !payload.largo_cm || !payload.ancho_cm || !payload.alto_cm || !payload.peso_maximo_kg) {

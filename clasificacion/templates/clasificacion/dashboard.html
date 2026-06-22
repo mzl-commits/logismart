@@ -5,10 +5,10 @@
 <!-- Header -->
 <div class="flex flex-col sm:flex-row gap-4 justify-between sm:items-center mb-6 fade-in">
     <div>
-        <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+        <h1 class="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <i class="bi bi-speedometer2 text-sky-400"></i> Dashboard
-        </h2>
-        <p class="text-slate-500 text-sm mt-1">Cajas activas · Almacén · Historial</p>
+        </h1>
+        <p class="text-slate-300 text-sm mt-1">Cajas activas · Almacén · Historial</p>
     </div>
     <div>
         <a href="/nueva-caja/" class="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5 no-underline w-full sm:w-auto">
@@ -21,22 +21,22 @@
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     <div class="fade-in relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-blue-950/80 to-blue-900/20 border border-blue-800/30 group hover:border-blue-700/50 transition-colors">
         <div class="text-4xl font-extrabold text-white">{{ total_cajas }}</div>
-        <div class="text-sm font-medium text-blue-300/60 mt-1">Total cajas</div>
+        <div class="text-sm font-semibold text-blue-200 mt-1">Total cajas</div>
         <i class="bi bi-box-seam absolute right-4 bottom-2 text-5xl text-blue-400/10 group-hover:text-blue-400/20 transition-colors"></i>
     </div>
     <div class="fade-in fade-d1 relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-amber-950/80 to-amber-900/20 border border-amber-800/30 group hover:border-amber-700/50 transition-colors">
         <div class="text-4xl font-extrabold text-amber-400">{{ cajas_pendientes }}</div>
-        <div class="text-sm font-medium text-amber-300/60 mt-1">Pendientes</div>
+        <div class="text-sm font-semibold text-amber-200 mt-1">Pendientes</div>
         <i class="bi bi-hourglass-split absolute right-4 bottom-2 text-5xl text-amber-400/10 group-hover:text-amber-400/20 transition-colors"></i>
     </div>
     <div class="fade-in fade-d2 relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-cyan-950/80 to-cyan-900/20 border border-cyan-800/30 group hover:border-cyan-700/50 transition-colors">
         <div class="text-4xl font-extrabold text-sky-400">{{ cajas_transito }}</div>
-        <div class="text-sm font-medium text-cyan-300/60 mt-1">En tránsito</div>
+        <div class="text-sm font-semibold text-sky-200 mt-1">En tránsito</div>
         <i class="bi bi-truck absolute right-4 bottom-2 text-5xl text-cyan-400/10 group-hover:text-cyan-400/20 transition-colors"></i>
     </div>
     <div class="fade-in fade-d3 relative overflow-hidden rounded-2xl p-5 bg-gradient-to-br from-emerald-950/80 to-emerald-900/20 border border-emerald-800/30 group hover:border-emerald-700/50 transition-colors">
         <div class="text-4xl font-extrabold text-emerald-400">{{ cajas_almacenadas }}</div>
-        <div class="text-sm font-medium text-emerald-300/60 mt-1">Almacenadas</div>
+        <div class="text-sm font-semibold text-emerald-200 mt-1">Almacenadas</div>
         <i class="bi bi-check-circle absolute right-4 bottom-2 text-5xl text-emerald-400/10 group-hover:text-emerald-400/20 transition-colors"></i>
     </div>
 </div>
@@ -45,13 +45,13 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6 fade-in fade-d1">
     <div class="lg:col-span-2 bg-surface rounded-2xl border border-slate-800/60 p-6">
         <div class="flex justify-between items-center mb-4">
-            <span class="text-base font-semibold flex items-center gap-2"><i class="bi bi-building text-sky-400"></i> Ocupación del almacén</span>
-            <span class="text-sm"><span class="{% if pct_ocupacion >= 90 %}text-red-500{% elif pct_ocupacion >= 70 %}text-amber-500{% else %}text-emerald-400{% endif %} font-bold">{{ ubicaciones_ocupadas }}</span><span class="text-slate-600"> / {{ total_ubicaciones }}</span> · <strong class="text-white">{{ pct_ocupacion }}%</strong></span>
+            <span class="text-base font-semibold text-white flex items-center gap-2"><i class="bi bi-building text-sky-400"></i> Ocupación del almacén</span>
+            <span class="text-sm"><span class="{% if pct_ocupacion >= 90 %}text-red-500{% elif pct_ocupacion >= 70 %}text-amber-500{% else %}text-emerald-400{% endif %} font-bold">{{ ubicaciones_ocupadas }}</span><span class="text-slate-400"> / {{ total_ubicaciones }}</span> · <strong class="text-white">{{ pct_ocupacion }}%</strong></span>
         </div>
         <div class="h-2.5 bg-slate-800 rounded-full overflow-hidden">
             <div class="h-full rounded-full transition-all duration-700 {% if pct_ocupacion >= 90 %}bg-gradient-to-r from-red-600 to-red-500{% elif pct_ocupacion >= 70 %}bg-gradient-to-r from-amber-500 to-amber-400{% else %}bg-gradient-to-r from-emerald-500 to-teal-500{% endif %}" style="width:{{ pct_ocupacion }}%"></div>
         </div>
-        <div class="flex justify-between mt-3 text-xs text-slate-500">
+        <div class="flex justify-between mt-3 text-xs text-slate-400">
             <span>{{ ubicaciones_libres }} libres</span>
             <span>{% if pct_ocupacion >= 90 %}⚠️ Crítico{% elif pct_ocupacion >= 70 %}Capacidad alta{% else %}Normal{% endif %}</span>
         </div>
@@ -73,7 +73,7 @@
     <div class="lg:col-span-2 bg-surface rounded-2xl border border-slate-800/60 overflow-hidden">
         <div class="p-6 border-b border-slate-800/60">
             <div class="flex items-center justify-between mb-4">
-                <span class="text-base font-semibold flex items-center gap-2"><i class="bi bi-box-seam text-sky-400"></i> Cajas activas</span>
+                <span class="text-base font-semibold text-white flex items-center gap-2"><i class="bi bi-box-seam text-sky-400"></i> Cajas activas</span>
                 <a href="/nueva-caja/" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors no-underline"><i class="bi bi-plus-lg"></i> Agregar</a>
             </div>
             
@@ -100,13 +100,13 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="border-b border-slate-800/60">
-                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-6 py-4">Producto</th>
-                        <th class="hidden md:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Categoría</th>
-                        <th class="hidden md:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Peso</th>
-                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Prioridad</th>
-                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Estado</th>
-                        <th class="hidden md:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Ubicación</th>
-                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Acción</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-6 py-4">Producto</th>
+                        <th class="hidden md:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-4 py-4">Categoría</th>
+                        <th class="hidden md:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-4 py-4">Peso</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-4 py-4">Prioridad</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-4 py-4">Estado</th>
+                        <th class="hidden md:table-cell text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-4 py-4">Ubicación</th>
+                        <th class="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-400 px-4 py-4">Acción</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-body" class="divide-y divide-slate-800/40">
@@ -114,8 +114,8 @@
                     <tr class="hover:bg-white/[.02] transition-colors" data-estado="{{ caja.estado }}" data-cat="{{ caja.categoria }}">
                         <td class="px-6 py-3">
                             <div class="font-medium text-slate-200 text-base">{{ caja.producto }}{% if caja.es_fragil %} <span title="Frágil">🔷</span>{% endif %}</div>
-                            <div class="text-xs text-slate-500">{{ caja.id }}</div>
-                            <div class="text-xs text-slate-400 flex flex-wrap gap-x-2 mt-1 md:hidden">
+                            <div class="text-xs text-slate-400">{{ caja.id }}</div>
+                            <div class="text-xs text-slate-300 flex flex-wrap gap-x-2 mt-1 md:hidden">
                                 <span>Cat: {{ caja.categoria }}</span>
                                 <span>· {{ caja.peso_kg }} kg</span>
                                 {% if caja.estado != 'pendiente' %}
@@ -123,7 +123,7 @@
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="hidden md:table-cell px-4 py-3 text-sm text-slate-400">{{ caja.categoria }}</td>
+                        <td class="hidden md:table-cell px-4 py-3 text-sm text-slate-300">{{ caja.categoria }}</td>
                         <td class="hidden md:table-cell px-4 py-3 text-sm text-slate-300">{{ caja.peso_kg }} kg</td>
                         <td class="px-4 py-3">
                             <span class="px-2.5 py-1 rounded-md text-xs font-semibold 
@@ -147,9 +147,9 @@
                             {% if caja.estado == 'pendiente' %}
                                 <span class="px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20" id="rec-{{ caja.id }}">—</span>
                             {% elif caja.id_ubicacion %}
-                                <span class="text-sm text-slate-400">{{ caja.id_ubicacion }}</span>
+                                <span class="text-sm text-slate-300">{{ caja.id_ubicacion }}</span>
                             {% else %}
-                                <span class="text-slate-600 text-sm">—</span>
+                                <span class="text-slate-400 text-sm">—</span>
                             {% endif %}
                         </td>
                         <td class="px-4 py-3">
@@ -169,7 +169,7 @@
                         </td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="7" class="text-center text-slate-500 py-8">
+                    <tr><td colspan="7" class="text-center text-slate-400 py-8">
                          <i class="bi bi-inbox text-4xl block mb-2 opacity-30"></i>No hay cajas activas.
                     </td></tr>
                 {% endfor %}
@@ -181,7 +181,7 @@
     <!-- Historial -->
     <div class="bg-surface rounded-2xl border border-slate-800/60 overflow-hidden flex flex-col">
         <div class="p-6 border-b border-slate-800/60 shrink-0">
-            <span class="text-base font-semibold flex items-center gap-2"><i class="bi bi-clock-history text-sky-400"></i> Historial</span>
+            <span class="text-base font-semibold text-white flex items-center gap-2"><i class="bi bi-clock-history text-sky-400"></i> Historial</span>
         </div>
         <div class="p-6 space-y-5 overflow-y-auto flex-1 max-h-[500px]">
             {% for log in historial_reciente %}
@@ -193,9 +193,9 @@
                     {% else %}bg-amber-500{% endif %}">
                 </div>
                 <div class="text-sm font-semibold text-white">{{ log.id_caja.id }}</div>
-                <div class="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                <div class="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
                     {{ log.estado_anterior }} 
-                    <i class="bi bi-arrow-right text-[9px] text-slate-600"></i> 
+                    <i class="bi bi-arrow-right text-[9px] text-slate-500"></i> 
                     <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold 
                         {% if log.estado_nuevo == 'almacenada' %}bg-emerald-600/20 text-emerald-400
                         {% elif log.estado_nuevo == 'en_transito' %}bg-sky-600/20 text-sky-400
@@ -203,9 +203,9 @@
                         {% else %}bg-amber-600/20 text-amber-400{% endif %}">
                         {{ log.estado_nuevo }}
                     </span>
-                    {% if log.id_usuario %}<span class="text-slate-600 ml-1">· {{ log.id_usuario.nombre }}</span>{% endif %}
+                    {% if log.id_usuario %}<span class="text-slate-400 ml-1">· {{ log.id_usuario.nombre }}</span>{% endif %}
                 </div>
-                <div class="text-[11px] text-slate-600 mt-1">{{ log.fecha_cambio|date:"d/m H:i" }}</div>
+                <div class="text-[11px] text-slate-400 mt-1">{{ log.fecha_cambio|date:"d/m H:i" }}</div>
             </div>
             {% empty %}
             <p class="text-slate-500 text-sm">Sin movimientos.</p>
@@ -216,7 +216,7 @@
 
 <!-- Gráfico -->
 <div class="bg-surface rounded-2xl border border-slate-800/60 p-6 fade-in fade-d3 mb-4">
-    <div class="text-base font-semibold flex items-center gap-2 mb-4"><i class="bi bi-graph-up text-sky-400"></i> Flujo de Cajas (Últimos 7 días)</div>
+    <div class="text-base font-semibold text-white flex items-center gap-2 mb-4"><i class="bi bi-graph-up text-sky-400"></i> Flujo de Cajas (Últimos 7 días)</div>
     <div style="position: relative; height: 320px; width: 100%;">
         <canvas id="flujoChart"></canvas>
     </div>

@@ -409,10 +409,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 lastUbisHash = newUbisHash;
             }
             
-            // Auto-avanzar carro si está en movimiento
-            if (carroGlobal?.estado === 'moviendo') {
-                await fetch('/api/carro/avanzar/', { method: 'POST', headers: { 'X-CSRFToken': getCookie('csrftoken') } });
-            }
+
         } catch(e) { /* silencio en polling */ }
     }, 1500);
 });

@@ -141,19 +141,22 @@
             <button class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-all {% if request.path == '/configuracion/' or request.path == '/administracion/' %}text-white bg-[#2D4A53]/50{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
                 <i class="bi bi-shield-lock"></i> Admin <i class="bi bi-chevron-down text-[10px]"></i>
             </button>
-            <div class="nav-dropdown absolute top-full left-0 mt-2 w-48 bg-[#132E35] border border-[#2D4A53]/80 rounded-xl shadow-2xl shadow-black/40 py-1.5 z-[1060]">
-                <a href="/configuracion/" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline {% if request.path == '/configuracion/' %}text-white bg-[#2D4A53]/30{% endif %}">
-                    <i class="bi bi-robot"></i> Robot AGV
-                </a>
-                <a href="/administracion/" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline {% if request.path == '/administracion/' %}text-white bg-[#2D4A53]/30{% endif %}">
-                    <i class="bi bi-people"></i> Administración
-                </a>
-                <div class="h-px bg-[#2D4A53]/60 mx-3 my-1"></div>
-                <a href="/api/docs/" target="_blank" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline">
-                    <i class="bi bi-terminal"></i> Docs API
-                </a>
+            <div class="nav-dropdown absolute top-full left-0 pt-2 w-48 z-[1060]">
+                <div class="bg-[#132E35] border border-[#2D4A53]/80 rounded-xl shadow-2xl shadow-black/40 py-1.5">
+                    <a href="/configuracion/" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline {% if request.path == '/configuracion/' %}text-white bg-[#2D4A53]/30{% endif %}">
+                        <i class="bi bi-robot"></i> Robot AGV
+                    </a>
+                    <a href="/administracion/" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline {% if request.path == '/administracion/' %}text-white bg-[#2D4A53]/30{% endif %}">
+                        <i class="bi bi-people"></i> Administración
+                    </a>
+                    <div class="h-px bg-[#2D4A53]/60 mx-3 my-1"></div>
+                    <a href="/api/docs/" target="_blank" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline">
+                        <i class="bi bi-terminal"></i> Docs API
+                    </a>
+                </div>
             </div>
         </div>
+
         {% endif %}
 
         <!-- Suscripción (siempre visible) -->
