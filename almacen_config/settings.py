@@ -38,6 +38,11 @@ DEBUG = _get_env('DJANGO_DEBUG', default='True').lower() == 'true'
 
 ALLOWED_HOSTS = _get_env('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://logistica.promube.com',
+    'http://logistica.promube.com',
+]
+
 
 # ─── Aplicaciones ─────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
