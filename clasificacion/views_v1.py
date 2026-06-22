@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 
-from .models import Caja, Medida, Proveedor
+from .models import Caja, Medida, Proveedor, Ubicacion, Usuario, HistorialMovimientos, Despacho
 
 logger = logging.getLogger('clasificacion')
 
@@ -208,3 +208,169 @@ def _to_upper_estado(estado_interno):
         'despachada':  'DESPACHADO',
     }
     return _map.get(estado_interno, estado_interno.upper())
+
+
+# ── Endpoint: PATCH /api/v1/cajas/{id_caja}/estado ─────────────────────────────
+
+class CajaV1EstadoView(APIView):
+    """
+    PATCH /api/v1/cajas/{id_caja}/estado → Actualiza el estado y ubicación de una caja
+    """
+    permission_classes = [AllowAny]
+
+    def patch(self, request, id_caja):
+        try:
+            caja = Caja.objects.get(id=id_caja)
+        except Caja.DoesNotExist:
+            return Response({'error': f'No existe una caja con id "{id_caja}".'}, status=status.HTTP_404_NOT_FOUND)
+
+        data = request.data
+        estado_raw = data.get('estado_nuevo')
+        id_ubicacion_raw = data.get('id_ubicacion')
+        usuario_id = data.get('id_usuario')
+
+        if not estado_raw:
+            return Response({'error': 'El campo estado_nuevo es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        estado_nuevo = ESTADO_MAP.get(str(estado_raw).upper())
+        if not estado_nuevo:
+            return Response({'error': f'Estado "{estado_raw}" no es válido.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if usuario_id:
+            try:
+                Usuario.objects.get(id_usuario=usuario_id)
+            except Usuario.DoesNotExist:
+                return Response({'error': f'No existe un usuario con id_usuario={usuario_id}.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        estado_anterior = caja.estado
+        ubicacion_anterior = caja.id_ubicacion
+
+        # Resolver ubicacion
+        ubicacion_nueva = None
+        if id_ubicacion_raw is not None:
+            try:
+                ubicacion_nueva = Ubicacion.objects.get(id_ubicacion=int(id_ubicacion_raw))
+            except (Ubicacion.DoesNotExist, ValueError, TypeError):
+                return Response({'error': f'No existe una ubicación con id_ubicacion={id_ubicacion_raw}.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        from django.db import transaction
+        from .services.optimizador import OptimizadorUbicaciones
+
+        try:
+            with transaction.atomic():
+                caja.estado = estado_nuevo
+
+                if estado_nuevo == 'despachada':
+                    caja.id_ubicacion = None
+                    if ubicacion_anterior:
+                        OptimizadorUbicaciones.liberar_ubicacion(ubicacion_anterior)
+                else:
+                    if ubicacion_nueva:
+                        caja.id_ubicacion = ubicacion_nueva
+                        OptimizadorUbicaciones.ocupar_ubicacion(ubicacion_nueva)
+                        if ubicacion_anterior and ubicacion_anterior != ubicacion_nueva:
+                            OptimizadorUbicaciones.liberar_ubicacion(ubicacion_anterior)
+
+                caja.save()
+                if usuario_id:
+                    _registrar_historial(caja, estado_anterior, usuario_id)
+
+        except Exception as e:
+            logger.error('Error al actualizar estado caja v1: %s', e)
+            return Response({'error': 'Error interno al actualizar estado.', 'detalle': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            'ok': True,
+            'id': caja.id,
+            'estado_nuevo': _to_upper_estado(caja.estado),
+            'estado_interno': caja.estado,
+            'ubicacion': str(caja.id_ubicacion) if caja.id_ubicacion else None,
+            'mensaje': 'Estado de caja actualizado correctamente.'
+        }, status=status.HTTP_200_OK)
+
+
+# ── Endpoint: POST /api/v1/despachos ───────────────────────────────────────────
+
+class DespachoV1CreateView(APIView):
+    """
+    POST /api/v1/despachos → Procesa el despacho y salida definitiva de una caja
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        data = request.data
+        caja_id = data.get('id_caja', '').strip()
+        destino = data.get('destino', '').strip()
+        placa = data.get('transporte_placa', '').strip()
+        usuario_id = data.get('id_usuario_despacho')
+
+        if not caja_id:
+            return Response({'error': 'El campo id_caja es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            caja = Caja.objects.get(id=caja_id)
+        except Caja.DoesNotExist:
+            return Response({'error': f'No existe una caja con id "{caja_id}".'}, status=status.HTTP_404_NOT_FOUND)
+
+        usuario = None
+        if usuario_id:
+            try:
+                usuario = Usuario.objects.get(id_usuario=usuario_id)
+            except Usuario.DoesNotExist:
+                return Response({'error': f'No existe un usuario con id_usuario={usuario_id}.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if caja.estado == 'despachada':
+            return Response({'error': 'La caja ya ha sido despachada previamente.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        estado_anterior = caja.estado
+        ubicacion_anterior = caja.id_ubicacion
+
+        from django.db import transaction
+        from .services.optimizador import OptimizadorUbicaciones
+
+        try:
+            with transaction.atomic():
+                caja.estado = 'despachada'
+                caja.id_ubicacion = None
+                caja.save()
+
+                if ubicacion_anterior:
+                    OptimizadorUbicaciones.liberar_ubicacion(ubicacion_anterior)
+
+                if usuario:
+                    _registrar_historial(caja, estado_anterior, usuario.id_usuario)
+
+                despacho = Despacho.objects.create(
+                    id_caja=caja,
+                    id_usuario_despacho=usuario,
+                    destino=destino or 'No especificado',
+                    transporte_placa=placa or 'N/A'
+                )
+        except Exception as e:
+            logger.error('Error al registrar despacho v1: %s', e)
+            return Response({'error': 'Error interno al registrar el despacho.', 'detalle': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            'ok': True,
+            'id_despacho': despacho.id,
+            'id_caja': caja.id,
+            'destino': despacho.destino,
+            'transporte_placa': despacho.transporte_placa,
+            'estado_caja': 'DESPACHADO',
+            'mensaje': 'Despacho registrado y procesado correctamente.'
+        }, status=status.HTTP_201_CREATED)
+
+
+def _registrar_historial(caja, estado_anterior, usuario_id):
+    """Registra el cambio de estado en el historial de movimientos."""
+    if not usuario_id:
+        return
+    try:
+        usuario = Usuario.objects.get(id_usuario=usuario_id)
+        HistorialMovimientos.objects.create(
+            id_caja=caja, id_usuario=usuario,
+            estado_anterior=estado_anterior, estado_nuevo=caja.estado,
+        )
+    except Exception as e:
+        logger.error('Error al registrar historial en v1: %s', e)
+
