@@ -23,6 +23,12 @@
 #define PIN_MOTOR_IN4   19   // Motor Derecho IN4
 #define PIN_MOTOR_ENB   23   // Motor Derecho ENB (PWM)
 
+// ─── COMPENSACIÓN DE VELOCIDAD FÍSICA (CALIBRACIÓN) ──────────────────────────
+// Si el motor izquierdo gira muy lento, aumenta este factor (ej. 1.3, 1.5 o 1.8)
+// Si el motor derecho es el lento, aumenta el factor derecho correspondientemente.
+const float COMPENSACION_MOTOR_IZQ = 1.4; 
+const float COMPENSACION_MOTOR_DER = 1.0;
+
 // Variables de estado del ciclo de prueba
 unsigned long lastMotorChange = 0;
 int testState = 0; // 0: Parado, 1: Avanzar, 2: Girar Derecha, 3: Girar Izquierda
@@ -112,6 +118,14 @@ void loop() {
 
 // Función auxiliar para controlar el puente H
 void setMotors(int speedL, int speedR) {
+  // Aplicar factores de compensación física
+  speedL = (int)(speedL * COMPENSACION_MOTOR_IZQ);
+  speedR = (int)(speedR * COMPENSACION_MOTOR_DER);
+
+  // Límite de seguridad
+  speedL = constrain(speedL, -255, 255);
+  speedR = constrain(speedR, -255, 255);
+
   // Motor Izquierdo (M1)
   if (speedL > 0) {
     digitalWrite(PIN_MOTOR_IN1, LOW);
