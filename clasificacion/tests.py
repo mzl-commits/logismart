@@ -219,3 +219,65 @@ class TransicionEstadoTests(TestCase):
 
         ubicacion.refresh_from_db()
         self.assertFalse(ubicacion.estado_ocupacion, "La ubicación debe quedar libre tras el despacho")
+
+
+class BatchPreviewAndOverrideTests(TestCase):
+
+    def setUp(self):
+        self.medida = crear_medida()
+        self.proveedor = crear_proveedor()
+        self.usuario = Usuario.objects.create(nombre='Test Op', rol='operador')
+        self.ubi_sugerida = crear_ubicacion(pasillo='A', estante=1, nivel=1)
+        self.ubi_manual = crear_ubicacion(pasillo='B', estante=2, nivel=2)
+        # Create a pending box
+        self.caja = crear_caja(
+            id='CAJA-BATCH-001',
+            producto='Caja Test Batch',
+            medida=self.medida,
+            proveedor=self.proveedor
+        )
+
+    def test_previsualizar_lote(self):
+        url = '/api/cajas/previsualizar_lote/'
+        res = self.client.post(url, content_type='application/json', data={})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertIn('cajas', data)
+        self.assertIn('ubicaciones_libres', data)
+        # Verify our box is in the preview list
+        cajas = data['cajas']
+        self.assertEqual(len(cajas), 1)
+        self.assertEqual(cajas[0]['id'], 'CAJA-BATCH-001')
+        self.assertEqual(cajas[0]['sugerida_id'], self.ubi_sugerida.id_ubicacion)
+
+    def test_procesar_lote_con_sugerida_por_defecto(self):
+        url = '/api/cajas/procesar_lote/'
+        res = self.client.post(url, content_type='application/json', data={
+            'id_usuario': self.usuario.id_usuario,
+            'asignaciones': {}
+        })
+        self.assertEqual(res.status_code, 200)
+        self.caja.refresh_from_db()
+        self.assertEqual(self.caja.estado, 'en_transito')
+        self.assertEqual(self.caja.id_ubicacion, self.ubi_sugerida)
+        self.ubi_sugerida.refresh_from_db()
+        self.assertTrue(self.ubi_sugerida.estado_ocupacion)
+
+    def test_procesar_lote_con_override_manual(self):
+        url = '/api/cajas/procesar_lote/'
+        res = self.client.post(url, content_type='application/json', data={
+            'id_usuario': self.usuario.id_usuario,
+            'asignaciones': {
+                'CAJA-BATCH-001': self.ubi_manual.id_ubicacion
+            }
+        })
+        self.assertEqual(res.status_code, 200)
+        self.caja.refresh_from_db()
+        self.assertEqual(self.caja.estado, 'en_transito')
+        self.assertEqual(self.caja.id_ubicacion, self.ubi_manual)
+        self.ubi_manual.refresh_from_db()
+        self.assertTrue(self.ubi_manual.estado_ocupacion)
+        # Recommended one should remain free
+        self.ubi_sugerida.refresh_from_db()
+        self.assertFalse(self.ubi_sugerida.estado_ocupacion)
+
