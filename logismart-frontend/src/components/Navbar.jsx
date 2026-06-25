@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Package, Search, Terminal, Plus, Menu, X, ShieldAlert, Star, ChevronDown, User, LogOut } from 'lucide-react';
+import { Package, Search, Terminal, Plus, Menu, X, ShieldAlert, Star, ChevronDown, User, LogOut, Sun, Moon } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { getCajas, getCurrentUser } from '../api/endpoints';
 
@@ -9,6 +9,23 @@ export default function Navbar() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [user, setUser] = useState(null);
   const dropdownRef = useRef(null);
+
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('theme') || 'dark';
+  });
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   useEffect(() => {
     // Obtener información del usuario logueado en la sesión
@@ -54,7 +71,7 @@ export default function Navbar() {
         <img 
           src="/logo.png?v=3" 
           alt="LogiSmart" 
-          className="h-11 md:h-[52px] object-contain transition-transform group-hover:scale-[1.01]" 
+          className="h-11 md:h-[52px] object-contain transition-transform group-hover:scale-[1.01] dark:invert-0 invert" 
         />
       </NavLink>
 
@@ -172,6 +189,16 @@ export default function Navbar() {
             <span className="hidden sm:inline">Nueva Caja</span>
           </NavLink>
         )}
+
+        {/* Theme Switcher Toggle */}
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="text-muted hover:text-light p-2 rounded-lg hover:bg-surface2/25 transition-colors focus:outline-none"
+          title={theme === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
 
         {/* Hamburger toggle button - visible below lg */}
         <button 

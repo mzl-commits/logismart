@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,36 +8,95 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+    <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        base: '#0A0A0C',     // Negro carbón profundo
-                        surface: '#121214',   // Gris oscuro (tarjetas)
-                        surface2: '#1E1E22',  // Gris oscuro interactivo (hovers)
-                        accent: '#8E95A5',    // Gris acero para detalles
-                        muted: '#94A3B8',     // Gris medio (textos secundarios)
-                        light: '#F8FAFC',     // Blanco grisáceo (textos principales)
+                        base: 'var(--color-main-bg)',
+                        surface: 'var(--color-surface)',
+                        surface2: 'var(--color-surface2)',
+                        accent: 'var(--color-accent)',
+                        muted: 'var(--color-muted)',
+                        light: 'var(--color-light)',
                     }
                 }
             }
         }
     </script>
     <style>
+        :root {
+            /* Default: Light Mode Theme */
+            --color-main-bg: #F8FAFC;
+            --color-surface: #FFFFFF;
+            --color-surface2: #F1F5F9;
+            --color-accent: #64748B;
+            --color-muted: #64748B;
+            --color-light: #0F172A;
+            --color-border: #E2E8F0;
+        }
+        .dark {
+            /* Dark Mode Theme */
+            --color-main-bg: #0A0A0C;
+            --color-surface: #121214;
+            --color-surface2: #1E1E22;
+            --color-accent: #8E95A5;
+            --color-muted: #94A3B8;
+            --color-light: #F8FAFC;
+            --color-border: #222227;
+        }
+
         @keyframes fadeInUp { 
             from { opacity:0; transform:translateY(20px); } 
             to { opacity:1; transform:translateY(0); } 
         }
         .fade-in { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
         .glass-panel {
-            background: #121214;
-            border: 1px solid #222227;
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+        }
+
+        /* Light Mode Custom Overrides */
+        html:not(.dark) h1,
+        html:not(.dark) h2,
+        html:not(.dark) h3,
+        html:not(.dark) h4 {
+            color: var(--color-light) !important;
+        }
+        html:not(.dark) .text-white:not(.btn) {
+            color: var(--color-light) !important;
+        }
+        html:not(.dark) .text-slate-400 {
+            color: var(--color-muted) !important;
+        }
+        html:not(.dark) .border-surface2 {
+            border-color: var(--color-border) !important;
+        }
+        html:not(.dark) .bg-surface2\/30 {
+            background-color: var(--color-surface2) !important;
         }
     </style>
 </head>
-<body class="bg-base text-light font-sans min-h-screen flex items-center justify-center p-4">
+<body class="bg-base text-light font-sans min-h-screen flex items-center justify-center p-4 transition-colors duration-200">
+
+    <!-- Theme Toggle Button -->
+    <div class="absolute top-4 right-4">
+        <button type="button" onclick="toggleTheme()" class="text-muted hover:text-light p-2.5 rounded-xl bg-surface border border-surface2/60 transition-all shadow-md focus:outline-none flex items-center justify-center" id="theme-toggle-btn" title="Activar modo claro">
+            <i class="bi bi-sun text-lg" id="theme-icon-sun"></i>
+            <i class="bi bi-moon text-lg hidden" id="theme-icon-moon"></i>
+        </button>
+    </div>
 
     <div class="w-full max-w-md fade-in">
         <!-- Logo / Header -->
@@ -131,5 +190,40 @@
         </p>
     </div>
 
+    <script>
+        function actualizarIconoTema(theme) {
+            const sunIcon = document.getElementById('theme-icon-sun');
+            const moonIcon = document.getElementById('theme-icon-moon');
+            const btn = document.getElementById('theme-toggle-btn');
+
+            if (theme === 'dark') {
+                if (sunIcon) sunIcon.classList.remove('hidden');
+                if (moonIcon) moonIcon.classList.add('hidden');
+                if (btn) btn.title = "Activar modo claro";
+            } else {
+                if (sunIcon) sunIcon.classList.add('hidden');
+                if (moonIcon) moonIcon.classList.remove('hidden');
+                if (btn) btn.title = "Activar modo oscuro";
+            }
+        }
+
+        function toggleTheme() {
+            let currentTheme = localStorage.getItem('theme') || 'dark';
+            let newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            if (newTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            
+            localStorage.setItem('theme', newTheme);
+            actualizarIconoTema(newTheme);
+        }
+
+        // Initial update
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        actualizarIconoTema(currentTheme);
+    </script>
 </body>
 </html>

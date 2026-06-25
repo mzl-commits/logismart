@@ -13,7 +13,7 @@ import CarroIoT from './pages/CarroIoT';
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="bg-base text-light font-sans min-h-screen">
+      <div className="bg-main-bg text-light font-sans min-h-screen">
         <Navbar />
         
         <main className="max-w-[1440px] mx-auto px-6 py-6 fade-in">

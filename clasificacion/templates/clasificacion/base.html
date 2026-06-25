@@ -1,30 +1,62 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Sistema Logístico{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">    <script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        })();
+    </script>
+    <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        base: '#0A0A0C',     // Negro carbón profundo
-                        surface: '#121214',   // Gris oscuro (tarjetas)
-                        surface2: '#1E1E22',  // Gris oscuro interactivo (hovers)
-                        accent: '#8E95A5',    // Gris acero para detalles
-                        muted: '#94A3B8',     // Gris medio (textos secundarios)
-                        light: '#F8FAFC',     // Blanco grisáceo (textos principales)
+                        base: 'var(--color-main-bg)',
+                        surface: 'var(--color-surface)',
+                        surface2: 'var(--color-surface2)',
+                        accent: 'var(--color-accent)',
+                        muted: 'var(--color-muted)',
+                        light: 'var(--color-light)',
                     }
                 }
             }
         }
     </script>
     <style>
+        :root {
+            /* Default: Light Mode Theme */
+            --color-main-bg: #F8FAFC;
+            --color-surface: #FFFFFF;
+            --color-surface2: #F1F5F9;
+            --color-accent: #64748B;
+            --color-muted: #64748B;
+            --color-light: #0F172A;
+            --color-border: #E2E8F0;
+        }
+        .dark {
+            /* Dark Mode Theme */
+            --color-main-bg: #0A0A0C;
+            --color-surface: #121214;
+            --color-surface2: #1E1E22;
+            --color-accent: #8E95A5;
+            --color-muted: #94A3B8;
+            --color-light: #F8FAFC;
+            --color-border: #222227;
+        }
+
         /* Animations */
         @keyframes fadeInUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
         .fade-in { animation: fadeInUp .4s ease both; }
@@ -53,9 +85,9 @@
 
         /* Bootstrap JS modal/toast overrides for dark theme */
         .modal-backdrop { background: rgba(0,0,0,.75) !important; }
-        .modal-content { background: #121214 !important; border: 1px solid #222227 !important; color: #F8FAFC !important; border-radius: 16px !important; }
-        .modal-header { border-bottom: 1px solid #222227 !important; padding: 20px 24px !important; display: flex; align-items: center; justify-content: space-between; }
-        .modal-footer { border-top: 1px solid #222227 !important; padding: 16px 24px !important; display: flex; justify-content: flex-end; gap: .5rem; }
+        .modal-content { background: var(--color-surface) !important; border: 1px solid var(--color-border) !important; color: var(--color-light) !important; border-radius: 16px !important; }
+        .modal-header { border-bottom: 1px solid var(--color-border) !important; padding: 20px 24px !important; display: flex; align-items: center; justify-content: space-between; }
+        .modal-footer { border-top: 1px solid var(--color-border) !important; padding: 16px 24px !important; display: flex; justify-content: flex-end; gap: .5rem; }
         .modal-body { padding: 20px 24px !important; }
         .modal-title { font-weight: 700 !important; font-size: 16px !important; margin: 0; }
         .btn-close { box-sizing: content-box; width: 1em; height: 1em; padding: .25em .25em; color: #000; background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat; border: 0; border-radius: .25rem; opacity: .5; }
@@ -63,41 +95,169 @@
         .toast-header { display: flex; align-items: center; padding: .5rem .75rem; border-bottom: 1px solid rgba(0,0,0,.05); border-top-left-radius: calc(.25rem - 1px); border-top-right-radius: calc(.25rem - 1px); }
         .toast-body { padding: .75rem; }
 
-        .toast { background: #1E1E22 !important; color: #F8FAFC !important; border: 1px solid #2A2A30 !important; border-radius: 12px !important; }
-        .toast-header { background: #121214 !important; color: #F8FAFC !important; border-bottom: 1px solid #222227 !important; }
+        .toast { background: var(--color-surface2) !important; color: var(--color-light) !important; border: 1px solid var(--color-border) !important; border-radius: 12px !important; }
+        .toast-header { background: var(--color-surface) !important; color: var(--color-light) !important; border-bottom: 1px solid var(--color-border) !important; }
 
         /* Form controls used by Bootstrap JS modals */
         .form-control, .form-select {
-            background: #0A0A0C !important; border: 1px solid #222227 !important; color: #F8FAFC !important;
+            background: var(--color-main-bg) !important; border: 1px solid var(--color-border) !important; color: var(--color-light) !important;
             border-radius: 10px !important; font-size: 15px !important; padding: 10px 14px !important;
             font-family: 'Inter', sans-serif !important;
         }
         .form-control:focus, .form-select:focus {
-            border-color: #8E95A5 !important; box-shadow: 0 0 0 3px rgba(142,149,165,.2) !important; outline: none !important;
+            border-color: var(--color-accent) !important; box-shadow: 0 0 0 3px rgba(142,149,165,.2) !important; outline: none !important;
         }
-        .form-control::placeholder { color: #94A3B8 !important; }
-        .form-label { font-size: 12px !important; font-weight: 600 !important; color: #94A3B8 !important; text-transform: uppercase !important; letter-spacing: .4px !important; margin-bottom: 6px !important; display: block !important; }
-        .form-text { font-size: 12px !important; color: #94A3B8 !important; margin-top: 4px !important; }
-        .form-check-input { background-color: #1E1E22 !important; border-color: #2A2A30 !important; }
-        .form-check-input:checked { background-color: #8E95A5 !important; border-color: #8E95A5 !important; }
+        .form-control::placeholder { color: var(--color-muted) !important; }
+        .form-label { font-size: 12px !important; font-weight: 600 !important; color: var(--color-muted) !important; text-transform: uppercase !important; letter-spacing: .4px !important; margin-bottom: 6px !important; display: block !important; }
+        .form-text { font-size: 12px !important; color: var(--color-muted) !important; margin-top: 4px !important; }
+        .form-check-input { background-color: var(--color-surface2) !important; border-color: var(--color-border) !important; }
+        .form-check-input:checked { background-color: var(--color-accent) !important; border-color: var(--color-accent) !important; }
 
         /* Bootstrap btn overrides for modals */
         .btn { border-radius: 10px !important; font-weight: 600 !important; font-size: 14px !important; padding: 8px 18px !important; font-family: 'Inter', sans-serif !important; transition: all .2s !important; }
         .btn-sm { padding: 6px 14px !important; font-size: 13px !important; }
-        .btn-primary { background: #1E1E22 !important; border-color: #2A2A30 !important; color: #CBD5E1 !important; }
-        .btn-primary:hover { background: #2A2A30 !important; color: #fff !important; }
+        .btn-primary { background: var(--color-surface2) !important; border-color: var(--color-border) !important; color: var(--color-light) !important; }
+        .btn-primary:hover { background: var(--color-surface) !important; color: var(--color-light) !important; filter: brightness(0.95) !important; }
         .btn-success { background: #16a34a !important; border-color: #16a34a !important; color: #fff !important; }
         .btn-success:hover { background: #15803d !important; }
         .btn-warning { background: #d97706 !important; border-color: #d97706 !important; color: #fff !important; }
         .btn-warning:hover { background: #b45309 !important; }
-        .btn-secondary { background: #1E1E22 !important; border-color: #2A2A30 !important; color: #CBD5E1 !important; }
-        .btn-outline-secondary { background: transparent !important; border-color: #2A2A30 !important; color: #CBD5E1 !important; }
-        .btn-outline-secondary:hover { background: #1E1E22 !important; color: #CBD5E1 !important; }
+        .btn-secondary { background: var(--color-surface2) !important; border-color: var(--color-border) !important; color: var(--color-light) !important; }
+        .btn-outline-secondary { background: transparent !important; border-color: var(--color-border) !important; color: var(--color-light) !important; }
+        .btn-outline-secondary:hover { background: var(--color-surface2) !important; color: var(--color-light) !important; }
         .btn-outline-danger { background: transparent !important; border-color: #dc2626 !important; color: #dc2626 !important; }
         .btn-outline-danger:hover { background: rgba(220,38,38,.1) !important; }
-        .btn-outline-light { background: transparent !important; border: 1px solid #2A2A30 !important; color: #F8FAFC !important; text-align: left !important; }
-        .btn-outline-light:hover { background: #1E1E22 !important; }
-        .spinner-border { color: #8E95A5 !important; }
+        .btn-outline-light { background: transparent !important; border: 1px solid var(--color-border) !important; color: var(--color-light) !important; text-align: left !important; }
+        .btn-outline-light:hover { background: var(--color-surface2) !important; }
+        .spinner-border { color: var(--color-accent) !important; }
+
+        /* ── Light Mode Custom Overrides for Hardcoded Tailwind Dark Utilities ── */
+        html:not(.dark) h1,
+        html:not(.dark) h2,
+        html:not(.dark) h3,
+        html:not(.dark) h4,
+        html:not(.dark) h5,
+        html:not(.dark) h6 {
+            color: var(--color-light) !important;
+        }
+
+        /* Override general dark text colors to primary light text */
+        html:not(.dark) .text-white:not(.btn):not(.badge):not(.chip):not(.toast-body):not(.badge-override):not(.parada-num),
+        html:not(.dark) .text-slate-100,
+        html:not(.dark) .text-slate-200,
+        html:not(.dark) .text-slate-300,
+        html:not(.dark) .text-slate-350 {
+            color: var(--color-light) !important;
+        }
+
+        /* Override secondary text colors to muted light text */
+        html:not(.dark) .text-slate-400,
+        html:not(.dark) .text-slate-500 {
+            color: var(--color-muted) !important;
+        }
+
+        /* Override background colors of dark cards / containers */
+        html:not(.dark) .bg-slate-900,
+        html:not(.dark) .bg-slate-950,
+        html:not(.dark) .bg-slate-900\/30,
+        html:not(.dark) .bg-slate-900\/50,
+        html:not(.dark) .bg-slate-900\/80,
+        html:not(.dark) .bg-slate-950\/40,
+        html:not(.dark) .bg-slate-950\/50,
+        html:not(.dark) .bg-base\/60 {
+            background-color: var(--color-surface2) !important;
+        }
+
+        html:not(.dark) .bg-surface {
+            background-color: var(--color-surface) !important;
+        }
+
+        html:not(.dark) .bg-slate-800 {
+            background-color: var(--color-surface2) !important;
+            color: var(--color-light) !important;
+        }
+
+        html:not(.dark) img[src*="logo.png"] {
+            filter: invert(1) !important;
+        }
+
+        /* Warehouse Cell State Overrides for Light Mode */
+        html:not(.dark) .cell-libre {
+            background-image: none !important;
+            background-color: #e8f5e9 !important;
+            color: #1b5e20 !important;
+            border-color: #a5d6a7 !important;
+        }
+        html:not(.dark) .cell-ocupada {
+            background-image: none !important;
+            background-color: var(--color-surface2) !important;
+            color: var(--color-light) !important;
+            border-color: var(--color-border) !important;
+        }
+        html:not(.dark) .cell-carro {
+            background-image: none !important;
+            background-color: var(--color-accent) !important;
+            color: var(--color-surface) !important;
+            border-color: var(--color-accent) !important;
+        }
+        html:not(.dark) .cell-ruta {
+            background-image: none !important;
+            background-color: #fff8e1 !important;
+            color: #b78103 !important;
+            border-color: #ffe082 !important;
+        }
+
+        /* Override border colors to light theme borders */
+        html:not(.dark) .border-slate-800,
+        html:not(.dark) .border-slate-800\/60,
+        html:not(.dark) .border-slate-800\/40,
+        html:not(.dark) .border-slate-700,
+        html:not(.dark) .border-slate-700\/50,
+        html:not(.dark) .border-slate-800\/80,
+        html:not(.dark) .border-white\/\[\.04\] {
+            border-color: var(--color-border) !important;
+        }
+
+        html:not(.dark) .divide-slate-800\/40 > * + *,
+        html:not(.dark) .divide-slate-800\/60 > * + * {
+            border-color: var(--color-border) !important;
+        }
+
+        /* Hover background adjustments */
+        html:not(.dark) .hover\:bg-white\/\[\.02\]:hover {
+            background-color: rgba(0, 0, 0, 0.03) !important;
+        }
+
+        /* Input overrides for forms */
+        html:not(.dark) input[type="text"],
+        html:not(.dark) input[type="number"],
+        html:not(.dark) input[type="email"],
+        html:not(.dark) input[type="password"],
+        html:not(.dark) select,
+        html:not(.dark) textarea {
+            background-color: var(--color-surface2) !important;
+            border-color: var(--color-border) !important;
+            color: var(--color-light) !important;
+        }
+        
+        html:not(.dark) input::placeholder,
+        html:not(.dark) textarea::placeholder {
+            color: #94A3B8 !important;
+        }
+
+        /* Chips / filters list overrides */
+        html:not(.dark) .chip:not(.active),
+        html:not(.dark) .chip-cat:not(.active) {
+            border-color: var(--color-border) !important;
+            color: var(--color-muted) !important;
+            background: var(--color-surface) !important;
+        }
+        html:not(.dark) .chip:not(.active):hover,
+        html:not(.dark) .chip-cat:not(.active):hover {
+            border-color: var(--color-accent) !important;
+            color: var(--color-light) !important;
+            background: var(--color-surface2) !important;
+        }
 
         /* Search dropdown */
         .search-results { display: none; }
@@ -105,14 +265,14 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-base text-light font-sans min-h-screen">
+<body class="bg-base text-light font-sans min-h-screen transition-colors duration-200">
 
 <!-- ── Navbar ──────────────────────────────────────────────────────────────── -->
 <style>
   .nav-dropdown { display:none; }
   .nav-dropdown-wrap:hover .nav-dropdown { display:block; }
 </style>
-<nav class="sticky top-0 z-50 h-[64px] bg-[#0A0A0C] border-b border-surface2/60 backdrop-blur-xl px-5 flex items-center justify-between gap-4">
+<nav class="sticky top-0 z-50 h-[64px] bg-gradient-to-r from-base via-surface to-base border-b border-surface2/60 backdrop-blur-xl px-5 flex items-center justify-between gap-4">
 
     <!-- Logo -->
     <a href="/" class="flex items-center gap-2.5 group no-underline shrink-0">
@@ -183,6 +343,12 @@
             <span id="nav-pending-badge" class="hidden bg-amber-500 text-[#0A0A0C] text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
         </div>
 
+        <!-- Theme Toggle (Desktop) -->
+        <button type="button" onclick="toggleTheme()" class="text-muted hover:text-light p-2 rounded-lg hover:bg-surface2/25 transition-colors focus:outline-none flex items-center justify-center" id="theme-toggle-btn" title="Activar modo claro">
+            <i class="bi bi-sun text-sm" id="theme-icon-sun"></i>
+            <i class="bi bi-moon text-sm hidden" id="theme-icon-moon"></i>
+        </button>
+
         <!-- User chip -->
         {% if user.is_authenticated %}
         <div class="flex items-center gap-1.5 text-xs bg-surface2/30 border border-surface2 px-2.5 py-1.5 rounded-lg text-light">
@@ -209,6 +375,11 @@
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-dot inline-block"></span>
             <span id="mobile-nav-pending-badge" class="bg-amber-500 text-[#0A0A0C] text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
         </div>
+        <!-- Theme Toggle (Mobile) -->
+        <button type="button" onclick="toggleTheme()" class="text-muted hover:text-light p-1.5 rounded-lg hover:bg-surface2/25 transition-colors focus:outline-none flex items-center justify-center" id="mobile-theme-toggle-btn" title="Activar modo claro">
+            <i class="bi bi-sun text-lg" id="mobile-theme-icon-sun"></i>
+            <i class="bi bi-moon text-lg hidden" id="mobile-theme-icon-moon"></i>
+        </button>
         <button onclick="toggleMobileMenu()" class="text-light hover:text-white text-2xl transition-colors focus:outline-none">
             <i class="bi bi-list"></i>
         </button>
@@ -546,6 +717,52 @@ function toggleMobileMenu() {
         document.body.style.overflow = '';
     }
 }
+
+// ── Theme Switcher Helper Functions ──────────────────────────────────────────
+function actualizarIconoTema(theme) {
+    const sunIcon = document.getElementById('theme-icon-sun');
+    const moonIcon = document.getElementById('theme-icon-moon');
+    const mobileSunIcon = document.getElementById('mobile-theme-icon-sun');
+    const mobileMoonIcon = document.getElementById('mobile-theme-icon-moon');
+    const btn = document.getElementById('theme-toggle-btn');
+    const mobileBtn = document.getElementById('mobile-theme-toggle-btn');
+
+    if (theme === 'dark') {
+        if (sunIcon) sunIcon.classList.remove('hidden');
+        if (moonIcon) moonIcon.classList.add('hidden');
+        if (mobileSunIcon) mobileSunIcon.classList.remove('hidden');
+        if (mobileMoonIcon) mobileMoonIcon.classList.add('hidden');
+        if (btn) btn.title = "Activar modo claro";
+        if (mobileBtn) mobileBtn.title = "Activar modo claro";
+    } else {
+        if (sunIcon) sunIcon.classList.add('hidden');
+        if (moonIcon) moonIcon.classList.remove('hidden');
+        if (mobileSunIcon) mobileSunIcon.classList.add('hidden');
+        if (mobileMoonIcon) mobileMoonIcon.classList.remove('hidden');
+        if (btn) btn.title = "Activar modo oscuro";
+        if (mobileBtn) mobileBtn.title = "Activar modo oscuro";
+    }
+}
+
+function toggleTheme() {
+    let currentTheme = localStorage.getItem('theme') || 'dark';
+    let newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    
+    if (newTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+    
+    localStorage.setItem('theme', newTheme);
+    actualizarIconoTema(newTheme);
+}
+
+// Initial icon update on load
+document.addEventListener('DOMContentLoaded', () => {
+    const currentTheme = localStorage.getItem('theme') || 'dark';
+    actualizarIconoTema(currentTheme);
+});
 </script>
 {% block extra_js %}{% endblock %}
 </body>

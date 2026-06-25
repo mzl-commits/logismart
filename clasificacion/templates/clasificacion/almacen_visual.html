@@ -25,7 +25,7 @@
 }
 .ubicacion-cell:hover { @apply -translate-y-1 scale-105 z-10 shadow-[0_8px_24px_rgba(0,0,0,0.5)]; }
 .ubicacion-cell-compact {
-    @apply w-[44px] h-[30px] rounded-lg text-[9px] font-black text-center cursor-pointer transition-all duration-200 border relative select-none flex flex-col justify-center items-center backdrop-blur-sm;
+    @apply w-full h-[48px] rounded-lg text-[11px] font-black text-center cursor-pointer transition-all duration-200 border relative select-none flex flex-col justify-center items-center backdrop-blur-sm;
 }
 .ubicacion-cell-compact:hover { @apply border-sky-400 text-white shadow-md z-10; }
 .cell-libre   { @apply bg-gradient-to-br from-emerald-900 to-emerald-800 text-emerald-200 border-emerald-500/50; }
@@ -169,7 +169,12 @@ function getParada(ubiId) {
 // ── Renderizar mapa (layout por pasillo) ──────────────────────────────────────
 function renderMapa() {
     const cont = document.getElementById('contenedor-mapa');
-    if (!ubicacionesGlobal.length) { cont.innerHTML = `<div class="bg-amber-500/10 border border-amber-500/30 text-amber-400 p-4 rounded-xl text-sm">Sin ubicaciones.</div>`; return; }
+    if (!ubicacionesGlobal.length) {
+        cont.className = "";
+        cont.innerHTML = `<div class="bg-amber-500/10 border border-amber-500/30 text-amber-400 p-4 rounded-xl text-sm">Sin ubicaciones.</div>`;
+        return;
+    }
+    cont.className = "space-y-6";
 
     const cajasByUbi = {};
     cajasGlobal.forEach(c => { if (c.id_ubicacion) cajasByUbi[c.id_ubicacion] = c; });
@@ -232,7 +237,7 @@ function renderMapa() {
                         <div class="${clases}" onclick="seleccionarUbicacion(${u.id_ubicacion})" title="${u.pasillo}${u.estante}-N${u.nivel}-${u.lado === 'posterior' ? 'P' : 'A'}${u.casillero} (Caja ${cajaNum})">
                             ${paradaBadge}
                             <span class="font-black">C${cajaNum}</span>
-                            <div class="w-1.5 h-1.5 rounded-full mt-0.5 ${esCar ? 'bg-accent' : ocupada ? 'bg-red-500/80' : 'bg-emerald-500/80'}"></div>
+                            <div class="w-2 h-2 rounded-full mt-1 ${esCar ? 'bg-accent' : ocupada ? 'bg-red-500/80' : 'bg-emerald-500/80'}"></div>
                         </div>`;
                 });
 
@@ -244,7 +249,7 @@ function renderMapa() {
             }
 
             estantesHtml += `
-                <div class="flex flex-col gap-2 p-2 bg-slate-900/30 border border-slate-800/80 rounded-2xl w-[120px]" title="Estante ${pasillo}${est}">
+                <div class="flex flex-col gap-2 p-2 bg-slate-900/30 border border-slate-800/80 rounded-2xl w-full" title="Estante ${pasillo}${est}">
                     <div class="text-[9px] text-slate-500 font-bold text-center uppercase tracking-widest mb-1 flex items-center justify-between px-1">
                         <span>Est ${est}</span>
                         ${isCarFront ? `<span class="text-[9px] text-sky-400 font-black animate-pulse" title="AGV al Frente">🤖A</span>` : ''}
@@ -255,14 +260,15 @@ function renderMapa() {
         }
 
         html += `
-            <div class="pasillo-row flex flex-col gap-3 mb-6">
+            <div class="flex flex-col gap-3">
                 <div class="flex items-center gap-3">
                     <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-white font-black text-sm shadow">
-                        Pasillo ${pasillo}
+                        ${pasillo}
                     </div>
+                    <span class="text-sm font-bold text-slate-400">Pasillo ${pasillo}</span>
                     <div class="flex-1 h-px bg-gradient-to-r from-slate-800 to-transparent" />
                 </div>
-                <div class="ubicaciones-row flex gap-3.5 flex-wrap pl-12">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     ${estantesHtml}
                 </div>
             </div>`;

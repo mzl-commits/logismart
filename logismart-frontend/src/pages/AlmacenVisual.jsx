@@ -34,26 +34,19 @@ function CeldaUbi({ u, esCar, enRuta, parada, onClick }) {
   let style = {};
 
   if (esCar) {
-    base += 'border-accent shadow-[0_0_8px_rgba(142,149,165,0.3)] z-10 ';
-    style = { background: '#22242B' };
+    base += 'border-accent shadow-[0_0_8px_rgba(142,149,165,0.3)] z-10 bg-accent/20 ';
   } else if (parada?.esCurrent) {
-    base += 'border-[#52A27F] shadow-[0_0_8px_rgba(82,162,127,0.3)] animate-pulse ';
-    style = { background: '#121E19' };
+    base += 'border-[#52A27F] shadow-[0_0_8px_rgba(82,162,127,0.3)] animate-pulse bg-emerald-100/50 dark:bg-emerald-950/30 ';
   } else if (parada && !parada.esHecha) {
-    base += 'border-amber-500/60 shadow-[0_0_6px_rgba(245,158,11,0.2)] ';
-    style = { background: '#1E1912' };
+    base += 'border-amber-500/60 shadow-[0_0_6px_rgba(245,158,11,0.2)] bg-amber-100/50 dark:bg-amber-950/30 ';
   } else if (parada?.esHecha) {
-    base += 'border-slate-800/60 opacity-60 ';
-    style = { background: '#121214' };
+    base += 'border-slate-800/60 opacity-60 bg-surface2 ';
   } else if (enRuta) {
-    base += 'border-amber-500/40 ';
-    style = { background: '#1E1B15' };
+    base += 'border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 ';
   } else if (ocupada) {
-    base += 'border-surface2 hover:border-slate-700/60 hover:shadow ';
-    style = { background: '#1E1E22' };
+    base += 'border-surface2 hover:border-slate-700/60 hover:shadow bg-surface2 ';
   } else {
-    base += 'border-surface2 hover:border-accent/40 hover:shadow ';
-    style = { background: '#121214' };
+    base += 'border-surface2 hover:border-accent/40 hover:shadow bg-surface ';
   }
 
   const ladoChar = u.lado === 'posterior' ? 'P' : 'A';
@@ -61,7 +54,7 @@ function CeldaUbi({ u, esCar, enRuta, parada, onClick }) {
   return (
     <div 
       className={base} 
-      style={{ width: '100%', minWidth: '40px', minHeight: '30px', ...style }} 
+      style={{ width: '100%', minWidth: '40px', minHeight: '48px', ...style }} 
       onClick={onClick} 
       title={`${u.pasillo}${u.estante}-N${u.nivel}-${ladoChar}${u.casillero} (Caja ${cajaNum})`}
     >
@@ -79,12 +72,12 @@ function CeldaUbi({ u, esCar, enRuta, parada, onClick }) {
       )}
 
       {/* label ubicación */}
-      <div className={`text-[9px] font-black leading-none ${esCar ? 'text-light' : ocupada ? 'text-slate-400' : 'text-muted'}`}>
+      <div className={`text-[11px] font-black leading-none ${esCar ? 'text-light' : ocupada ? 'text-slate-400' : 'text-muted'}`}>
         C{cajaNum}
       </div>
 
       {/* dot ocupación */}
-      <div className={`w-1.5 h-1.5 rounded-full mt-0.5 ${esCar ? 'bg-accent' : ocupada ? 'bg-red-500/80' : 'bg-emerald-500/80'}`} />
+      <div className={`w-2 h-2 rounded-full mt-1 ${esCar ? 'bg-accent' : ocupada ? 'bg-red-500/80' : 'bg-emerald-500/80'}`} />
     </div>
   );
 }
@@ -266,12 +259,13 @@ export default function AlmacenVisual() {
                 });
 
                 return (
-                  <div key={pasillo}>
+                  <div key={pasillo} className="flex flex-col">
                     {/* Label del pasillo */}
                     <div className="flex items-center gap-3 mb-3">
                       <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-surface2 border border-accent/20 text-light font-black text-sm shadow-[0_0_12px_rgba(255,255,255,0.01)]">
                         {pasillo}
                       </div>
+                      <span className="text-sm font-bold text-slate-300">Pasillo {pasillo}</span>
                       <div className="flex-1 h-px bg-gradient-to-r from-accent/25 to-transparent" />
                       <span className="text-[11px] text-slate-500 font-medium">
                         {ubis.filter(u => u.estado_ocupacion).length}/{ubis.length} ocupadas
@@ -279,7 +273,7 @@ export default function AlmacenVisual() {
                     </div>
 
                     {/* Estantes del pasillo */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3.5 pl-12">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {Object.keys(porEstante).sort((a, b) => a - b).map(est => {
                         const slots = porEstante[est];
                         // Group slots by level: 3, 2, 1

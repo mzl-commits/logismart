@@ -479,6 +479,7 @@ class CajaViewSet(viewsets.ModelViewSet):
 class UbicacionViewSet(viewsets.ModelViewSet):
     queryset = Ubicacion.objects.all()
     serializer_class = UbicacionSerializer
+    pagination_class = None
 
     @action(detail=False, methods=['get'])
     def disponibles(self, request):
