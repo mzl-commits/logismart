@@ -274,6 +274,35 @@
         </div>
     </div>
 </div>
+
+<!-- Custom Modal for Batch Preview & Override -->
+<div id="modal-preview" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-[2000] p-4">
+    <div class="bg-surface border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-[fadeInUp_0.2s_ease-out] flex flex-col max-h-[90vh]">
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/30 flex items-center justify-between">
+            <h3 class="font-bold text-white flex items-center gap-2"><i class="bi bi-eye text-sky-400"></i> Previsualización e Itinerario del Lote</h3>
+            <button onclick="cerrarPreview()" class="text-slate-400 hover:text-white transition-colors"><i class="bi bi-x-lg"></i></button>
+        </div>
+        
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto space-y-4 flex-grow" id="modal-preview-body">
+            <!-- Contenido dinámico -->
+        </div>
+        
+        <!-- Footer -->
+        <div class="px-6 py-4 border-t border-slate-800 bg-slate-900/10 flex justify-between items-center gap-3">
+            <div class="text-xs text-slate-500">
+                Peso total: <span class="text-slate-300 font-bold" id="preview-peso">0</span> kg
+            </div>
+            <div class="flex gap-3">
+                <button onclick="cerrarPreview()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-light text-xs font-semibold rounded-xl transition-all">Cancelar</button>
+                <button onclick="confirmarYProcesar()" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5" id="btn-confirmar-lote">
+                    <i class="bi bi-check-lg"></i> Confirmar y Enviar Carro
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -408,7 +437,6 @@ document.getElementById('formCaja').addEventListener('submit', async (e) => {
         });
         const data = await res.json();
         if (res.ok) {
-            mostrarToast(`Caja "${producto}" agregada a la cola ✓`, 'success');
             e.target.reset();
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
             document.querySelector('.prio-btn[data-val="media"]')?.click();
@@ -428,21 +456,135 @@ document.getElementById('formCaja').addEventListener('submit', async (e) => {
     finally { btnCargando(btn, false); }
 });
 
-// ── Enviar carro ──────────────────────────────────────────────────────────────
+let currentPreviewData = null;
+
+// ── Enviar carro (Previsualización) ──────────────────────────────────────────
 async function enviarCarro(btn) {
     const usuarioId = document.getElementById('select-usuario-envio').value;
     if (!usuarioId) { mostrarToast('Selecciona un operador antes de enviar.', 'warning'); return; }
-    const ok = await confirmarModal('Enviar carro', `¿Enviar el carro a recoger ${colaPendientes.length} caja(s) con ruta optimizada?`, 'Enviar', 'btn-primary');
-    if (!ok) return;
+    
     btnCargando(btn, true);
+    try {
+        const res = await fetch('/api/cajas/previsualizar_lote/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (res.ok) {
+            currentPreviewData = data;
+            renderPreviewModal(data);
+        } else {
+            mostrarToast(data.error || 'Error al generar la previsualización del lote', 'danger');
+        }
+    } catch {
+        mostrarToast('Error de conexión', 'danger');
+    } finally {
+        btnCargando(btn, false);
+    }
+}
+
+function renderPreviewModal(data) {
+    const body = document.getElementById('modal-preview-body');
+    body.innerHTML = '';
+    
+    if (!data.cajas || !data.cajas.length) {
+        body.innerHTML = '<p class="text-slate-400 text-sm">No hay cajas compatibles para procesar en este lote.</p>';
+        return;
+    }
+    
+    data.cajas.forEach(caja => {
+        let optionsHtml = '';
+        
+        // Opción recomendada
+        if (caja.sugerida_id) {
+            optionsHtml += `<option value="${caja.sugerida_id}" selected>⭐ ${caja.sugerida_nombre} (Recomendada)</option>`;
+        } else {
+            optionsHtml += `<option value="" selected disabled>⚠️ Sin ubicación compatible</option>`;
+        }
+        
+        // Resto de ubicaciones libres
+        data.ubicaciones_libres.forEach(ubi => {
+            if (ubi.id_ubicacion !== caja.sugerida_id) {
+                optionsHtml += `<option value="${ubi.id_ubicacion}">${ubi.nombre}</option>`;
+            }
+        });
+        
+        const div = document.createElement('div');
+        div.className = 'flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-800 bg-slate-900/30';
+        div.innerHTML = `
+            <div>
+                <div class="font-bold text-white text-sm">${caja.producto}</div>
+                <div class="text-xs text-slate-500 mt-1 flex items-center gap-2">
+                    <span class="text-sky-400 font-semibold">${caja.id}</span> · ${caja.peso_kg} kg · <span class="uppercase font-bold">${caja.categoria}</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <span class="text-xs text-slate-400 font-semibold">Estante:</span>
+                <select id="select-ubi-${caja.id}" class="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all select-manual-ubi">
+                    ${optionsHtml}
+                </select>
+            </div>
+        `;
+        body.appendChild(div);
+    });
+    
+    document.getElementById('preview-peso').textContent = data.peso_total.toFixed(1);
+    
+    // Mostrar modal
+    const modal = document.getElementById('modal-preview');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function cerrarPreview() {
+    const modal = document.getElementById('modal-preview');
+    modal.classList.remove('flex');
+    modal.classList.add('hidden');
+}
+
+async function confirmarYProcesar() {
+    const usuarioId = document.getElementById('select-usuario-envio').value;
+    if (!usuarioId) { mostrarToast('Selecciona un operador antes de enviar.', 'warning'); return; }
+    
+    // Agrupar asignaciones manuales seleccionadas
+    const asignaciones = {};
+    let duplicados = false;
+    const seleccionadas = [];
+    
+    currentPreviewData.cajas.forEach(caja => {
+        const select = document.getElementById(`select-ubi-${caja.id}`);
+        if (select && select.value) {
+            const val = parseInt(select.value);
+            if (seleccionadas.includes(val)) {
+                duplicados = true;
+            }
+            seleccionadas.push(val);
+            asignaciones[caja.id] = val;
+        }
+    });
+    
+    if (duplicados) {
+        mostrarToast('Error: No puedes asignar la misma ubicación a dos cajas distintas.', 'warning');
+        return;
+    }
+    
+    const btn = document.getElementById('btn-confirmar-lote');
+    btnCargando(btn, true);
+    
     try {
         const res = await fetch('/api/cajas/procesar_lote/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-            body: JSON.stringify({ id_usuario: parseInt(usuarioId) }),
+            body: JSON.stringify({
+                id_usuario: parseInt(usuarioId),
+                asignaciones: asignaciones
+            }),
         });
         const data = await res.json();
         if (res.ok) {
+            cerrarPreview();
+            
             const paradas = (data.paradas || []).map((p, i) => `<li class="py-1 border-b border-slate-700/50 last:border-0"><span class="text-sky-400 font-bold mr-2">${i+1}.</span> <strong class="text-white">${p.ubicacion_nombre}</strong> <span class="text-slate-400 mx-2">—</span> ${p.producto}</li>`).join('');
             mostrarModalInfo('🚗 Carro en camino', `
                 <div class="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4 mb-4">
@@ -454,11 +596,17 @@ async function enviarCarro(btn) {
                 </div>
                 ${data.sin_ubicacion?.length ? `<div class="mt-4 bg-amber-500/10 border border-amber-500/30 text-amber-400 p-3 rounded-xl text-sm"><i class="bi bi-exclamation-triangle mr-2"></i>Sin ubicación asignada: <strong>${data.sin_ubicacion.join(', ')}</strong></div>` : ''}
             `, '/almacen/', '🗺️ Ver en mapa');
+            
             colaPendientes = [];
             renderizarCola();
-        } else { mostrarToast(data.error || 'Error al procesar lote', 'danger'); }
-    } catch { mostrarToast('Error de conexión', 'danger'); }
-    finally { btnCargando(btn, false); }
+        } else {
+            mostrarToast(data.error || 'Error al procesar lote', 'danger');
+        }
+    } catch {
+        mostrarToast('Error de conexión', 'danger');
+    } finally {
+        btnCargando(btn, false);
+    }
 }
 </script>
 {% endblock %}

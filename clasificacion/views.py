@@ -155,12 +155,129 @@ class CajaViewSet(viewsets.ModelViewSet):
         """
         Procesa cajas pendientes respetando la capacidad del carro:
         - Filtra hasta alcanzar el límite de peso, volumen o paradas.
-        - Clasifica y asigna ubicación óptima a cada una.
+        - Asigna ubicación óptima (o manual, si se provee asignaciones).
         - Genera ruta multi-parada optimizada para el carro.
         """
         usuario_id = request.data.get('id_usuario')
+        asignaciones = request.data.get('asignaciones', {})  # Diccionario { "id_caja": id_ubicacion_manual }
         cajas_pendientes = list(Caja.objects.filter(estado='pendiente').select_related('id_medida'))
+ 
+        if not cajas_pendientes:
+            return Response(
+                {'error': 'No hay cajas pendientes para procesar'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+ 
+        config = ConfigCarro.get_config()
+        peso_acumulado = 0.0
+        volumen_acumulado = 0.0
+        cajas_a_procesar = []
+ 
+        # Seleccionar cajas que caben en el carro
+        for caja in cajas_pendientes:
+            if len(cajas_a_procesar) >= config.max_paradas:
+                break
+            
+            peso_caja = float(caja.peso_kg)
+            vol_caja = float(caja.id_medida.volumen) if caja.id_medida and caja.id_medida.volumen else 0.0
+ 
+            if peso_acumulado + peso_caja <= float(config.peso_maximo_kg) and \
+               (volumen_acumulado + vol_caja <= float(config.volumen_cm3) or vol_caja == 0):
+                peso_acumulado += peso_caja
+                volumen_acumulado += vol_caja
+                cajas_a_procesar.append(caja)
+ 
+        if not cajas_a_procesar:
+            return Response(
+                {'error': 'Ninguna caja pendiente cabe en el carro con la configuración actual'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+ 
+        paradas = []
+        sin_ubicacion = []
+ 
+        for caja in cajas_a_procesar:
+            caja_id_str = str(caja.id)
+            mejor_ubi = None
+            detalle = None
+ 
+            # Verificar si el usuario asignó una ubicación manualmente
+            if caja_id_str in asignaciones and asignaciones[caja_id_str] is not None:
+                try:
+                    from .models import Ubicacion
+                    manual_ubi_id = int(asignaciones[caja_id_str])
+                    mejor_ubi = Ubicacion.objects.get(pk=manual_ubi_id)
+                    detalle = {'score': 100, 'tipo': 'Manual'}
+                except (Ubicacion.DoesNotExist, ValueError):
+                    pass
+ 
+            # Si no hay asignación manual, buscar la recomendada
+            if not mejor_ubi:
+                clasificacion = ClasificadorCajas.clasificar(caja)
+                mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
+                    clasificacion, caja=caja, incluir_detalle=True
+                )
+ 
+            if not mejor_ubi:
+                sin_ubicacion.append(caja.id)
+                continue
+ 
+            with transaction.atomic():
+                caja.id_ubicacion = mejor_ubi
+                caja.estado = 'en_transito'
+                caja.save()
+                OptimizadorUbicaciones.ocupar_ubicacion(mejor_ubi)
+                _registrar_historial(caja, 'pendiente', usuario_id)
+ 
+            paradas.append({
+                'caja_id': caja.id,
+                'producto': caja.producto,
+                'x': mejor_ubi.coord_x,
+                'y': mejor_ubi.coord_y,
+                'ubicacion_id': mejor_ubi.id_ubicacion,
+                'ubicacion_nombre': str(mejor_ubi),
+                'score': detalle.get('score') if detalle else None,
+            })
+ 
+        if not paradas:
+            return Response(
+                {'error': 'Ninguna caja pudo ser asignada a una ubicación'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+ 
+        carro_id = int(request.data.get('carro_id', 1))
+        carro = _get_or_create_carro(carro_id)
+        paradas_ordenadas = RutaService.optimizar_paradas(carro.pos_x, carro.pos_y, paradas)
+        primera = paradas_ordenadas[0]
+        ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, primera['x'], primera['y'])
+ 
+        carro.paradas = paradas_ordenadas
+        carro.parada_actual = 0
+        carro.destino_x = primera['x']
+        carro.destino_y = primera['y']
+        carro.ruta = ruta
+        carro.estado = 'moviendo'
+        carro.caja_id = primera['caja_id']
+        carro.save()
+ 
+        esp32_resultado = _enviar_esp32(primera['x'], primera['y'], caja_id=primera['caja_id'], carro_id=carro_id)
+        logger.info("Lote procesado: %d paradas, primera → %s", len(paradas_ordenadas), primera['ubicacion_nombre'])
+ 
+        return Response({
+            'mensaje': f'{len(paradas)} caja(s) procesada(s)',
+            'total_paradas': len(paradas_ordenadas),
+            'paradas': paradas_ordenadas,
+            'sin_ubicacion': sin_ubicacion,
+            'esp32': esp32_resultado,
+        })
 
+    @action(detail=False, methods=['get', 'post'])
+    def previsualizar_lote(self, request):
+        """
+        Previsualiza qué cajas se procesarán y sus ubicaciones sugeridas,
+        así como todas las ubicaciones libres en el almacén.
+        """
+        cajas_pendientes = list(Caja.objects.filter(estado='pendiente').select_related('id_medida'))
         if not cajas_pendientes:
             return Response(
                 {'error': 'No hay cajas pendientes para procesar'},
@@ -192,65 +309,36 @@ class CajaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        paradas = []
-        sin_ubicacion = []
-
+        cajas_preview = []
         for caja in cajas_a_procesar:
             clasificacion = ClasificadorCajas.clasificar(caja)
             mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
                 clasificacion, caja=caja, incluir_detalle=True
             )
-            if not mejor_ubi:
-                sin_ubicacion.append(caja.id)
-                continue
-
-            with transaction.atomic():
-                caja.id_ubicacion = mejor_ubi
-                caja.estado = 'en_transito'
-                caja.save()
-                OptimizadorUbicaciones.ocupar_ubicacion(mejor_ubi)
-                _registrar_historial(caja, 'pendiente', usuario_id)
-
-            paradas.append({
-                'caja_id': caja.id,
+            cajas_preview.append({
+                'id': caja.id,
                 'producto': caja.producto,
-                'x': mejor_ubi.coord_x,
-                'y': mejor_ubi.coord_y,
-                'ubicacion_id': mejor_ubi.id_ubicacion,
-                'ubicacion_nombre': str(mejor_ubi),
-                'score': detalle.get('score') if detalle else None,
+                'peso_kg': float(caja.peso_kg),
+                'categoria': caja.categoria,
+                'es_fragil': caja.es_fragil,
+                'sugerida_id': mejor_ubi.id_ubicacion if mejor_ubi else None,
+                'sugerida_nombre': str(mejor_ubi) if mejor_ubi else 'Ninguna compatible',
             })
 
-        if not paradas:
-            return Response(
-                {'error': 'Ninguna caja pudo ser asignada a una ubicación'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        carro_id = int(request.data.get('carro_id', 1))
-        carro = _get_or_create_carro(carro_id)
-        paradas_ordenadas = RutaService.optimizar_paradas(carro.pos_x, carro.pos_y, paradas)
-        primera = paradas_ordenadas[0]
-        ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, primera['x'], primera['y'])
-
-        carro.paradas = paradas_ordenadas
-        carro.parada_actual = 0
-        carro.destino_x = primera['x']
-        carro.destino_y = primera['y']
-        carro.ruta = ruta
-        carro.estado = 'moviendo'
-        carro.caja_id = primera['caja_id']
-        carro.save()
-
-        esp32_resultado = _enviar_esp32(primera['x'], primera['y'], caja_id=primera['caja_id'], carro_id=carro_id)
-        logger.info("Lote procesado: %d paradas, primera → %s", len(paradas_ordenadas), primera['ubicacion_nombre'])
+        # Todas las ubicaciones desocupadas
+        from .models import Ubicacion
+        libres_qs = Ubicacion.objects.filter(estado_ocupacion=False)
+        ubicaciones_libres = [
+            {'id_ubicacion': u.id_ubicacion, 'nombre': str(u)}
+            for u in libres_qs
+        ]
 
         return Response({
-            'mensaje': f'{len(paradas)} caja(s) procesada(s)',
-            'total_paradas': len(paradas_ordenadas),
-            'paradas': paradas_ordenadas,
-            'sin_ubicacion': sin_ubicacion,
-            'esp32': esp32_resultado,
+            'cajas': cajas_preview,
+            'ubicaciones_libres': ubicaciones_libres,
+            'peso_total': peso_acumulado,
+            'volumen_total': volumen_acumulado,
+            'max_paradas': config.max_paradas,
         })
 
     @action(detail=True, methods=['get'])
