@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Radio, Battery, Wifi, Activity, AlertTriangle } from 'lucide-react';
+import { Radio, Battery, Wifi, Activity, AlertTriangle, ArrowUp, ArrowDown, Disc } from 'lucide-react';
 import { getEstadoCarro } from '../api/endpoints';
 
 export default function CarroIoT() {
@@ -91,6 +91,18 @@ export default function CarroIoT() {
                   <td style={{fontWeight:600, color:'var(--text-light)'}}>{estado?.caja_id || 'Sin carga'}</td>
                 </tr>
                 <tr>
+                  <td>Motor Izquierdo</td>
+                  <td style={{fontWeight:600, color:'var(--text-light)'}}>
+                    {estado?.motor_izq_vel !== undefined ? `${estado.motor_izq_vel} us` : '1500 us'}
+                  </td>
+                </tr>
+                <tr>
+                  <td>Motor Derecho</td>
+                  <td style={{fontWeight:600, color:'var(--text-light)'}}>
+                    {estado?.motor_der_vel !== undefined ? `${estado.motor_der_vel} us` : '1500 us'}
+                  </td>
+                </tr>
+                <tr>
                   <td>Alineación</td>
                   <td style={{fontWeight:600, color:'var(--text-light)'}}>
                     {estado?.sensor_opt_izq_int !== undefined && estado?.sensor_opt_der_int !== undefined ? (
@@ -103,12 +115,116 @@ export default function CarroIoT() {
           </div>
         </div>
 
-        <div className="card" style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight: 200, borderStyle: 'dashed'}}>
-           <div style={{textAlign:'center', color:'var(--text-muted)'}}>
-              <Radio size={48} style={{opacity: 0.2, marginBottom: 16}}/>
-              <p>Monitoreo activo del vehículo AGV</p>
-              <p style={{fontSize: 12, marginTop: 8}}>Los datos se actualizan automáticamente en tiempo real</p>
-           </div>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 280 }}>
+          <div className="card-title mb-4" style={{ width: '100%', textAlign: 'left' }}>
+            <Disc size={14} style={{ display: 'inline', marginRight: 6, animation: (estado?.motor_izq_vel !== 1500 || estado?.motor_der_vel !== 1500) ? 'spin 2s linear infinite' : 'none' }}/>
+            Estado Dinámico del AGV
+          </div>
+          
+          <div className="agv-container" style={{ width: '100%' }}>
+            <div style={{ display: 'flex', gap: '32px', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+              {/* Left Motor label */}
+              <div style={{ textAlign: 'right', minWidth: '80px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Motor Izq</div>
+                <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>
+                  {estado?.motor_izq_vel !== undefined ? `${estado.motor_izq_vel} us` : '1500 us'}
+                </div>
+                <div style={{ fontSize: '10px', marginTop: '2px', fontWeight: '600', color: (estado?.motor_izq_vel > 1500) ? '#10b981' : (estado?.motor_izq_vel < 1500) ? '#f43f5e' : 'var(--text-muted)' }}>
+                  {estado?.motor_izq_vel > 1500 ? '↑ Avance' : estado?.motor_izq_vel < 1500 ? '↓ Reversa' : '■ Detenido'}
+                </div>
+              </div>
+
+              {/* The Chassis Graphic */}
+              <div className="agv-chassis">
+                {/* Front Obstacle Warning */}
+                {estado?.sensor_obstaculo_frontal && (
+                  <div style={{
+                    position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)',
+                    fontSize: '8px', background: '#f43f5e', color: '#fff', padding: '2px 6px',
+                    borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap', zIndex: 20
+                  }}>
+                    OBSTÁCULO FRONTAL
+                  </div>
+                )}
+
+                {/* Front Obstacle Sensor dot */}
+                <div style={{ position: 'absolute', top: '10px' }}>
+                  <div className={`sensor-dot ${estado?.sensor_obstaculo_frontal ? 'sensor-obstacle-active' : ''}`} title="Sensor Obstáculo Frontal" />
+                </div>
+
+                {/* Left Wheel */}
+                <div className="wheel wheel-left">
+                  {estado?.motor_izq_vel !== undefined && estado.motor_izq_vel !== 1500 && (
+                    <div 
+                      className={`wheel-tread ${estado.motor_izq_vel > 1500 ? 'wheel-spin-fw' : 'wheel-spin-rv'}`} 
+                      style={{ '--spin-speed': `${Math.max(0.1, 1 - Math.abs(estado.motor_izq_vel - 1500) / 500)}s` }}
+                    />
+                  )}
+                </div>
+
+                {/* Right Wheel */}
+                <div className="wheel wheel-right">
+                  {estado?.motor_der_vel !== undefined && estado.motor_der_vel !== 1500 && (
+                    <div 
+                      className={`wheel-tread ${estado.motor_der_vel > 1500 ? 'wheel-spin-fw' : 'wheel-spin-rv'}`} 
+                      style={{ '--spin-speed': `${Math.max(0.1, 1 - Math.abs(estado.motor_der_vel - 1500) / 500)}s` }}
+                    />
+                  )}
+                </div>
+
+                {/* Coordinates inside the chassis */}
+                <div style={{ textAlign: 'center', zIndex: 10 }}>
+                  <div style={{ fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Coordenadas</div>
+                  <div style={{ fontSize: '18px', fontWeight: '800', color: '#fff' }}>
+                    ({estado?.pos_x ?? 0}, {estado?.pos_y ?? 0})
+                  </div>
+                  {estado?.destino_x !== undefined && estado?.destino_y !== undefined && (
+                    <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Destino: ({estado.destino_x}, {estado.destino_y})
+                    </div>
+                  )}
+                </div>
+
+                {/* Line Follower Sensors (optical sensors) at bottom/front */}
+                <div style={{ position: 'absolute', bottom: '15px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <div style={{ fontSize: '8px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Sensores Ópticos</div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <div className={`sensor-dot ${estado?.sensor_opt_izq_ext ? 'sensor-align-active' : ''}`} title="Izq Extremo" />
+                    <div className={`sensor-dot ${estado?.sensor_opt_izq_int ? 'sensor-align-active' : ''}`} title="Izq Interno" />
+                    <div className={`sensor-dot ${estado?.sensor_opt_der_int ? 'sensor-align-active' : ''}`} title="Der Interno" />
+                    <div className={`sensor-dot ${estado?.sensor_opt_der_ext ? 'sensor-align-active' : ''}`} title="Der Extremo" />
+                  </div>
+                </div>
+
+                {/* Rear Obstacle Sensor dot */}
+                <div style={{ position: 'absolute', bottom: '40px' }}>
+                  <div className={`sensor-dot ${estado?.sensor_obstaculo_trasero ? 'sensor-obstacle-active' : ''}`} title="Sensor Obstáculo Trasero" />
+                </div>
+                
+                {/* Rear Obstacle Warning */}
+                {estado?.sensor_obstaculo_trasero && (
+                  <div style={{
+                    position: 'absolute', bottom: '-15px', left: '50%', transform: 'translateX(-50%)',
+                    fontSize: '8px', background: '#f43f5e', color: '#fff', padding: '2px 6px',
+                    borderRadius: '4px', fontWeight: 'bold', whiteSpace: 'nowrap', zIndex: 20
+                  }}>
+                    OBSTÁCULO TRASERO
+                  </div>
+                )}
+              </div>
+
+              {/* Right Motor label */}
+              <div style={{ textAlign: 'left', minWidth: '80px' }}>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Motor Der</div>
+                <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>
+                  {estado?.motor_der_vel !== undefined ? `${estado.motor_der_vel} us` : '1500 us'}
+                </div>
+                <div style={{ fontSize: '10px', marginTop: '2px', fontWeight: '600', color: (estado?.motor_der_vel > 1500) ? '#10b981' : (estado?.motor_der_vel < 1500) ? '#f43f5e' : 'var(--text-muted)' }}>
+                  {estado?.motor_der_vel > 1500 ? '↑ Avance' : estado?.motor_der_vel < 1500 ? '↓ Reversa' : '■ Detenido'}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

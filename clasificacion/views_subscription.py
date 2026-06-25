@@ -22,7 +22,6 @@ STRIPE_PRICE_ID = getattr(settings, 'STRIPE_PRICE_ID', '')       # ID del precio
 STRIPE_WEBHOOK_SECRET = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
 
 
-@login_required
 def suscripcion_view(request):
     """Página principal de suscripción."""
     success = request.GET.get('success')

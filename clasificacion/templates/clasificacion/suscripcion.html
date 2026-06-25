@@ -164,6 +164,11 @@
 {% block extra_js %}
 <script>
 async function iniciarPago() {
+    {% if not user.is_authenticated %}
+    window.location.href = '/login/?next=/suscripcion/';
+    return;
+    {% endif %}
+
     const btn = document.getElementById('btn-checkout');
     btn.disabled = true;
     btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Redirigiendo...';
@@ -190,6 +195,11 @@ async function iniciarPago() {
 }
 
 async function enviarCotizacion(btn) {
+    {% if not user.is_authenticated %}
+    window.location.href = '/login/?next=/suscripcion/';
+    return;
+    {% endif %}
+
     const empresa = document.getElementById('cot-empresa').value.trim();
     const email = document.getElementById('cot-email').value.trim();
     const necesidad = document.getElementById('cot-necesidad').value.trim();
