@@ -27,7 +27,7 @@ const bool INVERTIR_MOTOR_IZQ = false;
 // Si tu motor derecho gira al revés, cambia esto a 'true'
 const bool INVERTIR_MOTOR_DER = false;
 // Si el carro gira a la izquierda cuando debería ir a la derecha (o viceversa), pon esto en 'true'
-const bool INVERTIR_DIRECCION_GIRO = false;
+const bool INVERTIR_DIRECCION_GIRO = true;
 // ─── CONFIGURACIÓN DE SEGUIDOR DE LÍNEA ──────────────────────────────────────
 // MODO_STRADDLE = true: La línea negra va EN MEDIO de los dos sensores frontales.
 //                       (Ambos sensores leen BLANCO en trayecto recto).
