@@ -4,7 +4,7 @@
 // ==========================================
 // 1. CREDENCIALES DE RED Y SERVIDOR VPS
 // ==========================================
-const char* ssid = "iPhone de yuri";                     // <-- Wi-Fi local
+const char* ssid = "iPhone de Yuri";                     // <-- Wi-Fi local
 const char* password = "12345678";             // <-- Clave Wi-Fi local
 const char* mqtt_server = "38.250.116.213";
 const int mqtt_port = 1883;

@@ -165,14 +165,15 @@ class Command(BaseCommand):
                     fields = [
                         'sensor_opt_izq_ext', 'sensor_opt_izq_int', 'sensor_opt_der_int', 'sensor_opt_der_ext',
                         'sensor_obstaculo_frontal', 'sensor_obstaculo_trasero', 'motor_izq_vel', 'motor_der_vel',
-                        'pos_x', 'pos_y', 'destino_x', 'destino_y', 'estado', 'caja_id', 'parada_actual'
+                        'pos_x', 'pos_y', 'destino_x', 'destino_y', 'estado', 'caja_id', 'parada_actual',
+                        'bateria_pct'
                     ]
                     
                     updated = False
                     for field in fields:
                         if field in payload:
                             val = payload[field]
-                            if field in ['pos_x', 'pos_y', 'destino_x', 'destino_y', 'motor_izq_vel', 'motor_der_vel', 'parada_actual']:
+                            if field in ['pos_x', 'pos_y', 'destino_x', 'destino_y', 'motor_izq_vel', 'motor_der_vel', 'parada_actual', 'bateria_pct']:
                                 val = int(val)
                             elif field in ['sensor_opt_izq_ext', 'sensor_opt_izq_int', 'sensor_opt_der_int', 'sensor_opt_der_ext', 'sensor_obstaculo_frontal', 'sensor_obstaculo_trasero']:
                                 val = bool(val)

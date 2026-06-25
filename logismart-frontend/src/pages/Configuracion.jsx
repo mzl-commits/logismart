@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getConfigCarro, getMedidas, updateConfigCarro } from '../api/endpoints';
+import { getConfigCarro, getMedidas, updateConfigCarro, getEstadoCarro } from '../api/endpoints';
 
 export default function Configuracion() {
   const [config, setConfig] = useState({
@@ -73,6 +73,30 @@ export default function Configuracion() {
       if (retryTimer) clearTimeout(retryTimer);
     };
   }, []);
+
+  // Polling fallback when WebSockets are disconnected
+  useEffect(() => {
+    if (wsConnected) return;
+
+    const poll = async () => {
+      try {
+        const res = await getEstadoCarro();
+        const data = Array.isArray(res.data) ? res.data[0] : res.data;
+        if (data) {
+          setTelemetry(prev => ({
+            ...prev,
+            ...data
+          }));
+        }
+      } catch (err) {
+        console.error('Error in telemetry polling fallback:', err);
+      }
+    };
+
+    poll();
+    const interval = setInterval(poll, 3000);
+    return () => clearInterval(interval);
+  }, [wsConnected]);
 
   useEffect(() => {
     const estaMoviendose = (telemetry.estado === 'moviendo' || telemetry.estado === 'regresando');

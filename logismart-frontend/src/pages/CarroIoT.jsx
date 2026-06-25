@@ -7,6 +7,17 @@ export default function CarroIoT() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const friendlyState = (state) => {
+    const map = {
+      'esperando': 'Esperando instrucciones',
+      'moviendo': 'En movimiento',
+      'llego': 'Llegó a destino',
+      'regresando': 'Regresando a base',
+      'desconectado': 'Desconectado'
+    };
+    return map[state] || state || 'Desconocido';
+  };
+
   const fetchEstado = async () => {
     try {
       const res = await getEstadoCarro();
@@ -43,21 +54,21 @@ export default function CarroIoT() {
         <div className="stat-card">
           <div className="stat-icon indigo"><Radio size={24}/></div>
           <div>
-            <div className="stat-value">{estado?.estado_actual || 'Desconocido'}</div>
+            <div className="stat-value">{friendlyState(estado?.estado)}</div>
             <div className="stat-label">Estado de Operación</div>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon emerald"><Battery size={24}/></div>
           <div>
-            <div className="stat-value">{estado?.nivel_bateria ? `${estado.nivel_bateria}%` : '—'}</div>
+            <div className="stat-value">{estado?.bateria_pct !== undefined ? `${estado.bateria_pct}%` : '—'}</div>
             <div className="stat-label">Nivel de Batería</div>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon cyan"><Activity size={24}/></div>
           <div>
-            <div className="stat-value">{estado?.posicion_x !== undefined ? `(${estado.posicion_x}, ${estado.posicion_y})` : '—'}</div>
+            <div className="stat-value">{estado?.pos_x !== undefined ? `(${estado.pos_x}, ${estado.pos_y})` : '—'}</div>
             <div className="stat-label">Coordenadas Actuales</div>
           </div>
         </div>
@@ -71,18 +82,20 @@ export default function CarroIoT() {
               <tbody>
                 <tr>
                   <td>Última actualización</td>
-                  <td style={{fontWeight:600, color:'var(--text)'}}>
-                    {estado?.ultima_actualizacion ? new Date(estado.ultima_actualizacion).toLocaleTimeString('es-PE') : '—'}
+                  <td style={{fontWeight:600, color:'var(--text-light)'}}>
+                    {estado?.actualizado_en ? new Date(estado.actualizado_en).toLocaleTimeString('es-PE') : '—'}
                   </td>
                 </tr>
                 <tr>
-                  <td>Carga actual (kg)</td>
-                  <td style={{fontWeight:600, color:'var(--text)'}}>{estado?.carga_actual_kg || '0'} kg</td>
+                  <td>Caja asignada (Carga)</td>
+                  <td style={{fontWeight:600, color:'var(--text-light)'}}>{estado?.caja_id || 'Sin carga'}</td>
                 </tr>
                 <tr>
                   <td>Alineación</td>
-                  <td style={{fontWeight:600, color:'var(--text)'}}>
-                    {estado?.alineado !== undefined ? (estado.alineado ? '✅ Correcta' : '❌ Desalineado') : '—'}
+                  <td style={{fontWeight:600, color:'var(--text-light)'}}>
+                    {estado?.sensor_opt_izq_int !== undefined && estado?.sensor_opt_der_int !== undefined ? (
+                      (estado.sensor_opt_izq_int || estado.sensor_opt_der_int) ? '✅ Correcta' : '❌ Desalineado'
+                    ) : '—'}
                   </td>
                 </tr>
               </tbody>
@@ -93,8 +106,8 @@ export default function CarroIoT() {
         <div className="card" style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight: 200, borderStyle: 'dashed'}}>
            <div style={{textAlign:'center', color:'var(--text-muted)'}}>
               <Radio size={48} style={{opacity: 0.2, marginBottom: 16}}/>
-              <p>Esperando conexión directa por WebSockets...</p>
-              <p style={{fontSize: 12, marginTop: 8}}>El mapa en vivo se renderizará aquí</p>
+              <p>Monitoreo activo del vehículo AGV</p>
+              <p style={{fontSize: 12, marginTop: 8}}>Los datos se actualizan automáticamente en tiempo real</p>
            </div>
         </div>
       </div>

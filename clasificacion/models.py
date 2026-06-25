@@ -283,6 +283,7 @@ class EstadoCarro(models.Model):
     # Telemetría de motores (us: 1000 - 2000, 1500 = detenido)
     motor_izq_vel = models.IntegerField(default=1500)
     motor_der_vel = models.IntegerField(default=1500)
+    bateria_pct = models.IntegerField(default=100)
 
     class Meta:
         db_table = 'estado_carro'
