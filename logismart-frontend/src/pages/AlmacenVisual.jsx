@@ -28,18 +28,19 @@ function StatCard({ icon, label, value, sub }) {
 /* ── celda del mapa ──────────────────────────────── */
 function CeldaUbi({ u, esCar, enRuta, parada, onClick }) {
   const ocupada = u.estado_ocupacion;
+  const cajaNum = u.lado === 'posterior' ? (u.casillero === 1 ? 3 : 4) : (u.casillero === 1 ? 1 : 2);
 
-  let base = 'warehouse-cell relative flex flex-col items-center justify-center text-center cursor-pointer select-none transition-all duration-200 rounded-xl border-2 ';
+  let base = 'warehouse-cell relative flex flex-col items-center justify-center text-center cursor-pointer select-none transition-all duration-200 rounded-lg border ';
   let style = {};
 
   if (esCar) {
-    base += 'border-accent shadow-[0_0_15px_rgba(142,149,165,0.3)] scale-110 z-20 ';
+    base += 'border-accent shadow-[0_0_8px_rgba(142,149,165,0.3)] z-10 ';
     style = { background: '#22242B' };
   } else if (parada?.esCurrent) {
-    base += 'border-[#52A27F] shadow-[0_0_12px_rgba(82,162,127,0.3)] animate-pulse ';
+    base += 'border-[#52A27F] shadow-[0_0_8px_rgba(82,162,127,0.3)] animate-pulse ';
     style = { background: '#121E19' };
   } else if (parada && !parada.esHecha) {
-    base += 'border-amber-500/60 shadow-[0_0_8px_rgba(245,158,11,0.2)] ';
+    base += 'border-amber-500/60 shadow-[0_0_6px_rgba(245,158,11,0.2)] ';
     style = { background: '#1E1912' };
   } else if (parada?.esHecha) {
     base += 'border-slate-800/60 opacity-60 ';
@@ -48,49 +49,42 @@ function CeldaUbi({ u, esCar, enRuta, parada, onClick }) {
     base += 'border-amber-500/40 ';
     style = { background: '#1E1B15' };
   } else if (ocupada) {
-    base += 'border-surface2 hover:-translate-y-0.5 hover:border-slate-700/60 hover:shadow-lg ';
+    base += 'border-surface2 hover:border-slate-700/60 hover:shadow ';
     style = { background: '#1E1E22' };
   } else {
-    base += 'border-surface2 hover:-translate-y-1 hover:border-accent/40 hover:shadow-[0_4px_12px_rgba(255,255,255,0.02)] ';
+    base += 'border-surface2 hover:border-accent/40 hover:shadow ';
     style = { background: '#121214' };
   }
+
+  const ladoChar = u.lado === 'posterior' ? 'P' : 'A';
 
   return (
     <div 
       className={base} 
-      style={{ width: '100%', minWidth: '95px', minHeight: '82px', ...style }} 
+      style={{ width: '100%', minWidth: '40px', minHeight: '30px', ...style }} 
       onClick={onClick} 
-      title={`${u.pasillo}${u.estante}-N${u.nivel}`}
+      title={`${u.pasillo}${u.estante}-N${u.nivel}-${ladoChar}${u.casillero} (Caja ${cajaNum})`}
     >
       {/* badge parada */}
       {parada && (
         <div className={`
-          absolute -top-2 -right-2 w-5.5 h-5.5 rounded-full text-[9px] font-black flex items-center justify-center
-          border-2 border-slate-950 z-10
-          ${parada.esCurrent ? 'bg-[#52A27F] text-white shadow-[0_0_8px_rgba(82,162,127,0.4)]' :
+          absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full text-[8px] font-black flex items-center justify-center
+          border border-slate-950 z-10
+          ${parada.esCurrent ? 'bg-[#52A27F] text-white shadow-[0_0_6px_rgba(82,162,127,0.4)]' :
             parada.esHecha   ? 'bg-slate-600 text-slate-300' :
-                               'bg-amber-400 text-amber-950 shadow-[0_0_6px_rgba(251,191,36,0.5)]'}
+                               'bg-amber-400 text-amber-950 shadow-[0_0_4px_rgba(251,191,36,0.5)]'}
         `}>
           {parada.esHecha ? '✓' : parada.numero}
         </div>
       )}
 
-      {/* indicador "en ruta" dashed */}
-      {enRuta && !esCar && !parada && (
-        <div className="absolute inset-0 rounded-xl border-2 border-dashed border-amber-500/30 pointer-events-none" />
-      )}
-
-      {/* carro emoji */}
-      {esCar && <span className="text-2xl mb-0.5 drop-shadow-[0_0_8px_rgba(142,149,165,0.5)]">🤖</span>}
-
       {/* label ubicación */}
-      <div className={`text-xs md:text-sm font-black leading-tight tracking-wide ${esCar ? 'text-light' : ocupada ? 'text-slate-400' : 'text-muted'}`}>
-        {u.pasillo}{u.estante}<br />
-        <span className="text-[11px] md:text-xs font-semibold opacity-70">N{u.nivel}</span>
+      <div className={`text-[9px] font-black leading-none ${esCar ? 'text-light' : ocupada ? 'text-slate-400' : 'text-muted'}`}>
+        C{cajaNum}
       </div>
 
       {/* dot ocupación */}
-      <div className={`w-1.5 h-1.5 rounded-full mt-1 ${esCar ? 'bg-accent' : ocupada ? 'bg-red-500/80' : 'bg-emerald-500/80'}`} />
+      <div className={`w-1.5 h-1.5 rounded-full mt-0.5 ${esCar ? 'bg-accent' : ocupada ? 'bg-red-500/80' : 'bg-emerald-500/80'}`} />
     </div>
   );
 }
@@ -129,9 +123,9 @@ export default function AlmacenVisual() {
 
   const enRuta   = (x, y) => carro?.ruta?.some(p => p.x === x && p.y === y) ?? false;
   const esCarro  = (x, y) => carro?.pos_x === x && carro?.pos_y === y;
-  const getParada = (x, y) => {
+  const getParada = (ubiId) => {
     if (!carro?.paradas?.length) return null;
-    const idx = carro.paradas.findIndex(p => p.x === x && p.y === y);
+    const idx = carro.paradas.findIndex(p => p.ubicacion_id === ubiId);
     if (idx === -1) return null;
     return { numero: idx + 1, esCurrent: idx === carro.parada_actual, esHecha: idx < carro.parada_actual };
   };
@@ -287,24 +281,61 @@ export default function AlmacenVisual() {
                     {/* Estantes del pasillo */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 gap-3.5 pl-12">
                       {Object.keys(porEstante).sort((a, b) => a - b).map(est => {
-                        const niveles = [...porEstante[est]].sort((a, b) => b.nivel - a.nivel); // nivel alto arriba
+                        const slots = porEstante[est];
+                        // Group slots by level: 3, 2, 1
+                        const ubiPorNivel = { 3: [], 2: [], 1: [] };
+                        slots.forEach(u => {
+                          if (ubiPorNivel[u.nivel]) {
+                            ubiPorNivel[u.nivel].push(u);
+                          }
+                        });
+
+                        const pasilloX = pasillo.charCodeAt(0) - 65;
+                        const estanteNum = parseInt(est);
+                        const isCarFront = carro?.pos_x === pasilloX && carro?.pos_y === estanteNum;
+                        const isCarBack = carro?.pos_x === (pasilloX + 1) && carro?.pos_y === estanteNum;
+
                         return (
                           <div
                             key={est}
                             className="flex flex-col gap-1.5 p-2 bg-surface2/30 border border-surface2 rounded-xl"
                             title={`Estante ${pasillo}${est}`}
                           >
-                            <div className="text-[9px] text-slate-500 font-bold text-center uppercase tracking-widest mb-1">Est {est}</div>
-                            {niveles.map(u => (
-                              <CeldaUbi
-                                key={u.id_ubicacion}
-                                u={u}
-                                esCar={esCarro(u.coord_x, u.coord_y)}
-                                enRuta={enRuta(u.coord_x, u.coord_y)}
-                                parada={getParada(u.coord_x, u.coord_y)}
-                                onClick={() => { setUbiSel(u); setTab('ubicacion'); }}
-                              />
-                            ))}
+                            <div className="text-[9px] text-slate-500 font-bold text-center uppercase tracking-widest mb-1 flex items-center justify-between px-1">
+                              <span>Est {est}</span>
+                              {isCarFront && <span className="text-[9px] text-sky-400 font-black animate-pulse" title="AGV al Frente">🤖A</span>}
+                              {isCarBack && <span className="text-[9px] text-sky-400 font-black animate-pulse" title="AGV Atrás">🤖P</span>}
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              {[3, 2, 1].map(lvlNum => {
+                                const lvlSlots = ubiPorNivel[lvlNum] || [];
+                                const c1 = lvlSlots.find(u => u.lado === 'adelante' && u.casillero === 1);
+                                const c2 = lvlSlots.find(u => u.lado === 'adelante' && u.casillero === 2);
+                                const c3 = lvlSlots.find(u => u.lado === 'posterior' && u.casillero === 1);
+                                const c4 = lvlSlots.find(u => u.lado === 'posterior' && u.casillero === 2);
+
+                                return (
+                                  <div key={lvlNum} className="border border-surface2/80 bg-surface/30 rounded-lg p-1 flex flex-col gap-1">
+                                    <div className="text-[8px] text-slate-500 font-bold px-0.5">N{lvlNum}</div>
+                                    <div className="grid grid-cols-2 gap-1">
+                                      {[c1, c2, c3, c4].map((u, idx) => {
+                                        if (!u) return <div key={idx} className="w-full h-7 border border-transparent opacity-0 pointer-events-none" />;
+                                        return (
+                                          <CeldaUbi
+                                            key={u.id_ubicacion}
+                                            u={u}
+                                            esCar={esCarro(u.coord_x, u.coord_y)}
+                                            enRuta={enRuta(u.coord_x, u.coord_y)}
+                                            parada={getParada(u.id_ubicacion)}
+                                            onClick={() => { setUbiSel(u); setTab('ubicacion'); }}
+                                          />
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
                         );
                       })}
@@ -455,8 +486,8 @@ export default function AlmacenVisual() {
                     <div className="space-y-4">
                       {/* cabecera ubicación */}
                       <div className="bg-surface2 border border-surface2 rounded-xl p-4 text-center">
-                        <div className="font-black text-2xl text-accent drop-shadow-[0_0_10px_rgba(142,149,165,0.2)] mb-2">
-                          {u.pasillo}{u.estante}-N{u.nivel}
+                        <div className="font-black text-xl text-accent drop-shadow-[0_0_10px_rgba(142,149,165,0.2)] mb-2">
+                          {u.pasillo}{u.estante}-N{u.nivel}-{u.lado === 'posterior' ? 'P' : 'A'}{u.casillero} (Caja {u.lado === 'posterior' ? (u.casillero === 1 ? 3 : 4) : (u.casillero === 1 ? 1 : 2)})
                         </div>
                         <div className="flex flex-wrap justify-center gap-1.5">
                           <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-surface/80 text-slate-300 border border-surface2">
@@ -478,6 +509,8 @@ export default function AlmacenVisual() {
                       <div className="bg-surface2/40 border border-surface2 rounded-xl divide-y divide-surface2 text-sm">
                         {[
                           { label: 'Capacidad',      value: `${u.capacidad_peso_kg} kg` },
+                          { label: 'Lado',           value: u.lado === 'posterior' ? 'Posterior' : 'Adelante' },
+                          { label: 'Casillero',      value: `Caja ${u.lado === 'posterior' ? (u.casillero === 1 ? 3 : 4) : (u.casillero === 1 ? 1 : 2)} (${u.lado === 'posterior' ? 'P' : 'A'}${u.casillero})` },
                           { label: 'Prioridad cat.', value: u.prioridad_categoria },
                           { label: 'Coordenadas',    value: `X:${u.coord_x} Y:${u.coord_y}`, mono: true },
                         ].map(({ label, value, mono }) => (

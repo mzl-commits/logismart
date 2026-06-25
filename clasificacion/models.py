@@ -85,21 +85,32 @@ class Ubicacion(models.Model):
         default='sin_preferencia'
     )
 
+    lado = models.CharField(max_length=20, choices=[('adelante', 'Adelante'), ('posterior', 'Posterior')], default='adelante')
+    casillero = models.IntegerField(choices=[(1, 'Casillero 1'), (2, 'Casillero 2')], default=1)
+
     class Meta:
         db_table = 'ubicaciones'
-        unique_together = ('pasillo', 'estante', 'nivel')
+        unique_together = ('pasillo', 'estante', 'nivel', 'lado', 'casillero')
     
     @property
     def coord_x(self):
-        # Convierte pasillo (A,B,C...) a número
-        return ord(self.pasillo.upper()) - ord('A')
+        # Convierte pasillo (A,B,C...) a número.
+        # Si es del lado posterior, se accede desde el pasillo siguiente (x + 1)
+        x = ord(self.pasillo.upper()) - ord('A')
+        if self.lado == 'posterior':
+            return x + 1
+        return x
     
     @property
     def coord_y(self):
         return self.estante
     
     def __str__(self):
-        return f"{self.pasillo}{self.estante}-N{self.nivel}"
+        lado_char = self.lado[0].upper() if self.lado else 'A'
+        caja_num = 3 if self.lado == 'posterior' and self.casillero == 1 else \
+                   4 if self.lado == 'posterior' and self.casillero == 2 else \
+                   1 if self.casillero == 1 else 2
+        return f"{self.pasillo}{self.estante}-N{self.nivel}-{lado_char}{self.casillero} (Caja {caja_num})"
 
 
 class Usuario(models.Model):

@@ -451,47 +451,80 @@ export default function NuevaCaja() {
                       {/* Grid representation */}
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 overflow-y-auto max-h-[42vh] pr-2">
                         {Object.keys(porEstante).sort((a, b) => parseInt(a) - parseInt(b)).map(est => {
-                          const niveles = [...porEstante[est]].sort((a, b) => b.nivel - a.nivel);
+                          const slots = porEstante[est];
+                          // Group slots by level: 3, 2, 1
+                          const ubiPorNivel = { 3: [], 2: [], 1: [] };
+                          slots.forEach(u => {
+                            if (ubiPorNivel[u.nivel]) {
+                              ubiPorNivel[u.nivel].push(u);
+                            }
+                          });
+
                           return (
                             <div key={est} className="p-3.5 bg-slate-900/20 border border-slate-800/80 rounded-2xl flex flex-col gap-2">
                               <div className="text-[10px] text-slate-500 font-bold text-center uppercase tracking-widest pb-1.5 border-b border-slate-800/60">
                                 Estante {activePasillo}{est}
                               </div>
-                              <div className="flex flex-col gap-1.5">
-                                {niveles.map(u => {
-                                  const isOccupied = u.estado_ocupacion;
-                                  const isSelectedByCurrent = asignaciones[selectedBoxId] === u.id_ubicacion;
-                                  const isSelectedByOther = Object.entries(asignaciones).some(([cajaId, ubiId]) => cajaId !== selectedBoxId && ubiId === u.id_ubicacion);
-                                  const isRecommendedForCurrent = previewData.cajas.find(c => c.id === selectedBoxId)?.sugerida_id === u.id_ubicacion;
-
-                                  let cellClass = 'w-full py-2 px-3 rounded-xl text-[10px] font-black text-left transition-all border-2 select-none flex items-center justify-between ';
-                                  let clickHandler = null;
-
-                                  if (isOccupied) {
-                                    cellClass += 'border-slate-850 bg-slate-950 text-slate-650 cursor-not-allowed';
-                                  } else if (isSelectedByCurrent) {
-                                    cellClass += 'border-emerald-500 bg-emerald-950 text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)] cursor-pointer';
-                                    clickHandler = () => handleUbiChange(selectedBoxId, u.id_ubicacion);
-                                  } else if (isSelectedByOther) {
-                                    cellClass += 'border-amber-600/30 bg-amber-950/40 text-amber-500/40 opacity-55 cursor-not-allowed';
-                                  } else if (isRecommendedForCurrent) {
-                                    cellClass += 'border-indigo-500/50 bg-indigo-950/40 text-indigo-300 hover:border-sky-500 cursor-pointer';
-                                    clickHandler = () => handleUbiChange(selectedBoxId, u.id_ubicacion);
-                                  } else {
-                                    cellClass += 'border-slate-800 bg-slate-900/30 text-slate-400 hover:border-sky-500 hover:text-white cursor-pointer';
-                                    clickHandler = () => handleUbiChange(selectedBoxId, u.id_ubicacion);
-                                  }
+                              <div className="flex flex-col gap-2">
+                                {[3, 2, 1].map(lvlNum => {
+                                  const lvlSlots = ubiPorNivel[lvlNum] || [];
+                                  const c1 = lvlSlots.find(u => u.lado === 'adelante' && u.casillero === 1);
+                                  const c2 = lvlSlots.find(u => u.lado === 'adelante' && u.casillero === 2);
+                                  const c3 = lvlSlots.find(u => u.lado === 'posterior' && u.casillero === 1);
+                                  const c4 = lvlSlots.find(u => u.lado === 'posterior' && u.casillero === 2);
+                                  const cellList = [
+                                    { u: c1, label: 'C1', num: 1 },
+                                    { u: c2, label: 'C2', num: 2 },
+                                    { u: c3, label: 'C3', num: 3 },
+                                    { u: c4, label: 'C4', num: 4 }
+                                  ];
 
                                   return (
-                                    <div
-                                      key={u.id_ubicacion}
-                                      className={cellClass}
-                                      onClick={clickHandler}
-                                      title={isOccupied ? 'Ocupado' : isSelectedByOther ? 'Reservado por otra caja' : 'Disponible'}
-                                    >
-                                      <span>Nivel {u.nivel}</span>
-                                      {isRecommendedForCurrent && <span className="text-[10px]" title="Óptima">⭐</span>}
-                                      {isSelectedByCurrent && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>}
+                                    <div key={lvlNum} className="border border-slate-800/50 bg-slate-950/20 rounded-xl p-2 flex flex-col gap-1.5">
+                                      <div className="text-[9px] text-slate-400 font-bold px-0.5">Nivel {lvlNum}</div>
+                                      <div className="grid grid-cols-2 gap-1">
+                                        {cellList.map(({ u, label }) => {
+                                          if (!u) return <div key={label} className="w-full py-1 text-[9px] border border-transparent opacity-0 pointer-events-none" />;
+
+                                          const isOccupied = u.estado_ocupacion;
+                                          const isSelectedByCurrent = asignaciones[selectedBoxId] === u.id_ubicacion;
+                                          const isSelectedByOther = Object.entries(asignaciones).some(([cajaId, ubiId]) => cajaId !== selectedBoxId && ubiId === u.id_ubicacion);
+                                          const isRecommendedForCurrent = previewData.cajas.find(c => c.id === selectedBoxId)?.sugerida_id === u.id_ubicacion;
+
+                                          let cellClass = 'w-full py-1 px-1.5 rounded-lg text-[9px] font-black text-center transition-all border select-none flex items-center justify-between ';
+                                          let clickHandler = null;
+
+                                          if (isOccupied) {
+                                            cellClass += 'border-slate-850 bg-slate-950 text-slate-700 cursor-not-allowed';
+                                          } else if (isSelectedByCurrent) {
+                                            cellClass += 'border-emerald-500 bg-emerald-950 text-emerald-300 shadow-[0_0_6px_rgba(16,185,129,0.3)] cursor-pointer';
+                                            clickHandler = () => handleUbiChange(selectedBoxId, u.id_ubicacion);
+                                          } else if (isSelectedByOther) {
+                                            cellClass += 'border-amber-600/30 bg-amber-950/40 text-amber-500/30 opacity-55 cursor-not-allowed';
+                                          } else if (isRecommendedForCurrent) {
+                                            cellClass += 'border-indigo-500/50 bg-indigo-950/40 text-indigo-300 hover:border-sky-500 cursor-pointer';
+                                            clickHandler = () => handleUbiChange(selectedBoxId, u.id_ubicacion);
+                                          } else {
+                                            cellClass += 'border-slate-800 bg-slate-900/30 text-slate-400 hover:border-sky-500 hover:text-white cursor-pointer';
+                                            clickHandler = () => handleUbiChange(selectedBoxId, u.id_ubicacion);
+                                          }
+
+                                          return (
+                                            <div
+                                              key={u.id_ubicacion}
+                                              className={cellClass}
+                                              onClick={clickHandler}
+                                              title={isOccupied ? 'Ocupado' : isSelectedByOther ? 'Reservado por otra caja' : isRecommendedForCurrent ? 'Recomendada ⭐' : 'Disponible'}
+                                            >
+                                              <span className="flex items-center gap-0.5">
+                                                {isRecommendedForCurrent && <span className="text-[8px]">⭐</span>}
+                                                {label}
+                                              </span>
+                                              {isSelectedByCurrent && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     </div>
                                   );
                                 })}
