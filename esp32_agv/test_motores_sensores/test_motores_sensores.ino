@@ -33,9 +33,9 @@ const bool INVERTIR_DIRECCION_GIRO = true; // Por defecto true tras invertir dir
 // La línea negra va en el medio de los sensores (true) o debajo (false)
 const bool MODO_STRADDLE = true; 
 
-// Polaridad del sensor: HIGH en negro, LOW en blanco
-#define ESTADO_NEGRO HIGH
-#define ESTADO_BLANCO LOW
+// Polaridad del sensor: LOW en negro, HIGH en blanco (sensores activos en bajo)
+#define ESTADO_NEGRO LOW
+#define ESTADO_BLANCO HIGH
 
 // Velocidad base (0 a 255)
 int baseSpeedForward = 120;
