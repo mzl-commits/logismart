@@ -4,14 +4,14 @@
 {% block content %}
 
 {% if success %}
-<div class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/70 backdrop-blur-sm" id="success-overlay">
-  <div class="bg-[#132E35] border border-emerald-500/30 rounded-3xl p-10 max-w-md w-full text-center shadow-2xl shadow-emerald-500/10 fade-in">
+<div class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/75 backdrop-blur-sm" id="success-overlay">
+  <div class="bg-surface border border-[#222227] rounded-3xl p-10 max-w-md w-full text-center shadow-2xl shadow-emerald-500/5 fade-in">
     <div class="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
       <i class="bi bi-check-circle-fill text-emerald-400 text-4xl"></i>
     </div>
     <h2 class="text-2xl font-bold text-white mb-2">¡Suscripción activada!</h2>
     <p class="text-slate-400 text-sm mb-8">Tu plan LogiSmart Básico está activo. Recibirás un correo de confirmación de Stripe.</p>
-    <a href="/" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-8 py-3 rounded-xl inline-flex items-center gap-2 transition-all no-underline">
+    <a href="/" class="bg-surface2 hover:bg-surface border border-accent/25 text-light font-bold px-8 py-3 rounded-xl inline-flex items-center gap-2 transition-all no-underline">
       <i class="bi bi-speedometer2"></i> Ir al Dashboard
     </a>
   </div>
@@ -27,7 +27,7 @@
 
 <!-- Header -->
 <div class="text-center mb-12 fade-in">
-  <div class="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold px-4 py-1.5 rounded-full mb-4 uppercase tracking-widest">
+  <div class="inline-flex items-center gap-2 bg-surface2 border border-accent/20 text-light text-xs font-bold px-4 py-1.5 rounded-full mb-4 uppercase tracking-widest">
     <i class="bi bi-stars"></i> Planes y Suscripción
   </div>
   <h2 class="text-4xl font-extrabold text-white mb-3 tracking-tight">Elige tu plan</h2>
@@ -40,16 +40,16 @@
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto mb-16">
 
   <!-- Plan Básico -->
-  <div class="relative bg-surface border border-[#2D4A53]/80 rounded-3xl p-8 shadow-2xl shadow-black/30 flex flex-col fade-in hover:border-[#69818D]/60 transition-all duration-300 group">
+  <div class="relative bg-surface border border-surface2 rounded-3xl p-8 shadow-2xl shadow-black/30 flex flex-col fade-in hover:border-accent/40 transition-all duration-300 group">
     <!-- Badge -->
     <div class="absolute -top-3.5 left-8">
-      <span class="bg-gradient-to-r from-[#2D4A53] to-[#69818D] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+      <span class="bg-surface2 text-light border border-accent/30 text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
         MÁS POPULAR
       </span>
     </div>
 
     <div class="mb-6 pt-2">
-      <div class="w-12 h-12 bg-[#2D4A53]/60 border border-[#69818D]/30 rounded-2xl flex items-center justify-center text-2xl mb-4">
+      <div class="w-12 h-12 bg-surface2 border border-surface2 rounded-2xl flex items-center justify-center text-2xl mb-4">
         📦
       </div>
       <h3 class="text-xl font-bold text-white">Plan Básico</h3>
@@ -67,36 +67,32 @@
 
     <!-- Features -->
     <ul class="space-y-3 mb-8 flex-grow">
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-400 shrink-0"></i> Dashboard en tiempo real</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-400 shrink-0"></i> Control AGV (Robot de clasificación)</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-400 shrink-0"></i> Gestión de almacén y ubicaciones</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-400 shrink-0"></i> Despachos y trazabilidad completa</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-400 shrink-0"></i> API REST documentada (Swagger)</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-400 shrink-0"></i> Hasta 2 usuarios (admin + controlador)</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-400 shrink-0"></i> Soporte por email</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-400 shrink-0"></i> Actualizaciones incluidas</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Dashboard en tiempo real</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Control AGV (Robot de clasificación)</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Gestión de almacén y ubicaciones</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Despachos y trazabilidad completa</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> API REST documentada (Swagger)</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Hasta 2 usuarios (admin + controlador)</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Soporte por email</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Actualizaciones incluidas</li>
     </ul>
 
     <!-- CTA -->
     <button onclick="iniciarPago()" id="btn-checkout"
-            class="w-full bg-gradient-to-r from-[#2D4A53] to-[#69818D] hover:from-[#69818D] hover:to-[#2D4A53] text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-[#69818D]/20 hover:shadow-[#69818D]/40 transition-all text-base hover:-translate-y-0.5">
+            class="w-full bg-surface2 text-light hover:bg-accent/10 border border-accent/30 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all text-base hover:-translate-y-0.5">
       <i class="bi bi-credit-card text-lg"></i> Suscribirse ahora
     </button>
     <p class="text-center text-xs text-slate-600 mt-3 flex items-center justify-center gap-1">
-      <i class="bi bi-lock-fill"></i> Pago seguro con Stripe · SSL
-    </p>
-  </div>
-
-  <!-- Plan Enterprise -->
-  <div class="relative bg-gradient-to-br from-[#0D1F23] to-[#132E35] border border-amber-500/20 rounded-3xl p-8 shadow-2xl shadow-amber-500/5 flex flex-col fade-in fade-d1 hover:border-amber-500/40 transition-all duration-300">
+      <i class="bi bi-lock-fill"></i> Pago seguro con Stripe ·  <!-- Plan Enterprise -->
+  <div class="relative bg-surface border border-surface2 rounded-3xl p-8 shadow-2xl shadow-black/30 flex flex-col fade-in fade-d1 hover:border-accent/40 transition-all duration-300">
     <div class="absolute -top-3.5 left-8">
-      <span class="bg-gradient-to-r from-amber-600 to-amber-400 text-slate-900 text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+      <span class="bg-surface2 text-amber-500 border border-amber-500/30 text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
         ENTERPRISE
       </span>
     </div>
 
     <div class="mb-6 pt-2">
-      <div class="w-12 h-12 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center text-2xl mb-4">
+      <div class="w-12 h-12 bg-surface2 border border-surface2 rounded-2xl flex items-center justify-center text-2xl mb-4">
         🏭
       </div>
       <h3 class="text-xl font-bold text-white">Plan Personalizado</h3>
@@ -105,32 +101,32 @@
 
     <div class="mb-8">
       <div class="flex items-end gap-2">
-        <span class="text-4xl font-extrabold text-amber-400">A medida</span>
+        <span class="text-4xl font-extrabold text-light">A medida</span>
       </div>
       <p class="text-xs text-slate-500 mt-1">Precio según requerimientos · Cotización sin costo</p>
     </div>
 
     <ul class="space-y-3 mb-8 flex-grow">
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-amber-400 shrink-0"></i> Todo lo del Plan Básico</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-amber-400 shrink-0"></i> Usuarios ilimitados</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-amber-400 shrink-0"></i> Integraciones con sistemas externos (ERP / WMS)</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-amber-400 shrink-0"></i> Módulos adicionales a pedido</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-amber-400 shrink-0"></i> Soporte prioritario 24/7</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-amber-400 shrink-0"></i> Capacitación para tu equipo</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-amber-400 shrink-0"></i> SLA garantizado</li>
-      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-amber-400 shrink-0"></i> Instalación on-premise disponible</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Todo lo del Plan Básico</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Usuarios ilimitados</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Integraciones con sistemas externos (ERP / WMS)</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Módulos adicionales a pedido</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Soporte prioritario 24/7</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Capacitación para tu equipo</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> SLA garantizado</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Instalación on-premise disponible</li>
     </ul>
 
     <!-- Cotización Form -->
     <div class="space-y-3" id="form-cotizacion">
       <input type="text" id="cot-empresa" placeholder="Nombre de tu empresa"
-             class="w-full bg-[#0D1F23]/80 border border-[#2D4A53]/80 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all">
+             class="w-full bg-base border border-surface2 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-all">
       <input type="email" id="cot-email" placeholder="Correo de contacto"
-             class="w-full bg-[#0D1F23]/80 border border-[#2D4A53]/80 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all">
+             class="w-full bg-base border border-surface2 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-all">
       <textarea id="cot-necesidad" rows="2" placeholder="Describe brevemente qué necesitas..."
-                class="w-full bg-[#0D1F23]/80 border border-[#2D4A53]/80 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 transition-all resize-none"></textarea>
+                class="w-full bg-base border border-surface2 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-all resize-none"></textarea>
       <button onclick="enviarCotizacion(this)"
-              class="w-full bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500 hover:border-amber-500 text-amber-400 hover:text-slate-900 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all text-base">
+              class="w-full bg-surface2 text-amber-500 border border-amber-500/30 hover:bg-amber-500/10 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all text-base">
         <i class="bi bi-envelope-fill text-lg"></i> Solicitar cotización
       </button>
     </div>
@@ -138,9 +134,9 @@
 </div>
 
 <!-- Feature comparison teaser -->
-<div class="max-w-4xl mx-auto bg-[#132E35]/50 border border-[#2D4A53]/40 rounded-2xl p-6 fade-in fade-d2">
+<div class="max-w-4xl mx-auto bg-surface border border-surface2 rounded-2xl p-6 fade-in fade-d2">
   <div class="flex items-center gap-3 mb-4">
-    <i class="bi bi-shield-check text-emerald-400 text-xl"></i>
+    <i class="bi bi-shield-check text-[#52A27F] text-xl"></i>
     <span class="font-semibold text-white">¿Por qué LogiSmart?</span>
   </div>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">

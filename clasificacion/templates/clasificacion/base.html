@@ -6,20 +6,19 @@
     <title>{% block title %}Sistema Logístico{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
-    <script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">    <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        base: '#0D1F23',
-                        surface: '#132E35',
-                        surface2: '#2D4A53',
-                        accent: '#69818D',
-                        muted: '#5A636A',
-                        light: '#AFB3B7',
+                        base: '#0A0A0C',     // Negro carbón profundo
+                        surface: '#121214',   // Gris oscuro (tarjetas)
+                        surface2: '#1E1E22',  // Gris oscuro interactivo (hovers)
+                        accent: '#8E95A5',    // Gris acero para detalles
+                        muted: '#94A3B8',     // Gris medio (textos secundarios)
+                        light: '#F8FAFC',     // Blanco grisáceo (textos principales)
                     }
                 }
             }
@@ -53,10 +52,10 @@
         .toast:not(.show) { display: none; }
 
         /* Bootstrap JS modal/toast overrides for dark theme */
-        .modal-backdrop { background: rgba(0,0,0,.6) !important; }
-        .modal-content { background: #132E35 !important; border: 1px solid #2D4A53 !important; color: #AFB3B7 !important; border-radius: 16px !important; }
-        .modal-header { border-bottom: 1px solid #2D4A53 !important; padding: 20px 24px !important; display: flex; align-items: center; justify-content: space-between; }
-        .modal-footer { border-top: 1px solid #2D4A53 !important; padding: 16px 24px !important; display: flex; justify-content: flex-end; gap: .5rem; }
+        .modal-backdrop { background: rgba(0,0,0,.75) !important; }
+        .modal-content { background: #121214 !important; border: 1px solid #222227 !important; color: #F8FAFC !important; border-radius: 16px !important; }
+        .modal-header { border-bottom: 1px solid #222227 !important; padding: 20px 24px !important; display: flex; align-items: center; justify-content: space-between; }
+        .modal-footer { border-top: 1px solid #222227 !important; padding: 16px 24px !important; display: flex; justify-content: flex-end; gap: .5rem; }
         .modal-body { padding: 20px 24px !important; }
         .modal-title { font-weight: 700 !important; font-size: 16px !important; margin: 0; }
         .btn-close { box-sizing: content-box; width: 1em; height: 1em; padding: .25em .25em; color: #000; background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat; border: 0; border-radius: .25rem; opacity: .5; }
@@ -64,42 +63,41 @@
         .toast-header { display: flex; align-items: center; padding: .5rem .75rem; border-bottom: 1px solid rgba(0,0,0,.05); border-top-left-radius: calc(.25rem - 1px); border-top-right-radius: calc(.25rem - 1px); }
         .toast-body { padding: .75rem; }
 
-        .toast { background: #2D4A53 !important; color: #AFB3B7 !important; border: 1px solid #69818D !important; border-radius: 12px !important; }
-        .toast-header { background: #132E35 !important; color: #AFB3B7 !important; border-bottom: 1px solid #2D4A53 !important; }
+        .toast { background: #1E1E22 !important; color: #F8FAFC !important; border: 1px solid #2A2A30 !important; border-radius: 12px !important; }
+        .toast-header { background: #121214 !important; color: #F8FAFC !important; border-bottom: 1px solid #222227 !important; }
 
         /* Form controls used by Bootstrap JS modals */
         .form-control, .form-select {
-            background: #0D1F23 !important; border: 1px solid #2D4A53 !important; color: #AFB3B7 !important;
+            background: #0A0A0C !important; border: 1px solid #222227 !important; color: #F8FAFC !important;
             border-radius: 10px !important; font-size: 15px !important; padding: 10px 14px !important;
             font-family: 'Inter', sans-serif !important;
         }
         .form-control:focus, .form-select:focus {
-            border-color: #69818D !important; box-shadow: 0 0 0 3px rgba(105,129,141,.2) !important; outline: none !important;
+            border-color: #8E95A5 !important; box-shadow: 0 0 0 3px rgba(142,149,165,.2) !important; outline: none !important;
         }
-        .form-control::placeholder { color: #5A636A !important; }
-        .form-label { font-size: 12px !important; font-weight: 600 !important; color: #69818D !important; text-transform: uppercase !important; letter-spacing: .4px !important; margin-bottom: 6px !important; display: block !important; }
-        .form-text { font-size: 12px !important; color: #5A636A !important; margin-top: 4px !important; }
-        .form-check-input { background-color: #2D4A53 !important; border-color: #5A636A !important; }
-        .form-check-input:checked { background-color: #69818D !important; border-color: #69818D !important; }
+        .form-control::placeholder { color: #94A3B8 !important; }
+        .form-label { font-size: 12px !important; font-weight: 600 !important; color: #94A3B8 !important; text-transform: uppercase !important; letter-spacing: .4px !important; margin-bottom: 6px !important; display: block !important; }
+        .form-text { font-size: 12px !important; color: #94A3B8 !important; margin-top: 4px !important; }
+        .form-check-input { background-color: #1E1E22 !important; border-color: #2A2A30 !important; }
+        .form-check-input:checked { background-color: #8E95A5 !important; border-color: #8E95A5 !important; }
 
         /* Bootstrap btn overrides for modals */
         .btn { border-radius: 10px !important; font-weight: 600 !important; font-size: 14px !important; padding: 8px 18px !important; font-family: 'Inter', sans-serif !important; transition: all .2s !important; }
         .btn-sm { padding: 6px 14px !important; font-size: 13px !important; }
-        .btn-primary { background: #2D4A53 !important; border-color: #2D4A53 !important; color: #AFB3B7 !important; }
-        .btn-primary:hover { background: #69818D !important; color: #fff !important; }
+        .btn-primary { background: #1E1E22 !important; border-color: #2A2A30 !important; color: #CBD5E1 !important; }
+        .btn-primary:hover { background: #2A2A30 !important; color: #fff !important; }
         .btn-success { background: #16a34a !important; border-color: #16a34a !important; color: #fff !important; }
         .btn-success:hover { background: #15803d !important; }
         .btn-warning { background: #d97706 !important; border-color: #d97706 !important; color: #fff !important; }
         .btn-warning:hover { background: #b45309 !important; }
-        .btn-secondary { background: #2D4A53 !important; border-color: #2D4A53 !important; color: #AFB3B7 !important; }
-        .btn-outline-secondary { background: transparent !important; border-color: #5A636A !important; color: #AFB3B7 !important; }
-        .btn-outline-secondary:hover { background: #2D4A53 !important; color: #AFB3B7 !important; }
+        .btn-secondary { background: #1E1E22 !important; border-color: #2A2A30 !important; color: #CBD5E1 !important; }
+        .btn-outline-secondary { background: transparent !important; border-color: #2A2A30 !important; color: #CBD5E1 !important; }
+        .btn-outline-secondary:hover { background: #1E1E22 !important; color: #CBD5E1 !important; }
         .btn-outline-danger { background: transparent !important; border-color: #dc2626 !important; color: #dc2626 !important; }
         .btn-outline-danger:hover { background: rgba(220,38,38,.1) !important; }
-        .btn-outline-light { background: transparent !important; border: 1px solid #2D4A53 !important; color: #AFB3B7 !important; text-align: left !important; }
-        .btn-outline-light:hover { background: #2D4A53 !important; }
-
-        .spinner-border { color: #69818D !important; }
+        .btn-outline-light { background: transparent !important; border: 1px solid #2A2A30 !important; color: #F8FAFC !important; text-align: left !important; }
+        .btn-outline-light:hover { background: #1E1E22 !important; }
+        .spinner-border { color: #8E95A5 !important; }
 
         /* Search dropdown */
         .search-results { display: none; }
@@ -114,43 +112,43 @@
   .nav-dropdown { display:none; }
   .nav-dropdown-wrap:hover .nav-dropdown { display:block; }
 </style>
-<nav class="sticky top-0 z-50 h-[64px] bg-gradient-to-r from-[#0D1F23] via-[#132E35] to-[#0D1F23] border-b border-[#2D4A53]/60 backdrop-blur-xl px-5 flex items-center justify-between gap-4">
+<nav class="sticky top-0 z-50 h-[64px] bg-[#0A0A0C] border-b border-surface2/60 backdrop-blur-xl px-5 flex items-center justify-between gap-4">
 
     <!-- Logo -->
     <a href="/" class="flex items-center gap-2.5 group no-underline shrink-0">
-        <div class="w-9 h-9 bg-gradient-to-br from-[#2D4A53] to-[#69818D] rounded-xl flex items-center justify-center text-white text-lg shadow-lg shadow-[#69818D]/20 group-hover:shadow-[#69818D]/40 transition-shadow">📦</div>
-        <span class="text-lg font-bold bg-gradient-to-r from-[#AFB3B7] to-[#69818D] bg-clip-text text-transparent">LogiSmart</span>
+        <div class="w-9 h-9 bg-surface2 border border-accent/20 rounded-xl flex items-center justify-center text-white text-lg shadow-lg group-hover:shadow-accent/10 transition-all">📦</div>
+        <span class="text-lg font-bold text-light">LogiSmart</span>
     </a>
 
     <!-- Nav Links (desktop) -->
     <div class="hidden md:flex items-center gap-0.5 flex-1 px-2">
         <!-- Divider visual group: Main -->
-        <a href="/" class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 no-underline transition-all {% if request.path == '/' %}text-white bg-[#2D4A53]/50{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+        <a href="/" class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 no-underline transition-all {% if request.path == '/' %}text-light bg-surface2/40{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
-        <a href="/almacen/" class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 no-underline transition-all {% if request.path == '/almacen/' %}text-white bg-[#2D4A53]/50{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+        <a href="/almacen/" class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 no-underline transition-all {% if request.path == '/almacen/' %}text-light bg-surface2/40{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-grid-3x3-gap"></i> Almacén
         </a>
-        <a href="/despachos/" class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 no-underline transition-all {% if request.path == '/despachos/' %}text-white bg-[#2D4A53]/50{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+        <a href="/despachos/" class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 no-underline transition-all {% if request.path == '/despachos/' %}text-light bg-surface2/40{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-truck"></i> Despachos
         </a>
 
         {% if user.is_superuser %}
         <!-- Admin dropdown -->
         <div class="relative nav-dropdown-wrap">
-            <button class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-all {% if request.path == '/configuracion/' or request.path == '/administracion/' %}text-white bg-[#2D4A53]/50{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+            <button class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 transition-all {% if request.path == '/configuracion/' or request.path == '/administracion/' %}text-light bg-surface2/40{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
                 <i class="bi bi-shield-lock"></i> Admin <i class="bi bi-chevron-down text-[10px]"></i>
             </button>
             <div class="nav-dropdown absolute top-full left-0 pt-2 w-48 z-[1060]">
-                <div class="bg-[#132E35] border border-[#2D4A53]/80 rounded-xl shadow-2xl shadow-black/40 py-1.5">
-                    <a href="/configuracion/" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline {% if request.path == '/configuracion/' %}text-white bg-[#2D4A53]/30{% endif %}">
+                <div class="bg-surface border border-surface2 rounded-xl shadow-2xl shadow-black/40 py-1.5">
+                    <a href="/configuracion/" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted hover:text-light hover:bg-surface2/30 transition-colors no-underline {% if request.path == '/configuracion/' %}text-light bg-surface2/30{% endif %}">
                         <i class="bi bi-robot"></i> Robot AGV
                     </a>
-                    <a href="/administracion/" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline {% if request.path == '/administracion/' %}text-white bg-[#2D4A53]/30{% endif %}">
+                    <a href="/administracion/" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted hover:text-light hover:bg-surface2/30 transition-colors no-underline {% if request.path == '/administracion/' %}text-light bg-surface2/30{% endif %}">
                         <i class="bi bi-people"></i> Administración
                     </a>
-                    <div class="h-px bg-[#2D4A53]/60 mx-3 my-1"></div>
-                    <a href="/api/docs/" target="_blank" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#69818D] hover:text-white hover:bg-[#2D4A53]/30 transition-colors no-underline">
+                    <div class="h-px bg-surface2 mx-3 my-1"></div>
+                    <a href="/api/docs/" target="_blank" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted hover:text-light hover:bg-surface2/30 transition-colors no-underline">
                         <i class="bi bi-terminal"></i> Docs API
                     </a>
                 </div>
@@ -169,29 +167,29 @@
     <div class="hidden md:flex items-center gap-3 shrink-0">
         <!-- Search -->
         <div class="relative">
-            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#5A636A] text-xs pointer-events-none"></i>
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs pointer-events-none"></i>
             <input type="text" id="global-search" placeholder="Buscar caja..." autocomplete="off"
                    oninput="buscarCajas(this.value)"
                    onfocus="if(this.value.length>=2)document.getElementById('search-results').classList.add('show')"
                    onblur="setTimeout(()=>document.getElementById('search-results').classList.remove('show'),200)"
-                   class="bg-[#2D4A53]/30 border border-[#2D4A53]/50 rounded-lg text-xs pl-8 pr-3 py-1.5 w-36 focus:w-52 transition-all focus:outline-none focus:ring-1 focus:ring-[#69818D]/40 focus:border-[#69818D]/60 text-[#AFB3B7] placeholder-[#5A636A]">
-            <div class="search-results absolute top-full right-0 mt-2 w-72 bg-surface border border-[#2D4A53] rounded-xl max-h-80 overflow-y-auto z-[1050] shadow-2xl shadow-black/40" id="search-results"></div>
+                   class="bg-surface2/30 border border-surface2 rounded-lg text-xs pl-8 pr-3 py-1.5 w-36 focus:w-52 transition-all focus:outline-none focus:ring-1 focus:ring-accent/40 focus:border-accent/60 text-light placeholder-muted">
+            <div class="search-results absolute top-full right-0 mt-2 w-72 bg-surface border border-surface2 rounded-xl max-h-80 overflow-y-auto z-[1050] shadow-2xl shadow-black/40" id="search-results"></div>
         </div>
 
         <!-- Live badge -->
-        <div class="flex items-center gap-1.5 text-xs text-[#5A636A]">
+        <div class="flex items-center gap-1.5 text-xs text-muted">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-dot inline-block"></span>
             <span id="nav-pending-count" class="tabular-nums">—</span>
-            <span id="nav-pending-badge" class="hidden bg-amber-500 text-[#0D1F23] text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
+            <span id="nav-pending-badge" class="hidden bg-amber-500 text-[#0A0A0C] text-[10px] font-bold px-1.5 py-0.5 rounded-full">0</span>
         </div>
 
         <!-- User chip -->
         {% if user.is_authenticated %}
-        <div class="flex items-center gap-1.5 text-xs bg-[#2D4A53]/30 border border-[#2D4A53]/55 px-2.5 py-1.5 rounded-lg text-[#AFB3B7]">
-            <i class="bi bi-person-fill text-[#69818D] text-sm"></i>
+        <div class="flex items-center gap-1.5 text-xs bg-surface2/30 border border-surface2 px-2.5 py-1.5 rounded-lg text-light">
+            <i class="bi bi-person-fill text-accent text-sm"></i>
             <span class="font-semibold">{{ user.username }}</span>
-            <span class="text-[10px] text-[#5A636A] bg-[#0D1F23]/60 px-1 py-0.5 rounded">{% if user.is_superuser %}Admin{% else %}Ctrl{% endif %}</span>
-            <a href="{% url 'logout' %}" class="text-[#5A636A] hover:text-red-400 ml-0.5 transition-colors" title="Cerrar sesión">
+            <span class="text-[10px] text-muted bg-base/60 px-1 py-0.5 rounded">{% if user.is_superuser %}Admin{% else %}Ctrl{% endif %}</span>
+            <a href="{% url 'logout' %}" class="text-muted hover:text-red-400 ml-0.5 transition-colors" title="Cerrar sesión">
                 <i class="bi bi-box-arrow-right"></i>
             </a>
         </div>
@@ -199,7 +197,7 @@
 
         <!-- Nueva Caja CTA -->
         {% if user.is_superuser %}
-        <a href="/nueva-caja/" class="bg-gradient-to-r from-[#2D4A53] to-[#69818D] hover:from-[#69818D] hover:to-[#2D4A53] text-white text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-md shadow-[#69818D]/20 hover:shadow-[#69818D]/30 transition-all hover:-translate-y-0.5 no-underline">
+        <a href="/nueva-caja/" class="bg-surface2 hover:bg-surface border border-accent/20 text-light text-xs font-bold px-3.5 py-1.5 rounded-lg flex items-center gap-1.5 shadow-md transition-all hover:-translate-y-0.5 no-underline">
             <i class="bi bi-plus-lg"></i> Nueva Caja
         </a>
         {% endif %}
@@ -207,9 +205,9 @@
 
     <!-- Mobile hamburger -->
     <div class="flex md:hidden items-center gap-3">
-        <div class="flex items-center gap-1 text-xs text-[#5A636A]">
+        <div class="flex items-center gap-1 text-xs text-muted">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-dot inline-block"></span>
-            <span id="mobile-nav-pending-badge" class="bg-amber-500 text-[#0D1F23] text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+            <span id="mobile-nav-pending-badge" class="bg-amber-500 text-[#0A0A0C] text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
         </div>
         <button onclick="toggleMobileMenu()" class="text-light hover:text-white text-2xl transition-colors focus:outline-none">
             <i class="bi bi-list"></i>
@@ -218,20 +216,20 @@
 </nav>
 
 <!-- Mobile Menu Drawer -->
-<div id="mobile-menu" class="fixed inset-y-0 right-0 z-[1060] w-72 bg-gradient-to-b from-[#0D1F23] to-[#132E35] border-l border-[#2D4A53]/60 shadow-2xl p-5 transform translate-x-full transition-transform duration-300 ease-in-out">
+<div id="mobile-menu" class="fixed inset-y-0 right-0 z-[1060] w-72 bg-surface border-l border-surface2 shadow-2xl p-5 transform translate-x-full transition-transform duration-300 ease-in-out">
     <div class="flex items-center justify-between mb-6">
         <span class="font-bold text-base text-white flex items-center gap-2">📦 Menú</span>
         <button onclick="toggleMobileMenu()" class="text-light hover:text-white text-xl focus:outline-none"><i class="bi bi-x-lg"></i></button>
     </div>
 
     <div class="flex flex-col gap-1">
-        <a href="/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/' %}text-white bg-[#2D4A53]/60{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+        <a href="/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/' %}text-light bg-surface2/60{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-speedometer2 w-4"></i> Dashboard
         </a>
-        <a href="/almacen/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/almacen/' %}text-white bg-[#2D4A53]/60{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+        <a href="/almacen/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/almacen/' %}text-light bg-surface2/60{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-grid-3x3-gap w-4"></i> Almacén
         </a>
-        <a href="/despachos/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/despachos/' %}text-white bg-[#2D4A53]/60{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+        <a href="/despachos/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/despachos/' %}text-light bg-surface2/60{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-truck w-4"></i> Despachos
         </a>
         <a href="/suscripcion/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/suscripcion/' %}text-amber-300 bg-amber-500/10{% else %}text-amber-500/70 hover:text-amber-300 hover:bg-amber-500/10{% endif %}">
@@ -239,46 +237,46 @@
         </a>
 
         {% if user.is_superuser %}
-        <div class="h-px bg-[#2D4A53]/50 my-2"></div>
-        <p class="text-[10px] uppercase tracking-widest text-[#5A636A] px-4 mb-1">Administrador</p>
-        <a href="/configuracion/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/configuracion/' %}text-white bg-[#2D4A53]/60{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+        <div class="h-px bg-surface2 my-2"></div>
+        <p class="text-[10px] uppercase tracking-widest text-muted px-4 mb-1">Administrador</p>
+        <a href="/configuracion/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/configuracion/' %}text-light bg-surface2/60{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-robot w-4"></i> Robot AGV
         </a>
-        <a href="/administracion/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/administracion/' %}text-white bg-[#2D4A53]/60{% else %}text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20{% endif %}">
+        <a href="/administracion/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/administracion/' %}text-light bg-surface2/60{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-people w-4"></i> Administración
         </a>
-        <a href="/api/docs/" target="_blank" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors text-[#69818D] hover:text-[#AFB3B7] hover:bg-[#2D4A53]/20">
+        <a href="/api/docs/" target="_blank" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors text-muted hover:text-light hover:bg-surface2/20">
             <i class="bi bi-terminal w-4"></i> Docs API
         </a>
         {% endif %}
 
-        <div class="h-px bg-[#2D4A53]/50 my-2"></div>
+        <div class="h-px bg-surface2 my-2"></div>
 
         <!-- Mobile Search -->
         <div class="relative">
-            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-[#5A636A] text-xs pointer-events-none"></i>
+            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-muted text-xs pointer-events-none"></i>
             <input type="text" id="mobile-search" placeholder="Buscar caja..." autocomplete="off"
                    oninput="buscarCajasMobile(this.value)"
                    onfocus="if(this.value.length>=2)document.getElementById('mobile-search-results').classList.add('show')"
                    onblur="setTimeout(()=>document.getElementById('mobile-search-results').classList.remove('show'),200)"
-                   class="w-full bg-[#0D1F23]/60 border border-[#2D4A53]/60 rounded-xl text-sm pl-8 pr-3 py-2 focus:outline-none focus:ring-1 focus:ring-[#69818D]/30 text-white placeholder-[#5A636A]">
-            <div class="search-results absolute top-full left-0 right-0 mt-2 bg-surface border border-[#2D4A53] rounded-xl max-h-48 overflow-y-auto z-[1070] shadow-2xl" id="mobile-search-results"></div>
+                   class="w-full bg-base/60 border border-surface2 rounded-xl text-sm pl-8 pr-3 py-2 focus:outline-none focus:ring-1 focus:ring-accent/30 text-white placeholder-muted">
+            <div class="search-results absolute top-full left-0 right-0 mt-2 bg-surface border border-surface2 rounded-xl max-h-48 overflow-y-auto z-[1070] shadow-2xl" id="mobile-search-results"></div>
         </div>
 
         {% if user.is_superuser %}
-        <a href="/nueva-caja/" class="mt-3 bg-gradient-to-r from-[#2D4A53] to-[#69818D] text-white text-sm font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-[#69818D]/20 transition-all no-underline">
+        <a href="/nueva-caja/" class="mt-3 bg-surface2 border border-accent/20 text-light text-sm font-bold px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all no-underline">
             <i class="bi bi-plus-lg"></i> Nueva Caja
         </a>
         {% endif %}
 
         {% if user.is_authenticated %}
-        <div class="mt-3 flex items-center justify-between bg-[#2D4A53]/30 border border-[#2D4A53]/55 p-3 rounded-xl">
-            <div class="flex items-center gap-2 text-sm text-[#AFB3B7]">
-                <i class="bi bi-person-fill text-[#69818D]"></i>
+        <div class="mt-3 flex items-center justify-between bg-surface2/30 border border-surface2 p-3 rounded-xl">
+            <div class="flex items-center gap-2 text-sm text-light">
+                <i class="bi bi-person-fill text-accent"></i>
                 <span class="font-semibold">{{ user.username }}</span>
-                <span class="text-[10px] text-[#5A636A] bg-[#0D1F23]/60 px-1.5 py-0.5 rounded">{% if user.is_superuser %}Admin{% else %}Ctrl{% endif %}</span>
+                <span class="text-[10px] text-muted bg-base/60 px-1.5 py-0.5 rounded">{% if user.is_superuser %}Admin{% else %}Ctrl{% endif %}</span>
             </div>
-            <a href="{% url 'logout' %}" class="text-[#5A636A] hover:text-red-400 transition-colors">
+            <a href="{% url 'logout' %}" class="text-muted hover:text-red-400 transition-colors">
                 <i class="bi bi-box-arrow-right text-lg"></i>
             </a>
         </div>
@@ -421,10 +419,10 @@ async function obtenerUsuarioActual() {
         const lista = document.getElementById('listaUsuarios');
         lista.innerHTML = usuarios.map(u => `
             <button class="btn btn-outline-light text-start d-flex align-items-center gap-3" onclick="window._resolveUsuario(${u.id_usuario})">
-                <div style="width:36px;height:36px;background:#2D4A53;border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                    <i class="bi bi-person-fill" style="color:#69818D"></i>
+                <div style="width:36px;height:36px;background:#1E1E22;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="bi bi-person-fill" style="color:#8E95A5"></i>
                 </div>
-                <div><div class="fw-semibold">${u.nombre}</div><div style="font-size:11px;color:#5A636A;">${u.rol}</div></div>
+                <div><div class="fw-semibold">${u.nombre}</div><div style="font-size:11px;color:#94A3B8;">${u.rol}</div></div>
             </button>`).join('');
         window._resolveUsuario = id => {
             _usuarioActual = id;
@@ -488,13 +486,13 @@ async function buscarCajas(query) {
                 box.innerHTML = '<div class="p-5 text-center text-slate-500 text-sm"><i class="bi bi-inbox mr-2"></i>Sin resultados</div>';
             } else {
                 const statusBadge = (e) => {
-                    const colors = { pendiente:'bg-amber-500/20 text-amber-400', en_transito:'bg-[#2D4A53]/60 text-[#AFB3B7]', almacenada:'bg-emerald-500/20 text-emerald-400', despachada:'bg-[#5A636A]/20 text-[#5A636A]' };
+                    const colors = { pendiente:'bg-amber-500/20 text-amber-400', en_transito:'bg-surface2 text-light', almacenada:'bg-emerald-500/20 text-emerald-400', despachada:'bg-slate-700/20 text-slate-400' };
                     return `<span class="px-2 py-0.5 rounded text-[11px] font-semibold ${colors[e]||'bg-slate-600'}">${e}</span>`;
                 };
                 box.innerHTML = items.map(c => `
-                    <div class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-[#2D4A53]/20 transition-colors text-sm border-b border-white/[.04] last:border-b-0" onclick="window.location.href='/'">
-                        <span class="font-bold text-[#69818D] min-w-[120px]">${c.id}</span>
-                        <span class="flex-1 text-[#AFB3B7]">${c.producto || '—'}</span>
+                    <div class="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-surface2 transition-colors text-sm border-b border-white/[.04] last:border-b-0" onclick="window.location.href='/'">
+                        <span class="font-bold text-accent min-w-[120px]">${c.id}</span>
+                        <span class="flex-1 text-light">${c.producto || '—'}</span>
                         ${statusBadge(c.estado)}
                     </div>
                 `).join('');
@@ -518,13 +516,13 @@ async function buscarCajasMobile(query) {
                 box.innerHTML = '<div class="p-4 text-center text-slate-500 text-xs"><i class="bi bi-inbox mr-2"></i>Sin resultados</div>';
             } else {
                 const statusBadge = (e) => {
-                    const colors = { pendiente:'bg-amber-500/20 text-amber-400', en_transito:'bg-[#2D4A53]/60 text-[#AFB3B7]', almacenada:'bg-emerald-500/20 text-emerald-400', despachada:'bg-[#5A636A]/20 text-[#5A636A]' };
+                    const colors = { pendiente:'bg-amber-500/20 text-amber-400', en_transito:'bg-surface2 text-light', almacenada:'bg-emerald-500/20 text-emerald-400', despachada:'bg-slate-700/20 text-slate-400' };
                     return `<span class="px-2 py-0.5 rounded text-[10px] font-semibold ${colors[e]||'bg-slate-600'}">${e}</span>`;
                 };
                 box.innerHTML = items.map(c => `
-                    <div class="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-[#2D4A53]/20 transition-colors text-xs border-b border-white/[.04] last:border-b-0" onclick="window.location.href='/'">
-                        <span class="font-bold text-[#69818D]">${c.id.substring(0, 8)}...</span>
-                        <span class="flex-1 text-[#AFB3B7] truncate">${c.producto || '—'}</span>
+                    <div class="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-surface2 transition-colors text-xs border-b border-white/[.04] last:border-b-0" onclick="window.location.href='/'">
+                        <span class="font-bold text-accent">${c.id.substring(0, 8)}...</span>
+                        <span class="flex-1 text-light truncate">${c.producto || '—'}</span>
                         ${statusBadge(c.estado)}
                     </div>
                 `).join('');

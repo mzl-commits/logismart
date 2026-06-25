@@ -103,25 +103,25 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-        <div className="fade-in relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-blue-600/20 to-blue-900/40 border border-blue-500/30 shadow-[0_0_15px_rgba(37,99,235,0.1)] group hover:shadow-[0_0_25px_rgba(37,99,235,0.2)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-white drop-shadow-md">{activas.length}</div>
-          <div className="text-sm font-semibold text-blue-200 mt-2 uppercase tracking-wider">Total cajas</div>
-          <i className="bi bi-box-seam absolute -right-2 -bottom-4 text-7xl text-blue-400/20 group-hover:text-blue-400/40 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-accent shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
+          <div className="text-5xl font-black text-light drop-shadow-md">{activas.length}</div>
+          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">Total cajas</div>
+          <i className="bi bi-box-seam absolute -right-2 -bottom-4 text-7xl text-slate-700/20 group-hover:text-slate-700/30 transition-colors transform group-hover:scale-110"></i>
         </div>
-        <div className="fade-in fade-d1 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-amber-600/20 to-amber-900/40 border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.1)] group hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-amber-400 drop-shadow-md">{pendientes}</div>
-          <div className="text-sm font-semibold text-amber-200 mt-2 uppercase tracking-wider">Pendientes</div>
-          <i className="bi bi-hourglass-split absolute -right-2 -bottom-4 text-7xl text-amber-400/20 group-hover:text-amber-400/40 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in fade-d1 relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-amber-600/80 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
+          <div className="text-5xl font-black text-amber-500/90 drop-shadow-md">{pendientes}</div>
+          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">Pendientes</div>
+          <i className="bi bi-hourglass-split absolute -right-2 -bottom-4 text-7xl text-amber-600/10 group-hover:text-amber-600/20 transition-colors transform group-hover:scale-110"></i>
         </div>
-        <div className="fade-in fade-d2 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-cyan-600/20 to-cyan-900/40 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)] group hover:shadow-[0_0_25px_rgba(6,182,212,0.2)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-sky-400 drop-shadow-md">{enTransito}</div>
-          <div className="text-sm font-semibold text-cyan-200 mt-2 uppercase tracking-wider">En tránsito</div>
-          <i className="bi bi-truck absolute -right-2 -bottom-4 text-7xl text-cyan-400/20 group-hover:text-cyan-400/40 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in fade-d2 relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-sky-600/80 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
+          <div className="text-5xl font-black text-sky-400/90 drop-shadow-md">{enTransito}</div>
+          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">En tránsito</div>
+          <i className="bi bi-truck absolute -right-2 -bottom-4 text-7xl text-sky-600/10 group-hover:text-sky-600/20 transition-colors transform group-hover:scale-110"></i>
         </div>
-        <div className="fade-in fade-d3 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-emerald-600/20 to-emerald-900/40 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)] group hover:shadow-[0_0_25px_rgba(16,185,129,0.2)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-emerald-400 drop-shadow-md">{almacenadas}</div>
-          <div className="text-sm font-semibold text-emerald-200 mt-2 uppercase tracking-wider">Almacenadas</div>
-          <i className="bi bi-check-circle absolute -right-2 -bottom-4 text-7xl text-emerald-400/20 group-hover:text-emerald-400/40 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in fade-d3 relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-emerald-600/80 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
+          <div className="text-5xl font-black text-[#52A27F] drop-shadow-md">{almacenadas}</div>
+          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">Almacenadas</div>
+          <i className="bi bi-check-circle absolute -right-2 -bottom-4 text-7xl text-emerald-600/10 group-hover:text-emerald-600/20 transition-colors transform group-hover:scale-110"></i>
         </div>
       </div>
 
