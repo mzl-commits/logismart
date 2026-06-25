@@ -151,7 +151,10 @@ export default function NuevaCaja() {
         id_usuario: parseInt(usuarioEnvio),
         asignaciones: asignaciones
       });
-      alert(res.data.mensaje || 'Ruta optimizada creada');
+      alert(res.data.mensaje || 'Lote procesado con éxito. Descargando guía de ruta...');
+      if (res.data.pdf_url) {
+        window.open(window.location.origin + res.data.pdf_url, '_blank');
+      }
       setShowPreview(false);
       load();
     } catch (error) {

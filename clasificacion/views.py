@@ -1,10 +1,19 @@
 # clasificacion/views.py
 import logging
+import io
+import datetime
+import math
 from django.db import transaction
 from django.utils import timezone
+from django.http import HttpResponse
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Flowable
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 
 from .models import (
     Caja, Ubicacion, Medida, Proveedor, Usuario,
@@ -123,6 +132,137 @@ def _enviar_esp32(x, y, caja_id=None, carro_id=1, publish_mqtt=True):
 
 
 
+# ── WarehouseMap Custom Flowable for ReportLab ──────────────────────────────
+
+class WarehouseMap(Flowable):
+    def __init__(self, paradas, width=540, height=220):
+        super().__init__()
+        self.paradas = paradas
+        self.width = width
+        self.height = height
+
+    def wrap(self, availWidth, availHeight):
+        return self.width, self.height
+
+    def draw(self):
+        canvas = self.canv
+        # Fondo claro
+        canvas.setFillColor(colors.HexColor("#f8fafc"))
+        canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+        canvas.rect(0, 0, self.width, self.height, fill=1, stroke=1)
+
+        margin_x = 55
+        margin_y = 40
+        grid_w = self.width - 2 * margin_x
+        grid_h = self.height - 2 * margin_y
+
+        scale_x = grid_w / 3.0
+        scale_y = grid_h / 2.0
+
+        def to_canvas(gx, gy):
+            cx = margin_x + gx * scale_x
+            cy = margin_y + gy * scale_y
+            return cx, cy
+
+        # Rejilla del almacén (Pasillos y Estantes)
+        canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+        canvas.setLineWidth(1)
+        
+        # Dibujar líneas de rejilla
+        for x in range(4):
+            cx, cy_start = to_canvas(x, 0)
+            _, cy_end = to_canvas(x, 2)
+            canvas.line(cx, cy_start, cx, cy_end)
+            # Etiqueta X (Pasillos)
+            if x < 3:
+                pasillo_nombre = chr(ord('A') + x)
+                canvas.setFillColor(colors.HexColor("#64748b"))
+                canvas.setFont("Helvetica-Bold", 8)
+                canvas.drawCentredString(cx + scale_x/2.0, 15, f"Pasillo {pasillo_nombre}")
+
+        for y in range(3):
+            cx_start, cy = to_canvas(0, y)
+            cx_end, _ = to_canvas(3, cy)
+            canvas.line(cx_start, cy, cx_end, cy)
+            # Etiqueta Y (Estantes)
+            if y > 0:
+                canvas.setFillColor(colors.HexColor("#64748b"))
+                canvas.setFont("Helvetica-Bold", 8)
+                canvas.drawString(15, cy - 3, f"Estante {y}")
+
+        # Dibujar estantes visuales (como rectángulos discretos grises a los lados de los pasillos)
+        canvas.setFillColor(colors.HexColor("#e2e8f0"))
+        canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
+        for x in range(3):
+            for y in (1, 2):
+                # Estante izquierdo
+                cx, cy = to_canvas(x, y)
+                canvas.rect(cx + 8, cy - 12, scale_x/2.0 - 16, 24, fill=1, stroke=1)
+                # Estante derecho
+                canvas.rect(cx + scale_x/2.0 + 8, cy - 12, scale_x/2.0 - 16, 24, fill=1, stroke=1)
+
+        # Dibujar base
+        bx, by = to_canvas(0, 0)
+        canvas.setFillColor(colors.HexColor("#10b981"))
+        canvas.circle(bx, by, 8, fill=1, stroke=0)
+        canvas.setFillColor(colors.white)
+        canvas.setFont("Helvetica-Bold", 8)
+        canvas.drawCentredString(bx, by - 2.5, "B")
+
+        # Función para dibujar flechas indicadoras en las líneas de ruta
+        def draw_arrow(c, x1, y1, x2, y2, size=6):
+            dx = x2 - x1
+            dy = y2 - y1
+            L = math.sqrt(dx*dx + dy*dy)
+            if L > 0:
+                angle = math.atan2(dy, dx)
+                # Posición de la punta de la flecha retrocediendo un poco del marcador (radio 9)
+                arrow_x = x2 - 9 * math.cos(angle)
+                arrow_y = y2 - 9 * math.sin(angle)
+                # Puntos de las alas
+                p1_x = arrow_x - size * math.cos(angle - math.pi/6)
+                p1_y = arrow_y - size * math.sin(angle - math.pi/6)
+                p2_x = arrow_x - size * math.cos(angle + math.pi/6)
+                p2_y = arrow_y - size * math.sin(angle + math.pi/6)
+                
+                path = c.beginPath()
+                path.moveTo(arrow_x, arrow_y)
+                path.lineTo(p1_x, p1_y)
+                path.lineTo(p2_x, p2_y)
+                path.close()
+                c.drawPath(path, fill=1, stroke=0)
+
+        # Dibujar ruta (líneas)
+        px, py = bx, by
+        canvas.setStrokeColor(colors.HexColor("#0284c7"))
+        canvas.setFillColor(colors.HexColor("#0284c7"))
+        canvas.setLineWidth(2)
+        
+        for p in self.paradas:
+            gx, gy = p['x'], p['y']
+            cx, cy = to_canvas(gx, gy)
+            # Dibujar línea
+            canvas.line(px, py, cx, cy)
+            # Dibujar flecha
+            draw_arrow(canvas, px, py, cx, cy)
+            # Guardar posición
+            px, py = cx, cy
+
+        # Dibujar marcadores de paradas
+        for idx, p in enumerate(self.paradas):
+            gx, gy = p['x'], p['y']
+            cx, cy = to_canvas(gx, gy)
+            
+            # Círculo
+            canvas.setFillColor(colors.HexColor("#0284c7"))
+            canvas.circle(cx, cy, 9, fill=1, stroke=1)
+            
+            # Texto del número de parada
+            canvas.setFillColor(colors.white)
+            canvas.setFont("Helvetica-Bold", 8)
+            canvas.drawCentredString(cx, cy - 3, str(idx + 1))
+
+
 # ── CajaViewSet ───────────────────────────────────────────────────────────────
 
 class CajaViewSet(viewsets.ModelViewSet):
@@ -153,10 +293,11 @@ class CajaViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def procesar_lote(self, request):
         """
-        Procesa cajas pendientes respetando la capacidad del carro:
+        Procesa cajas pendientes:
         - Filtra hasta alcanzar el límite de peso, volumen o paradas.
-        - Asigna ubicación óptima (o manual, si se provee asignaciones).
-        - Genera ruta multi-parada optimizada para el carro.
+        - Asigna ubicación óptima (o manual).
+        - Calcula ruta óptima desde base (0,0).
+        - Genera un enlace de descarga para el reporte PDF.
         """
         usuario_id = request.data.get('id_usuario')
         asignaciones = request.data.get('asignaciones', {})  # Diccionario { "id_caja": id_ubicacion_manual }
@@ -245,31 +386,190 @@ class CajaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
  
-        carro_id = int(request.data.get('carro_id', 1))
-        carro = _get_or_create_carro(carro_id)
-        paradas_ordenadas = RutaService.optimizar_paradas(carro.pos_x, carro.pos_y, paradas)
-        primera = paradas_ordenadas[0]
-        ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, primera['x'], primera['y'])
- 
-        carro.paradas = paradas_ordenadas
-        carro.parada_actual = 0
-        carro.destino_x = primera['x']
-        carro.destino_y = primera['y']
-        carro.ruta = ruta
-        carro.estado = 'moviendo'
-        carro.caja_id = primera['caja_id']
-        carro.save()
- 
-        esp32_resultado = _enviar_esp32(primera['x'], primera['y'], caja_id=primera['caja_id'], carro_id=carro_id)
-        logger.info("Lote procesado: %d paradas, primera → %s", len(paradas_ordenadas), primera['ubicacion_nombre'])
+        # Heurística TSP (Vecino más cercano) para ordenar la secuencia desde base (0,0)
+        paradas_ordenadas = RutaService.optimizar_paradas(0, 0, paradas)
+        cajas_ids_str = ",".join([p['caja_id'] for p in paradas_ordenadas])
+        
+        # URL dinámica para la descarga del PDF
+        pdf_url = f"/api/cajas/descargar_pdf_lote/?cajas={cajas_ids_str}&usuario_id={usuario_id or ''}"
+        
+        logger.info("Lote procesado: %d paradas. Guía PDF generada: %s", len(paradas_ordenadas), pdf_url)
  
         return Response({
-            'mensaje': f'{len(paradas)} caja(s) procesada(s)',
+            'mensaje': f'✅ {len(paradas)} caja(s) procesada(s) con éxito. Descargando guía de ruta...',
             'total_paradas': len(paradas_ordenadas),
             'paradas': paradas_ordenadas,
             'sin_ubicacion': sin_ubicacion,
-            'esp32': esp32_resultado,
+            'pdf_url': pdf_url,
         })
+
+    @action(detail=False, methods=['get'])
+    def descargar_pdf_lote(self, request):
+        """
+        Genera al vuelo un documento PDF con la ruta óptima de colocación,
+        un mapa de rejilla visual y las justificaciones logísticas de cada ubicación.
+        """
+        if hasattr(request, 'query_params'):
+            cajas_param = request.query_params.get('cajas', '')
+            usuario_id = request.query_params.get('usuario_id')
+        else:
+            cajas_param = request.GET.get('cajas', '')
+            usuario_id = request.GET.get('usuario_id')
+
+        cajas_ids = [cid.strip() for cid in cajas_param.split(',') if cid.strip()]
+        
+        if not cajas_ids:
+            return HttpResponse("Faltan los IDs de las cajas en los parámetros.", status=400)
+            
+        cajas = Caja.objects.filter(id__in=cajas_ids).select_related('id_ubicacion', 'id_medida', 'id_proveedor')
+        if not cajas.exists():
+            return HttpResponse("No se encontraron cajas con los IDs proporcionados.", status=404)
+            
+        # Obtener responsable
+        operador_nombre = "No especificado"
+        if usuario_id:
+            try:
+                operador = Usuario.objects.get(pk=int(usuario_id))
+                operador_nombre = f"{operador.nombre} ({operador.get_rol_display()})"
+            except (Usuario.DoesNotExist, ValueError):
+                pass
+                
+        # Construir lista de paradas con justificaciones
+        paradas = []
+        for c in cajas:
+            if c.id_ubicacion:
+                clasificacion = ClasificadorCajas.clasificar(c)
+                _, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
+                    clasificacion, caja=c, incluir_detalle=True
+                )
+                motivos = detalle.get('motivos', []) if detalle else ['Asignación directa / manual']
+                score = detalle.get('score', 100) if detalle else 100
+                
+                paradas.append({
+                    'caja_id': c.id,
+                    'producto': c.producto,
+                    'x': c.id_ubicacion.coord_x,
+                    'y': c.id_ubicacion.coord_y,
+                    'ubicacion_nombre': str(c.id_ubicacion),
+                    'peso_kg': float(c.peso_kg),
+                    'categoria': c.categoria,
+                    'proveedor': c.id_proveedor.nombre_empresa,
+                    'motivos': motivos,
+                    'score': score
+                })
+                
+        if not paradas:
+            return HttpResponse("Las cajas del lote no tienen ubicaciones asignadas.", status=400)
+            
+        # Ordenar las paradas por la ruta óptima TSP desde la base (0,0)
+        paradas_ordenadas = RutaService.optimizar_paradas(0, 0, paradas)
+        
+        # Generar reporte PDF
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=letter,
+            rightMargin=36,
+            leftMargin=36,
+            topMargin=36,
+            bottomMargin=36
+        )
+        
+        story = []
+        
+        # Configurar estilos de párrafo
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'DocTitle', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=18, textColor=colors.HexColor("#0f172a"), spaceAfter=2
+        )
+        subtitle_style = ParagraphStyle(
+            'DocSubTitle', parent=styles['Normal'], fontName='Helvetica', fontSize=9, textColor=colors.HexColor("#64748b"), spaceAfter=12
+        )
+        heading_style = ParagraphStyle(
+            'SectionHeading', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=11, textColor=colors.HexColor("#1e293b"), spaceBefore=10, spaceAfter=5
+        )
+        body_style = ParagraphStyle(
+            'BodyText', parent=styles['Normal'], fontName='Helvetica', fontSize=8.5, textColor=colors.HexColor("#334155")
+        )
+        body_bold = ParagraphStyle(
+            'BodyTextBold', parent=body_style, fontName='Helvetica-Bold'
+        )
+        motivo_style = ParagraphStyle(
+            'MotivoStyle', parent=styles['Normal'], fontName='Helvetica', fontSize=7.5, textColor=colors.HexColor("#475569"), leading=9
+        )
+        
+        # 1. Cabecera
+        story.append(Paragraph("LOGISMART - ORDEN DE ALMACENAMIENTO", title_style))
+        story.append(Paragraph("Guía detallada de colocación y ruta optimizada en almacén", subtitle_style))
+        
+        # Tabla de Metadatos del Lote
+        fecha_actual = datetime.datetime.now().strftime("%d/%m/%Y %H:%M")
+        meta_data = [
+            [Paragraph(f"<b>Responsable:</b> {operador_nombre}", body_style), Paragraph(f"<b>Fecha/Hora:</b> {fecha_actual}", body_style)],
+            [Paragraph(f"<b>Cajas en Lote:</b> {len(paradas_ordenadas)}", body_style), Paragraph(f"<b>Ruta de Operador:</b> Guía de Ruta Optimizada", body_style)]
+        ]
+        meta_table = Table(meta_data, colWidths=[270, 270])
+        meta_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+            ('PADDING', (0,0), (-1,-1), 6),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
+            ('LINEABOVE', (0,0), (-1,-1), 0.5, colors.HexColor("#e2e8f0")),
+        ]))
+        story.append(meta_table)
+        story.append(Spacer(1, 10))
+        
+        # 2. Mapa visual del recorrido
+        story.append(Paragraph("MAPA DE RUTA EN EL GRID DEL ALMACÉN", heading_style))
+        story.append(WarehouseMap(paradas_ordenadas, width=540, height=220))
+        story.append(Spacer(1, 10))
+        
+        # 3. Tabla detallada de cajas y justificaciones
+        story.append(Paragraph("DETALLE DE CAJAS Y JUSTIFICACIÓN DE UBICACIÓN", heading_style))
+        
+        header_text_style = ParagraphStyle(
+            'HeaderTextStyle', parent=body_bold, textColor=colors.white
+        )
+        table_data = [[
+            Paragraph("<b>N°</b>", header_text_style),
+            Paragraph("<b>ID Caja</b>", header_text_style),
+            Paragraph("<b>Producto</b>", header_text_style),
+            Paragraph("<b>Ubicación</b>", header_text_style),
+            Paragraph("<b>Coord</b>", header_text_style),
+            Paragraph("<b>Criterio / Justificación Selección</b>", header_text_style)
+        ]]
+        
+        for idx, p in enumerate(paradas_ordenadas):
+            motivos_html = "<br/>".join([f"• {m}" for m in p['motivos']])
+            table_data.append([
+                Paragraph(str(idx + 1), body_style),
+                Paragraph(p['caja_id'], body_style),
+                Paragraph(p['producto'], body_style),
+                Paragraph(p['ubicacion_nombre'], body_style),
+                Paragraph(f"({p['x']}, {p['y']})", body_style),
+                Paragraph(motivos_html, motivo_style)
+            ])
+            
+        cajas_table = Table(table_data, colWidths=[20, 70, 90, 80, 35, 245])
+        cajas_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1e293b")),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ('PADDING', (0,0), (-1,-1), 6),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor("#f8fafc")]),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ]))
+        story.append(cajas_table)
+        
+        doc.build(story)
+        pdf_data = buffer.getvalue()
+        buffer.close()
+        
+        response = HttpResponse(pdf_data, content_type='application/pdf')
+        filename = f'ruta_almacenamiento_{datetime.datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        return response
 
     @action(detail=False, methods=['get', 'post'])
     def previsualizar_lote(self, request):
