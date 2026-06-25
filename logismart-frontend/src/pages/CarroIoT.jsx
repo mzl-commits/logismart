@@ -18,6 +18,36 @@ export default function CarroIoT() {
     return map[state] || state || 'Desconocido';
   };
 
+  const parseMotorValue = (val, state) => {
+    const v = Number(val) || 0;
+    // Si parece un valor en microsegundos (1000 - 2000)
+    if (v >= 900 && v <= 2100) {
+      const isStopped = Math.abs(v - 1500) <= 15;
+      const isForward = v > 1515;
+      const isReverse = v < 1485;
+      const pct = Math.min(100, Math.round(Math.abs(v - 1500) / 5));
+      return {
+        raw: v,
+        pct,
+        status: isStopped ? 'Detenido' : isForward ? 'Avance' : 'Reversa',
+        direction: isStopped ? 'stop' : isForward ? 'forward' : 'reverse',
+        label: `${v} us`
+      };
+    } else {
+      // Si es un valor de PWM directo del ESP32 (0 - 255)
+      const isStopped = v < 10;
+      const pct = Math.min(100, Math.round((v / 255) * 100));
+      const isReturning = state === 'regresando';
+      return {
+        raw: v,
+        pct,
+        status: isStopped ? 'Detenido' : (isReturning ? 'Retorno' : 'Avance'),
+        direction: isStopped ? 'stop' : (isReturning ? 'reverse' : 'forward'),
+        label: `${v} PWM`
+      };
+    }
+  };
+
   const fetchEstado = async () => {
     try {
       const res = await getEstadoCarro();
@@ -41,6 +71,9 @@ export default function CarroIoT() {
   }, []);
 
   if (loading && !estado) return <div className="loading-center"><div className="spinner" />Conectando con el carro…</div>;
+
+  const motorIzqInfo = parseMotorValue(estado?.motor_izq_vel, estado?.estado);
+  const motorDerInfo = parseMotorValue(estado?.motor_der_vel, estado?.estado);
 
   return (
     <div>
@@ -93,13 +126,13 @@ export default function CarroIoT() {
                 <tr>
                   <td>Motor Izquierdo</td>
                   <td style={{fontWeight:600, color:'var(--text-light)'}}>
-                    {estado?.motor_izq_vel !== undefined ? `${estado.motor_izq_vel} us` : '1500 us'}
+                    {motorIzqInfo.label}
                   </td>
                 </tr>
                 <tr>
                   <td>Motor Derecho</td>
                   <td style={{fontWeight:600, color:'var(--text-light)'}}>
-                    {estado?.motor_der_vel !== undefined ? `${estado.motor_der_vel} us` : '1500 us'}
+                    {motorDerInfo.label}
                   </td>
                 </tr>
                 <tr>
@@ -115,9 +148,9 @@ export default function CarroIoT() {
           </div>
         </div>
 
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 280 }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyItems: 'center', minHeight: 280 }}>
           <div className="card-title mb-4" style={{ width: '100%', textAlign: 'left' }}>
-            <Disc size={14} style={{ display: 'inline', marginRight: 6, animation: (estado?.motor_izq_vel !== 1500 || estado?.motor_der_vel !== 1500) ? 'spin 2s linear infinite' : 'none' }}/>
+            <Disc size={14} style={{ display: 'inline', marginRight: 6, animation: (motorIzqInfo.direction !== 'stop' || motorDerInfo.direction !== 'stop') ? 'spin 2s linear infinite' : 'none' }}/>
             Estado Dinámico del AGV
           </div>
           
@@ -127,10 +160,10 @@ export default function CarroIoT() {
               <div style={{ textAlign: 'right', minWidth: '80px' }}>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Motor Izq</div>
                 <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>
-                  {estado?.motor_izq_vel !== undefined ? `${estado.motor_izq_vel} us` : '1500 us'}
+                  {motorIzqInfo.label}
                 </div>
-                <div style={{ fontSize: '10px', marginTop: '2px', fontWeight: '600', color: (estado?.motor_izq_vel > 1500) ? '#10b981' : (estado?.motor_izq_vel < 1500) ? '#f43f5e' : 'var(--text-muted)' }}>
-                  {estado?.motor_izq_vel > 1500 ? '↑ Avance' : estado?.motor_izq_vel < 1500 ? '↓ Reversa' : '■ Detenido'}
+                <div style={{ fontSize: '10px', marginTop: '2px', fontWeight: '600', color: motorIzqInfo.direction === 'forward' ? '#10b981' : motorIzqInfo.direction === 'reverse' ? '#f43f5e' : 'var(--text-muted)' }}>
+                  {motorIzqInfo.direction === 'forward' ? '↑ Avance' : motorIzqInfo.direction === 'reverse' ? '↓ Reversa' : '■ Detenido'}
                 </div>
               </div>
 
@@ -154,20 +187,20 @@ export default function CarroIoT() {
 
                 {/* Left Wheel */}
                 <div className="wheel wheel-left">
-                  {estado?.motor_izq_vel !== undefined && estado.motor_izq_vel !== 1500 && (
+                  {motorIzqInfo.direction !== 'stop' && (
                     <div 
-                      className={`wheel-tread ${estado.motor_izq_vel > 1500 ? 'wheel-spin-fw' : 'wheel-spin-rv'}`} 
-                      style={{ '--spin-speed': `${Math.max(0.1, 1 - Math.abs(estado.motor_izq_vel - 1500) / 500)}s` }}
+                      className={`wheel-tread ${motorIzqInfo.direction === 'forward' ? 'wheel-spin-fw' : 'wheel-spin-rv'}`} 
+                      style={{ '--spin-speed': `${Math.max(0.1, 1 - motorIzqInfo.pct / 100)}s` }}
                     />
                   )}
                 </div>
 
                 {/* Right Wheel */}
                 <div className="wheel wheel-right">
-                  {estado?.motor_der_vel !== undefined && estado.motor_der_vel !== 1500 && (
+                  {motorDerInfo.direction !== 'stop' && (
                     <div 
-                      className={`wheel-tread ${estado.motor_der_vel > 1500 ? 'wheel-spin-fw' : 'wheel-spin-rv'}`} 
-                      style={{ '--spin-speed': `${Math.max(0.1, 1 - Math.abs(estado.motor_der_vel - 1500) / 500)}s` }}
+                      className={`wheel-tread ${motorDerInfo.direction === 'forward' ? 'wheel-spin-fw' : 'wheel-spin-rv'}`} 
+                      style={{ '--spin-speed': `${Math.max(0.1, 1 - motorDerInfo.pct / 100)}s` }}
                     />
                   )}
                 </div>
@@ -217,10 +250,10 @@ export default function CarroIoT() {
               <div style={{ textAlign: 'left', minWidth: '80px' }}>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Motor Der</div>
                 <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#fff' }}>
-                  {estado?.motor_der_vel !== undefined ? `${estado.motor_der_vel} us` : '1500 us'}
+                  {motorDerInfo.label}
                 </div>
-                <div style={{ fontSize: '10px', marginTop: '2px', fontWeight: '600', color: (estado?.motor_der_vel > 1500) ? '#10b981' : (estado?.motor_der_vel < 1500) ? '#f43f5e' : 'var(--text-muted)' }}>
-                  {estado?.motor_der_vel > 1500 ? '↑ Avance' : estado?.motor_der_vel < 1500 ? '↓ Reversa' : '■ Detenido'}
+                <div style={{ fontSize: '10px', marginTop: '2px', fontWeight: '600', color: motorDerInfo.direction === 'forward' ? '#10b981' : motorDerInfo.direction === 'reverse' ? '#f43f5e' : 'var(--text-muted)' }}>
+                  {motorDerInfo.direction === 'forward' ? '↑ Avance' : motorDerInfo.direction === 'reverse' ? '↓ Reversa' : '■ Detenido'}
                 </div>
               </div>
             </div>

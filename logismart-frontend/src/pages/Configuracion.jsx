@@ -27,7 +27,7 @@ export default function Configuracion() {
     motor_der_vel: 1500
   });
   const [wsConnected, setWsConnected] = useState(false);
-  const [simulation, setSimulation] = useState(true);
+  const [simulation, setSimulation] = useState(false);
   const [simStep, setSimStep] = useState(0);
   const [simValues, setSimValues] = useState(null);
 
@@ -215,13 +215,43 @@ export default function Configuracion() {
 
   const maxTotal = Math.max(maxPorTipo.pequena, 1);
 
+  const parseMotorValue = (val, state) => {
+    const v = Number(val) || 0;
+    // Si parece un valor en microsegundos (1000 - 2000)
+    if (v >= 900 && v <= 2100) {
+      const isStopped = Math.abs(v - 1500) <= 15;
+      const isForward = v > 1515;
+      const isReverse = v < 1485;
+      const pct = Math.min(100, Math.round(Math.abs(v - 1500) / 5));
+      return {
+        raw: v,
+        pct,
+        status: isStopped ? 'Detenido' : isForward ? 'Avance' : 'Reversa',
+        direction: isStopped ? 'stop' : isForward ? 'forward' : 'reverse',
+        label: `${v} us`
+      };
+    } else {
+      // Si es un valor de PWM directo del ESP32 (0 - 255)
+      const isStopped = v < 10;
+      const pct = Math.min(100, Math.round((v / 255) * 100));
+      const isReturning = state === 'regresando';
+      return {
+        raw: v,
+        pct,
+        status: isStopped ? 'Detenido' : (isReturning ? 'Retorno' : 'Avance'),
+        direction: isStopped ? 'stop' : (isReturning ? 'reverse' : 'forward'),
+        label: `${v} PWM`
+      };
+    }
+  };
+
   // --- Telemetry status variables ---
   const currentValues = simValues || telemetry;
-  const motorIzqPct = Math.min(100, Math.max(-100, Math.round((currentValues.motor_izq_vel - 1500) / 5)));
-  const motorDerPct = Math.min(100, Math.max(-100, Math.round((1500 - currentValues.motor_der_vel) / 5)));
+  const motorIzqInfo = parseMotorValue(currentValues.motor_izq_vel, currentValues.estado);
+  const motorDerInfo = parseMotorValue(currentValues.motor_der_vel, currentValues.estado);
 
-  const spinSpeedL = currentValues.motor_izq_vel !== 1500 ? `${Math.max(0.1, 1 - (Math.abs(motorIzqPct) / 100))}s` : '0s';
-  const spinSpeedR = currentValues.motor_der_vel !== 1500 ? `${Math.max(0.1, 1 - (Math.abs(motorDerPct) / 100))}s` : '0s';
+  const spinSpeedL = motorIzqInfo.direction !== 'stop' ? `${Math.max(0.1, 1 - (motorIzqInfo.pct / 100))}s` : '0s';
+  const spinSpeedR = motorDerInfo.direction !== 'stop' ? `${Math.max(0.1, 1 - (motorDerInfo.pct / 100))}s` : '0s';
 
   if (loading) {
     return (
@@ -277,7 +307,7 @@ export default function Configuracion() {
                       <div className="wheel wheel-left">
                         <div 
                           className={`wheel-tread ${
-                            currentValues.motor_izq_vel > 1500 ? 'wheel-spin-fw' : currentValues.motor_izq_vel < 1500 ? 'wheel-spin-rv' : ''
+                            motorIzqInfo.direction === 'forward' ? 'wheel-spin-fw' : motorIzqInfo.direction === 'reverse' ? 'wheel-spin-rv' : ''
                           }`}
                           style={{ '--spin-speed': spinSpeedL }}
                         ></div>
@@ -285,7 +315,7 @@ export default function Configuracion() {
                       <div className="wheel wheel-right">
                         <div 
                           className={`wheel-tread ${
-                            currentValues.motor_der_vel < 1500 ? 'wheel-spin-fw' : currentValues.motor_der_vel > 1500 ? 'wheel-spin-rv' : ''
+                            motorDerInfo.direction === 'forward' ? 'wheel-spin-fw' : motorDerInfo.direction === 'reverse' ? 'wheel-spin-rv' : ''
                           }`}
                           style={{ '--spin-speed': spinSpeedR }}
                         ></div>
@@ -360,18 +390,18 @@ export default function Configuracion() {
                     <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-bold text-slate-400">Motor Izquierdo</span>
-                        <span className="text-xs font-extrabold text-sky-400">{currentValues.motor_izq_vel ?? 1500} us</span>
+                        <span className="text-xs font-extrabold text-sky-400">{motorIzqInfo.label}</span>
                       </div>
                       <div className="text-[10px] text-slate-500 mb-2 flex justify-between">
-                        <span className="font-semibold">
-                          {currentValues.motor_izq_vel > 1500 ? 'AVANCE' : currentValues.motor_izq_vel < 1500 ? 'REVERSA' : 'PARADO'}
+                        <span className="font-semibold text-[#8E95A5]">
+                          {motorIzqInfo.status.toUpperCase()}
                         </span>
-                        <span className="font-semibold">{motorIzqPct}%</span>
+                        <span className="font-semibold">{motorIzqInfo.pct}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
                         <div 
                           className="h-full bg-sky-500 rounded-full transition-all duration-300" 
-                          style={{ width: `${50 + (motorIzqPct / 2)}%` }}
+                          style={{ width: `${motorIzqInfo.direction === 'stop' ? 50 : motorIzqInfo.direction === 'forward' ? 50 + (motorIzqInfo.pct / 2) : 50 - (motorIzqInfo.pct / 2)}%` }}
                         ></div>
                       </div>
                     </div>
@@ -380,18 +410,18 @@ export default function Configuracion() {
                     <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-xs font-bold text-slate-400">Motor Derecho</span>
-                        <span className="text-xs font-extrabold text-sky-400">{currentValues.motor_der_vel ?? 1500} us</span>
+                        <span className="text-xs font-extrabold text-sky-400">{motorDerInfo.label}</span>
                       </div>
                       <div className="text-[10px] text-slate-500 mb-2 flex justify-between">
-                        <span className="font-semibold">
-                          {currentValues.motor_der_vel < 1500 ? 'AVANCE' : currentValues.motor_der_vel > 1500 ? 'REVERSA' : 'PARADO'}
+                        <span className="font-semibold text-[#8E95A5]">
+                          {motorDerInfo.status.toUpperCase()}
                         </span>
-                        <span className="font-semibold">{motorDerPct}%</span>
+                        <span className="font-semibold">{motorDerInfo.pct}%</span>
                       </div>
                       <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden relative">
                         <div 
                           className="h-full bg-sky-500 rounded-full transition-all duration-300" 
-                          style={{ width: `${50 + (motorDerPct / 2)}%` }}
+                          style={{ width: `${motorDerInfo.direction === 'stop' ? 50 : motorDerInfo.direction === 'forward' ? 50 + (motorDerInfo.pct / 2) : 50 - (motorDerInfo.pct / 2)}%` }}
                         ></div>
                       </div>
                     </div>
