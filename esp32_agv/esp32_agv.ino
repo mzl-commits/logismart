@@ -1,69 +1,55 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-
 // ==========================================
 // 1. CREDENCIALES DE RED Y SERVIDOR VPS
 // ==========================================
-const char* ssid = "Wash";                     // <-- Wi-Fi local
+const char* ssid = "iPhone de yuri";                     // <-- Wi-Fi local
 const char* password = "12345678";             // <-- Clave Wi-Fi local
-
 const char* mqtt_server = "38.250.116.213";
 const int mqtt_port = 1883;
 const char* mqtt_user = "yuri";
 const char* mqtt_pass = "Montescoli3";
-
 const char* topic_telemetria = "logismart/carro/telemetria";
 const char* topic_comando = "logismart/carro/comando";
-
 // ID del carro esperado por Django en EstadoCarro
 const int carro_id = 1; 
-
 WiFiClient espClient;
 PubSubClient client(espClient);
-
 // ==========================================
 // 2. MAPEO DE PINES EXACTO (L293D y Sensores)
 // ==========================================
 const int senFrontalIzq = 32; // S1 (Seguidor de línea izquierdo)
 const int senFrontalDer = 18; // S2 (Seguidor de línea derecho)
 const int senLateralDer = 35; // S4 (Detección de Nodos / Intersecciones)
-
 // Motor Izquierdo (M1)
 const int enA = 33; 
 const int in1 = 25; 
 const int in2 = 14; 
-
 // Motor Derecho (M2)
 const int enB = 23; 
 const int in3 = 21; 
 const int in4 = 19; 
-
 // ==========================================
 // 3. ESTRUCTURAS Y VARIABLES DE NAVEGACIÓN
 // ==========================================
 enum Heading { NORTH = 0, EAST = 1, SOUTH = 2, WEST = 3 };
 Heading orientacionActual = NORTH; // Comienza mirando al Norte (Y+)
-
 struct Nodo {
   int x;
   int y;
 };
-
 Nodo ruta[100];
 int ruta_len = 0;
 int ruta_idx = 0;
-
 int pos_x = 0;
 int pos_y = 0;
 int destino_x = 0;
 int destino_y = 0;
 int bateria_pct = 100;
 String estado_actual = "esperando"; // "esperando", "moviendo", "llego", "regresando"
-
 unsigned long lastMsg = 0;
 bool robotActivo = false;
-
 // ==========================================
 // 4. FUNCIONES DE MOVIMIENTO (Hardware Validado)
 // ==========================================
@@ -72,25 +58,21 @@ void avanzar(int velocidad) {
   digitalWrite(in1, LOW); digitalWrite(in2, HIGH); // M1 adelante
   digitalWrite(in3, LOW); digitalWrite(in4, HIGH); // M2 adelante
 }
-
 void girarDerecha(int velocidad) {
   analogWrite(enA, velocidad); analogWrite(enB, velocidad);
   digitalWrite(in1, LOW); digitalWrite(in2, HIGH); // M1 adelante
   digitalWrite(in3, HIGH); digitalWrite(in4, LOW); // M2 atrás
 }
-
 void girarIzquierda(int velocidad) {
   analogWrite(enA, velocidad); analogWrite(enB, velocidad);
   digitalWrite(in1, HIGH);  digitalWrite(in2, LOW); // M1 atrás
   digitalWrite(in3, LOW); digitalWrite(in4, HIGH);  // M2 adelante
 }
-
 void frenar() {
   analogWrite(enA, 0); analogWrite(enB, 0);
   digitalWrite(in1, LOW); digitalWrite(in2, LOW);
   digitalWrite(in3, LOW); digitalWrite(in4, LOW);
 }
-
 // ==========================================
 // 5. ENVÍO DE MENSAJES MQTT (Telemetría y Eventos)
 // ==========================================
@@ -103,7 +85,6 @@ void publicarTelemetria() {
   doc["destino_x"] = destino_x;
   doc["destino_y"] = destino_y;
   doc["estado"] = estado_actual;
-
   // Reportar sensores lógicos
   doc["sensor_opt_izq_ext"] = false;
   doc["sensor_opt_izq_int"] = (digitalRead(senFrontalIzq) == HIGH);
@@ -114,14 +95,12 @@ void publicarTelemetria() {
   
   doc["motor_izq_vel"] = robotActivo ? 110 : 0;
   doc["motor_der_vel"] = robotActivo ? 110 : 0;
-
   char jsonBuffer[512];
   serializeJson(doc, jsonBuffer);
   client.publish(topic_telemetria, jsonBuffer);
   Serial.print("[Telemetría] ");
   Serial.println(jsonBuffer);
 }
-
 void publicarAvanzar() {
   StaticJsonDocument<128> doc;
   doc["action"] = "avanzar";
@@ -133,7 +112,6 @@ void publicarAvanzar() {
   Serial.print("[Evento] Nodo cruzado reportado al servidor: ");
   Serial.println(jsonBuffer);
 }
-
 // ==========================================
 // 6. LÓGICA AUTÓNOMA DE PLANIFICACIÓN Y GIRO
 // ==========================================
@@ -145,7 +123,6 @@ void iniciarGiro(bool derecha) {
   delay(250); 
   frenar();
   delay(100);
-
   // 2. Comenzar a rotar en el propio eje
   if (derecha) {
     girarDerecha(135);
@@ -155,7 +132,6 @@ void iniciarGiro(bool derecha) {
   
   // 3. Esperar un momento breve para salir de la línea negra actual
   delay(400); 
-
   // 4. Seguir rotando hasta encontrar de nuevo la línea negra
   unsigned long start = millis();
   while (millis() - start < 3000) { // Timeout de seguridad
@@ -170,7 +146,6 @@ void iniciarGiro(bool derecha) {
   frenar();
   delay(100);
 }
-
 void iniciarGiro180() {
   Serial.println("Ejecutando giro de 180° (Retorno/Entrega)...");
   
@@ -191,7 +166,6 @@ void iniciarGiro180() {
   frenar();
   delay(100);
 }
-
 void planificarSiguientePaso() {
   if (ruta_idx >= ruta_len) {
     // Llegamos al destino final de la ruta
@@ -209,13 +183,10 @@ void planificarSiguientePaso() {
     publicarTelemetria();
     return;
   }
-
   // Determinar dirección requerida para ir al siguiente nodo de la ruta
   int next_x = ruta[ruta_idx].x;
   int next_y = ruta[ruta_idx].y;
-
   Heading direccionRequerida = orientacionActual;
-
   if (next_x > pos_x) {
     direccionRequerida = EAST;
   } else if (next_x < pos_x) {
@@ -225,10 +196,8 @@ void planificarSiguientePaso() {
   } else if (next_y < pos_y) {
     direccionRequerida = SOUTH;
   }
-
   // Calcular la diferencia de orientación (0: recto, 1: der, 2: 180°, 3: izq)
   int giro = (direccionRequerida - orientacionActual + 4) % 4;
-
   if (giro == 0) {
     Serial.printf("Trayecto recto hacia (%d, %d). Avanzando...\n", next_x, next_y);
   } 
@@ -241,10 +210,8 @@ void planificarSiguientePaso() {
   else if (giro == 2) {
     iniciarGiro180(); // Giro 180°
   }
-
   orientacionActual = direccionRequerida;
 }
-
 // ==========================================
 // 7. FUNCIONES DE RED (Wi-Fi y MQTT)
 // ==========================================
@@ -253,20 +220,16 @@ void setup_wifi() {
   Serial.println();
   Serial.print("Conectando a ");
   Serial.println(ssid);
-
   WiFi.begin(ssid, password);
-
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-
   Serial.println("");
   Serial.println("WiFi conectado exitosamente");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
 }
-
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("\n[Comando Recibido] ");
   
@@ -275,26 +238,21 @@ void callback(char* topic, byte* payload, unsigned int length) {
     msg += (char)payload[i];
   }
   Serial.println(msg);
-
   // Parsear el comando JSON
   StaticJsonDocument<1024> doc;
   DeserializationError error = deserializeJson(doc, msg);
-
   if (error) {
     Serial.print("Error al parsear JSON: ");
     Serial.println(error.c_str());
     return;
   }
-
   // Validar si el comando es para este carro
   int cid = doc["carro_id"];
   if (cid != 0 && cid != carro_id) {
     Serial.println("Comando ignorado (para otro carro).");
     return;
   }
-
   String action = doc["action"].as<String>();
-
   if (action == "mover") {
     destino_x = doc["destino_x"];
     destino_y = doc["destino_y"];
@@ -338,7 +296,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.println("▶ Carro reiniciado a coordenadas (0,0) mirando al Norte.");
   }
 }
-
 void reconnect() {
   while (!client.connected()) {
     Serial.print("Intentando conexión MQTT... ");
@@ -355,7 +312,6 @@ void reconnect() {
     }
   }
 }
-
 // ==========================================
 // 8. INICIALIZACIÓN
 // ==========================================
@@ -371,12 +327,10 @@ void setup() {
   pinMode(enB, OUTPUT); pinMode(in3, OUTPUT); pinMode(in4, OUTPUT);
   
   frenar(); 
-
   setup_wifi();
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(callback);
 }
-
 // ==========================================
 // 9. BUCLE PRINCIPAL (LOOP)
 // ==========================================
@@ -385,7 +339,6 @@ void loop() {
     reconnect();
   }
   client.loop();
-
   unsigned long now = millis();
   
   // --- TELEMETRÍA PERIÓDICA (Cada 2 segundos) ---
@@ -397,13 +350,11 @@ void loop() {
     }
     publicarTelemetria();
   }
-
   // --- CONTROL DE NAVEGACIÓN EN RUTA ---
   if (robotActivo) {
     int valS1 = digitalRead(senFrontalIzq);
     int valS2 = digitalRead(senFrontalDer);
     int valS4 = digitalRead(senLateralDer);
-
     // Detección de intersección o marca de nodo
     if (valS4 == 0) { 
       frenar();
@@ -412,7 +363,6 @@ void loop() {
       pos_x = ruta[ruta_idx].x;
       pos_y = ruta[ruta_idx].y;
       Serial.printf("Nodo cruzado. Posición actual: (%d, %d)\n", pos_x, pos_y);
-
       // 1. Reportar el avance al servidor Django
       publicarAvanzar();
       

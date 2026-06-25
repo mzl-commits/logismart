@@ -30,7 +30,7 @@ export default function Administracion() {
 
   if (loading && !usuarios.length) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] text-[#AFB3B7]">
+      <div className="flex flex-col items-center justify-center min-h-[300px] text-light">
         <div className="spinner mb-3"></div>
         Cargando administración...
       </div>

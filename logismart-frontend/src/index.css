@@ -78,22 +78,22 @@
 /* Modals and forms overrides to match original design */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,.6);
+  background: rgba(0,0,0,.75);
   display: flex; align-items: center; justify-content: center;
   z-index: 1050;
 }
 
 .modal-content {
-  background: #132E35;
-  border: 1px solid #2D4A53;
-  color: #AFB3B7;
+  background: #121214;
+  border: 1px solid #222227;
+  color: #F8FAFC;
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
 }
 
 .modal-header {
-  border-bottom: 1px solid #2D4A53;
+  border-bottom: 1px solid #222227;
   padding: 20px 24px;
   display: flex; align-items: center; justify-content: space-between;
 }
@@ -101,15 +101,15 @@
 .modal-title { font-weight: 700; font-size: 16px; margin: 0; }
 .modal-body { padding: 20px 24px; }
 .modal-footer {
-  border-top: 1px solid #2D4A53;
+  border-top: 1px solid #222227;
   padding: 16px 24px;
   display: flex; justify-content: flex-end; gap: .5rem;
 }
 
 .form-control, .form-select {
-  background: #0D1F23;
-  border: 1px solid #2D4A53;
-  color: #AFB3B7;
+  background: #0A0A0C;
+  border: 1px solid #222227;
+  color: #F8FAFC;
   border-radius: 10px;
   font-size: 15px;
   padding: 10px 14px;
@@ -117,14 +117,14 @@
   outline: none;
 }
 .form-control:focus, .form-select:focus {
-  border-color: #69818D;
-  box-shadow: 0 0 0 3px rgba(105,129,141,.2);
+  border-color: #8E95A5;
+  box-shadow: 0 0 0 3px rgba(142,149,165,.2);
 }
 
 .form-label {
   font-size: 12px;
   font-weight: 600;
-  color: #69818D;
+  color: #94A3B8;
   text-transform: uppercase;
   letter-spacing: .4px;
   margin-bottom: 6px;
@@ -143,15 +143,15 @@
   gap: 8px;
   cursor: pointer;
 }
-.btn-primary { background: #2D4A53; border: 1px solid #2D4A53; color: #AFB3B7; }
-.btn-primary:hover { background: #69818D; color: #fff; }
-.btn-secondary { background: #2D4A53; border: 1px solid #2D4A53; color: #AFB3B7; }
+.btn-primary { background: #1E1E22; border: 1px solid #2A2A30; color: #CBD5E1; }
+.btn-primary:hover { background: #2A2A30; color: #fff; }
+.btn-secondary { background: #1E1E22; border: 1px solid #2A2A30; color: #CBD5E1; }
 .btn-outline-danger { background: transparent; border: 1px solid #dc2626; color: #dc2626; }
 .btn-outline-danger:hover { background: rgba(220,38,38,.1); }
 
 .spinner {
   width: 20px; height: 20px;
-  border: 3px solid rgba(255,255,255,0.3);
+  border: 3px solid rgba(255,255,255,0.15);
   border-radius: 50%;
   border-top-color: #fff;
   animation: spin 1s ease-in-out infinite;
@@ -175,11 +175,11 @@
 .agv-chassis {
     width: 160px;
     height: 220px;
-    background: rgba(13, 31, 35, 0.7);
-    border: 2px solid #2D4A53;
+    background: rgba(18, 18, 20, 0.85);
+    border: 2px solid #2A2A30;
     border-radius: 20px;
     position: relative;
-    box-shadow: 0 0 25px rgba(56, 189, 248, 0.08);
+    box-shadow: 0 0 25px rgba(255, 255, 255, 0.02);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -189,8 +189,8 @@
 .wheel {
     width: 14px;
     height: 48px;
-    background: #0D1F23;
-    border: 2px solid #2D4A53;
+    background: #0A0A0C;
+    border: 2px solid #2A2A30;
     border-radius: 4px;
     position: absolute;
     top: 50%;
@@ -202,7 +202,7 @@
 .wheel-tread {
     width: 100%;
     height: 200%;
-    background: repeating-linear-gradient(0deg, #132E35, #132E35 4px, #2D4A53 4px, #2D4A53 8px);
+    background: repeating-linear-gradient(0deg, #121214, #121214 4px, #1E1E22 4px, #1E1E22 8px);
 }
 .wheel-spin-fw {
     animation: wheel-spin-forward var(--spin-speed, 0.5s) linear infinite;
@@ -222,8 +222,8 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: #0D1F23;
-    border: 1.5px solid #2D4A53;
+    background: #0A0A0C;
+    border: 1.5px solid #2A2A30;
     transition: all 0.2s ease;
 }
 .sensor-align-active {

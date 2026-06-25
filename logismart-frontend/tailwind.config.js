@@ -11,12 +11,12 @@ export default {
         sans: ['Inter', 'sans-serif']
       },
       colors: {
-        'main-bg': '#0D1F23',
-        surface: '#132E35',
-        surface2: '#2D4A53',
-        accent: '#69818D',
-        muted: '#5A636A',
-        light: '#AFB3B7',
+        'main-bg': '#0A0A0C',     // Negro carbón profundo
+        surface: '#121214',       // Gris oscuro de primer nivel (tarjetas)
+        surface2: '#1E1E22',      // Gris oscuro interactivo (hovers, botones secundarios)
+        accent: '#8E95A5',        // Gris acero para elementos destacados
+        muted: '#94A3B8',         // Gris medio de alta legibilidad para textos secundarios
+        light: '#F8FAFC',         // Blanco grisáceo para textos principales
       }
     }
   },

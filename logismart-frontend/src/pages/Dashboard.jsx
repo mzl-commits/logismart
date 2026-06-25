@@ -78,7 +78,7 @@ export default function Dashboard() {
   const pctOcupacion = totalUbic ? Math.round((ocupadas / totalUbic) * 100) : 0;
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center min-h-[300px] text-[#AFB3B7]">
+    <div className="flex flex-col items-center justify-center min-h-[300px] text-light">
       <div className="spinner mb-3"></div>
       Cargando dashboard...
     </div>
@@ -135,8 +135,8 @@ export default function Dashboard() {
               <span className="text-slate-600"> / {totalUbic}</span> · <strong className="text-white">{pctOcupacion}%</strong>
             </span>
           </div>
-          <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-700 ${pctOcupacion >= 90 ? 'bg-gradient-to-r from-red-600 to-red-500' : pctOcupacion >= 70 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-emerald-500 to-teal-500'}`} style={{ width: `${pctOcupacion}%` }}></div>
+          <div className="h-2.5 bg-[#2A2A30] rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-700 ${pctOcupacion >= 90 ? 'bg-gradient-to-r from-red-600 to-red-500' : pctOcupacion >= 70 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-emerald-600 to-emerald-500'}`} style={{ width: `${pctOcupacion}%` }}></div>
           </div>
           <div className="flex justify-between mt-3 text-xs text-slate-500">
             <span>{libres} libres</span>
@@ -148,8 +148,8 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={[{ value: ocupadas }, { value: libres }]} innerRadius={35} outerRadius={50} dataKey="value" stroke="none">
-                  <Cell fill={pctOcupacion >= 90 ? '#dc2626' : pctOcupacion >= 70 ? '#d97706' : '#10b981'} />
-                  <Cell fill="#1e293b" />
+                  <Cell fill={pctOcupacion >= 90 ? '#dc2626' : pctOcupacion >= 70 ? '#d97706' : '#52A27F'} />
+                  <Cell fill="#2A2A30" />
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
@@ -288,16 +288,16 @@ export default function Dashboard() {
         <div style={{ height: 320, width: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="fecha" tick={{fill:'#64748b',fontSize:12}} axisLine={false} tickLine={false} />
-              <YAxis tick={{fill:'#64748b',fontSize:12}} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#2A2A30" vertical={false} />
+              <XAxis dataKey="fecha" tick={{fill:'#94A3B8',fontSize:12}} axisLine={false} tickLine={false} />
+              <YAxis tick={{fill:'#94A3B8',fontSize:12}} axisLine={false} tickLine={false} />
               <Tooltip
-                contentStyle={{background:'#132E35',border:'1px solid #2D4A53',borderRadius:8,fontSize:13,color:'#AFB3B7'}}
-                itemStyle={{color:'#fff'}}
+                contentStyle={{background:'#121214',border:'1px solid #2A2A30',borderRadius:8,fontSize:13,color:'#F8FAFC'}}
+                itemStyle={{color:'#F8FAFC'}}
               />
-              <Legend wrapperStyle={{fontSize:13, color:'#94a3b8'}} />
-              <Line type="monotone" dataKey="ingresos" stroke="#0ea5e9" strokeWidth={3} dot={false} name="Cajas Ingresadas" />
-              <Line type="monotone" dataKey="salidas" stroke="#10b981" strokeWidth={3} dot={false} name="Cajas Despachadas" />
+              <Legend wrapperStyle={{fontSize:13, color:'#94A3B8'}} />
+              <Line type="monotone" dataKey="ingresos" stroke="#8E95A5" strokeWidth={3} dot={false} name="Cajas Ingresadas" />
+              <Line type="monotone" dataKey="salidas" stroke="#52A27F" strokeWidth={3} dot={false} name="Cajas Despachadas" />
             </LineChart>
           </ResponsiveContainer>
         </div>
