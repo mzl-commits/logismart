@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getCajas, getProveedores, getMedidas, getUsuarios, getCategorias, crearCaja, sugerirId, procesarLote } from '../api/endpoints';
+import { getCajas, getProveedores, getMedidas, getUsuarios, getCategorias, crearCaja, sugerirId, procesarLote, previsualizarLote } from '../api/endpoints';
 
 export default function NuevaCaja() {
   const [cajas, setCajas] = useState([]);
@@ -16,6 +16,10 @@ export default function NuevaCaja() {
   const [loadingForm, setLoadingForm] = useState(false);
   const [loadingEnvio, setLoadingEnvio] = useState(false);
   const [usuarioEnvio, setUsuarioEnvio] = useState('');
+  const [previewData, setPreviewData] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [asignaciones, setAsignaciones] = useState({});
+  const [loadingConfirmar, setLoadingConfirmar] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -70,7 +74,6 @@ export default function NuevaCaja() {
         id_medida: parseInt(form.medida),
         id_proveedor: parseInt(form.proveedor)
       });
-      alert(`Caja "${form.producto}" agregada a la cola ✓`);
       setForm({
         id: '', producto: '', categoria: '', prioridad: 'media', 
         peso: '', cantidad: 1, fragil: false, proveedor: '', medida: ''
@@ -91,14 +94,56 @@ export default function NuevaCaja() {
     }
     setLoadingEnvio(true);
     try {
-      const res = await procesarLote({ id_usuario: parseInt(usuarioEnvio) });
-      alert(res.data.mensaje || 'Ruta optimizada creada');
-      load();
+      const res = await previsualizarLote();
+      setPreviewData(res.data);
+      const initialAsignaciones = {};
+      res.data.cajas.forEach(caja => {
+        initialAsignaciones[caja.id] = caja.sugerida_id;
+      });
+      setAsignaciones(initialAsignaciones);
+      setShowPreview(true);
     } catch (error) {
-      alert('Error al procesar lote');
+      alert('Error al generar la previsualización del lote');
       console.error(error);
     } finally {
       setLoadingEnvio(false);
+    }
+  };
+
+  const handleUbiChange = (cajaId, ubiId) => {
+    setAsignaciones(prev => ({
+      ...prev,
+      [cajaId]: ubiId ? parseInt(ubiId) : null
+    }));
+  };
+
+  const confirmarYProcesarLote = async () => {
+    if (!usuarioEnvio) {
+      alert('Selecciona un operador responsable.');
+      return;
+    }
+
+    const selectedUbis = Object.values(asignaciones).filter(Boolean);
+    const duplicates = selectedUbis.some((item, index) => selectedUbis.indexOf(item) !== index);
+    if (duplicates) {
+      alert('Error: No puedes asignar la misma ubicación a dos cajas distintas.');
+      return;
+    }
+
+    setLoadingConfirmar(true);
+    try {
+      const res = await procesarLote({
+        id_usuario: parseInt(usuarioEnvio),
+        asignaciones: asignaciones
+      });
+      alert(res.data.mensaje || 'Ruta optimizada creada');
+      setShowPreview(false);
+      load();
+    } catch (error) {
+      alert(error.response?.data?.error || 'Error al procesar el lote');
+      console.error(error);
+    } finally {
+      setLoadingConfirmar(false);
     }
   };
 
@@ -287,6 +332,85 @@ export default function NuevaCaja() {
           </div>
         </div>
       </div>
+
+      {showPreview && previewData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[2000] p-4">
+          <div className="bg-surface border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-[fadeInUp_0.2s_ease-out] flex flex-col max-h-[90vh]">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/30 flex items-center justify-between">
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <i className="bi bi-eye text-sky-400"></i> Previsualización e Itinerario del Lote
+              </h3>
+              <button onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-white transition-colors">
+                <i className="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 overflow-y-auto space-y-4 flex-grow">
+              {previewData.cajas.length === 0 ? (
+                <p className="text-slate-400 text-sm">No hay cajas compatibles para procesar en este lote.</p>
+              ) : (
+                previewData.cajas.map(caja => {
+                  const currentVal = asignaciones[caja.id] ?? '';
+                  return (
+                    <div key={caja.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-slate-800 bg-slate-900/30">
+                      <div>
+                        <div className="font-bold text-white text-sm">{caja.producto}</div>
+                        <div className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+                          <span className="text-sky-400 font-semibold">{caja.id}</span> · {caja.peso_kg} kg · <span className="uppercase font-bold">{caja.categoria}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-slate-400 font-semibold">Estante:</span>
+                        <select 
+                          value={currentVal}
+                          onChange={(e) => handleUbiChange(caja.id, e.target.value)}
+                          className="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all"
+                        >
+                          {caja.sugerida_id ? (
+                            <option value={caja.sugerida_id}>⭐ {caja.sugerida_nombre} (Recomendada)</option>
+                          ) : (
+                            <option value="" disabled>⚠️ Sin ubicación compatible</option>
+                          )}
+                          {previewData.ubicaciones_libres
+                            .filter(u => u.id_ubicacion !== caja.sugerida_id)
+                            .map(u => (
+                              <option key={u.id_ubicacion} value={u.id_ubicacion}>{u.nombre}</option>
+                            ))
+                          }
+                        </select>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/10 flex justify-between items-center gap-3">
+              <div className="text-xs text-slate-500">
+                Peso total: <span className="text-slate-300 font-bold">{previewData.peso_total?.toFixed(1)}</span> kg
+              </div>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowPreview(false)}
+                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition-all"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={confirmarYProcesarLote}
+                  disabled={loadingConfirmar}
+                  className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <i className="bi bi-check-lg"></i> {loadingConfirmar ? 'Procesando...' : 'Confirmar y Enviar Carro'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

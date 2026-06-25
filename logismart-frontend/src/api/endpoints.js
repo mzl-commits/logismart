@@ -8,6 +8,7 @@ export const updateCaja      = (id, d)  => api.patch(`cajas/${id}/`, d);
 export const deleteCaja      = (id)     => api.delete(`cajas/${id}/`);
 export const sugerirId       = ()       => api.get('cajas/sugerir_id/');
 export const procesarLote    = (data)   => api.post('cajas/procesar_lote/', data);
+export const previsualizarLote = (data) => api.post('cajas/previsualizar_lote/', data);
 export const procesarCaja      = (id, data) => api.post(`cajas/${id}/procesar/`, data);
 export const confirmarAlmacenada = (id, data) => api.post(`cajas/${id}/confirmar_almacenada/`, data);
 export const confirmarDespacho = (id, data) => api.post(`cajas/${id}/confirmar_despacho/`, data);
