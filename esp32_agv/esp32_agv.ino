@@ -35,7 +35,7 @@ const bool INVERTIR_DIRECCION_GIRO = true;
 // ─── COMPENSACIÓN DE VELOCIDAD FÍSICA (CALIBRACIÓN) ──────────────────────────
 // Si el motor izquierdo gira muy lento en comparación al derecho, aumenta este factor (ej. 1.3, 1.5, 1.8)
 // Si el motor derecho es el que gira lento, aumenta el factor derecho correspondientemente.
-const float COMPENSACION_MOTOR_IZQ = 1.4; 
+const float COMPENSACION_MOTOR_IZQ = 1.0; 
 const float COMPENSACION_MOTOR_DER = 1.0;
 
 // ─── CONFIGURACIÓN DE SEGUIDOR DE LÍNEA ──────────────────────────────────────

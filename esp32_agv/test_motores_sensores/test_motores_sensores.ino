@@ -1,9 +1,8 @@
 /**
- * LogiSmart AGV - Sketch de Prueba de Motores y Sensores (v1.0)
+ * LogiSmart AGV - Sketch de Prueba Integrada (Seguidor de Línea Offline v2.0)
  * 
- * Sube este sketch para verificar:
- * 1. Que los motores N20 giren hacia adelante, atrás y den vueltas.
- * 2. Que los 4 sensores ópticos detecten la diferencia entre la superficie blanca y la línea negra.
+ * Este sketch prueba los motores y los sensores ópticos de forma integrada ("de la mano").
+ * El robot funcionará como un seguidor de línea autónomo inmediato al encenderse (sin WiFi ni MQTT).
  * 
  * Velocidad del Monitor Serial: 9600 baudios.
  */
@@ -23,25 +22,40 @@
 #define PIN_MOTOR_IN4   19   // Motor Derecho IN4
 #define PIN_MOTOR_ENB   23   // Motor Derecho ENB (PWM)
 
-// ─── COMPENSACIÓN DE VELOCIDAD FÍSICA (CALIBRACIÓN) ──────────────────────────
-// Si el motor izquierdo gira muy lento, aumenta este factor (ej. 1.3, 1.5 o 1.8)
-// Si el motor derecho es el lento, aumenta el factor derecho correspondientemente.
-const float COMPENSACION_MOTOR_IZQ = 1.4; 
+// ─── CONFIGURACIÓN DE CALIBRACIÓN (RESTAURADA A 1.0) ──────────────────────────
+const float COMPENSACION_MOTOR_IZQ = 1.0; 
 const float COMPENSACION_MOTOR_DER = 1.0;
 
-// Variables de estado del ciclo de prueba
-unsigned long lastMotorChange = 0;
-int testState = 0; // 0: Parado, 1: Avanzar, 2: Girar Derecha, 3: Girar Izquierda
+const bool INVERTIR_MOTOR_IZQ = false;
+const bool INVERTIR_MOTOR_DER = false;
+const bool INVERTIR_DIRECCION_GIRO = true; // Por defecto true tras invertir direcciones
+
+// La línea negra va en el medio de los sensores (true) o debajo (false)
+const bool MODO_STRADDLE = true; 
+
+// Polaridad del sensor: HIGH en negro, LOW en blanco
+#define ESTADO_NEGRO HIGH
+#define ESTADO_BLANCO LOW
+
+// Velocidad base (0 a 255)
+int baseSpeedForward = 120;
+
+// Variables globales del test
+int nodeCount = 0;
+unsigned long lastNodeDetectionTime = 0;
+const unsigned long nodeDebounceInterval = 1000;
 unsigned long lastSensorPrint = 0;
+int speedLeft = 0;
+int speedRight = 0;
 
 void setup() {
   Serial.begin(9600);
   delay(1500);
   Serial.println("\n=============================================");
-  Serial.println("   SKETCH DE PRUEBA DE MOTORES Y SENSORES   ");
+  Serial.println("  TEST INTEGRADO: SENSORES DE LA MANO CON MOTORES ");
   Serial.println("=============================================");
-  Serial.println("Asegúrate de configurar el Monitor Serial a 9600 baudios.");
-  Serial.println("Este test ciclará los motores y reportará los sensores.");
+  Serial.println("El carro intentará seguir la línea negra de forma autónoma.");
+  Serial.println("Configura tu Monitor Serial a 9600 baudios.");
   Serial.println("=============================================");
 
   // Configuración de pines de sensores
@@ -58,62 +72,92 @@ void setup() {
   pinMode(PIN_MOTOR_IN4, OUTPUT);
   pinMode(PIN_MOTOR_ENB, OUTPUT);
 
-  // Frenar motores inicialmente
   setMotors(0, 0);
-  lastMotorChange = millis();
 }
 
 void loop() {
-  unsigned long currentMillis = millis();
+  // 1. Leer Sensores
+  bool valLineLeft  = (digitalRead(PIN_LINE_LEFT) == ESTADO_NEGRO);
+  bool valLineRight = (digitalRead(PIN_LINE_RIGHT) == ESTADO_NEGRO);
+  bool valNodeLeft  = (digitalRead(PIN_NODE_LEFT) == ESTADO_NEGRO);
+  bool valNodeRight = (digitalRead(PIN_NODE_RIGHT) == ESTADO_NEGRO);
 
-  // 1. Ciclo de Movimiento de Motores (Cambia cada 3 segundos)
-  if (currentMillis - lastMotorChange > 3000) {
-    lastMotorChange = currentMillis;
-    testState = (testState + 1) % 5;
-    
-    switch (testState) {
-      case 0:
-        Serial.println("\n>>> MOTORES: PARADOS (Freno)");
-        setMotors(0, 0);
-        break;
-      case 1:
-        Serial.println("\n>>> MOTORES: AVANZAR ADELANTE");
-        setMotors(120, 120); // Velocidad media
-        break;
-      case 2:
-        Serial.println("\n>>> MOTORES: retroceder atrÁS");
-        setMotors(-120, -120);
-        break;
-      case 3:
-        Serial.println("\n>>> MOTORES: GIRAR A LA DERECHA (Pivote)");
-        setMotors(120, -120); // Rueda izq adelante, der atrás
-        break;
-      case 4:
-        Serial.println("\n>>> MOTORES: GIRAR A LA IZQUIERDA (Pivote)");
-        setMotors(-120, 120); // Rueda izq atrás, der adelante
-        break;
+  bool nodeDetected = (valNodeLeft || valNodeRight);
+
+  // 2. Lógica del Seguidor de Línea
+  bool irRecto = false;
+  bool girarIzquierda = false;
+  bool girarDerecha = false;
+
+  if (MODO_STRADDLE) {
+    if (!valLineLeft && !valLineRight) {
+      irRecto = true;
+    } else if (valLineLeft && !valLineRight) {
+      girarIzquierda = true;
+    } else if (!valLineLeft && valLineRight) {
+      girarDerecha = true;
+    } else {
+      irRecto = true;
+    }
+  } 
+  else {
+    if (valLineLeft && valLineRight) {
+      irRecto = true;
+    } else if (!valLineLeft && valLineRight) {
+      girarDerecha = true;
+    } else if (valLineLeft && !valLineRight) {
+      girarIzquierda = true;
+    } else {
+      irRecto = true;
     }
   }
 
-  // 2. Lectura y Reporte de Sensores (Cada 250ms)
-  if (currentMillis - lastSensorPrint > 250) {
-    lastSensorPrint = currentMillis;
-
-    // Lectura digital (HIGH o LOW)
-    int s1_dig = digitalRead(PIN_LINE_LEFT);
-    int s2_dig = digitalRead(PIN_LINE_RIGHT);
-    int s3_dig = digitalRead(PIN_NODE_LEFT);
-    int s4_dig = digitalRead(PIN_NODE_RIGHT);
-
-    // Lectura analógica (Solo pines que soportan ADC: 32, 34, 35)
-    // El pin 18 es digital y no soporta analogRead()
-    int s1_ana = analogRead(PIN_LINE_LEFT);
-    int s3_ana = analogRead(PIN_NODE_LEFT);
-    int s4_ana = analogRead(PIN_NODE_RIGHT);
-
-    Serial.printf("SENSORES -> [S3 Izq Ext/Pin34]: Dig=%d (Ana=%d) | [S1 Izq Int/Pin32]: Dig=%d (Ana=%d) | [S2 Der Int/Pin18]: Dig=%d | [S4 Der Ext/Pin35]: Dig=%d (Ana=%d)\n",
-                  s3_dig, s3_ana, s1_dig, s1_ana, s2_dig, s4_dig, s4_ana);
+  // Ajuste por inversión de giro
+  if (INVERTIR_DIRECCION_GIRO) {
+    if (girarIzquierda || girarDerecha) {
+      bool temp = girarIzquierda;
+      girarIzquierda = girarDerecha;
+      girarDerecha = temp;
+    }
   }
+
+  // Asignación de velocidades según el seguidor
+  if (irRecto) {
+    speedLeft = baseSpeedForward;
+    speedRight = baseSpeedForward;
+  } 
+  else if (girarIzquierda) {
+    speedLeft = -baseSpeedForward / 2;
+    speedRight = baseSpeedForward;
+  } 
+  else if (girarDerecha) {
+    speedLeft = baseSpeedForward;
+    speedRight = -baseSpeedForward / 2;
+  }
+
+  // Aplicar velocidad a los motores
+  setMotors(speedLeft, speedRight);
+
+  // 3. Conteo de Nodos (Marcas laterales)
+  if (nodeDetected && (millis() - lastNodeDetectionTime > nodeDebounceInterval)) {
+    lastNodeDetectionTime = millis();
+    nodeCount++;
+    Serial.printf("\n>>> [NODO DETECTADO #%d] (Sensores laterales activados -> Izq=%d Der=%d)\n", 
+                  nodeCount, valNodeLeft, valNodeRight);
+    
+    // Parar un momento para hacer evidente la detección del nodo
+    setMotors(0, 0);
+    delay(400); 
+  }
+
+  // 4. Reportar sensores en tiempo real al Monitor Serial (Cada 250ms)
+  if (millis() - lastSensorPrint > 250) {
+    lastSensorPrint = millis();
+    Serial.printf("[TEST INTEGRADO] S3_ext=%d | S1_int=%d | S2_int=%d | S4_ext=%d | Motores: L=%d R=%d\n",
+                  valNodeLeft, valLineLeft, valLineRight, valNodeRight, speedLeft, speedRight);
+  }
+
+  delay(20);
 }
 
 // Función auxiliar para controlar el puente H
@@ -121,6 +165,10 @@ void setMotors(int speedL, int speedR) {
   // Aplicar factores de compensación física
   speedL = (int)(speedL * COMPENSACION_MOTOR_IZQ);
   speedR = (int)(speedR * COMPENSACION_MOTOR_DER);
+
+  // Ajuste por inversión física
+  if (INVERTIR_MOTOR_IZQ) speedL = -speedL;
+  if (INVERTIR_MOTOR_DER) speedR = -speedR;
 
   // Límite de seguridad
   speedL = constrain(speedL, -255, 255);
