@@ -1,33 +1,36 @@
 /**
- * LogiSmart AGV Robot - ESP32 Firmware (v1.3 - Corregido y Optimizado)
+ * LogiSmart AGV Robot - ESP32 Firmware (v1.4 - N20 Motors & 4 Optical Sensors)
  * 
  * Este programa controla un vehículo guiado automatizado (AGV) utilizando un ESP32.
- * Incorpora conexión no bloqueante para poder calibrar y probar el robot de forma offline.
+ * Controla 2 motores DC N20 mediante un puente H (L293D / L298N / TB6612) y 4 sensores ópticos.
  * 
- * CONFIGURACIÓN DE SENSORES (4 Sensores en total):
- * 1. Sensor Infrarrojo Frontal Izquierdo (Seguidor de línea) -> Pin 32
- * 2. Sensor Infrarrojo Frontal Derecho (Seguidor de línea)   -> Pin 33
- * 3. Sensor Infrarrojo Lateral Derecho (Contador de Nodos)   -> Pin 25 (Delante de la rueda derecha)
- * 4. Sensor de Obstáculos Frontal Ultrasonidos HC-SR04        -> Trig: Pin 26, Echo: Pin 27
+ * CONFIGURACIÓN DE SENSORES (4 Sensores Ópticos):
+ * 1. Sensor Infrarrojo Frontal Izquierdo (Seguidor de línea) -> Pin 32 (S1 / Interno Izq)
+ * 2. Sensor Infrarrojo Frontal Derecho (Seguidor de línea)   -> Pin 18 (S2 / Interno Der)
+ * 3. Sensor Infrarrojo Lateral Izquierdo (Contador de Nodos)  -> Pin 34 (S3 / Externo Izq)
+ * 4. Sensor Infrarrojo Lateral Derecho (Contador de Nodos)   -> Pin 35 (S4 / Externo Der)
  * 
- * ACTUADORES:
- * - Servomotor Rotación Continua Izquierdo -> Pin 18 (Pulsos: 1000us max rev, 1500us stop, 2000us max forward)
- * - Servomotor Rotación Continua Derecho   -> Pin 19 (Pulsos: 1000us max rev, 1500us stop, 2000us max forward)
+ * ACTUADORES (Motores N20 con Puente H):
+ * - Motor Izquierdo (M1): ENA (PWM) -> Pin 33, IN1 -> Pin 25, IN2 -> Pin 14
+ * - Motor Derecho (M2):   ENB (PWM) -> Pin 23, IN3 -> Pin 21, IN4 -> Pin 19
  */
 
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include <ESP32Servo.h>
 
 // ─── CONFIGURACIÓN DE PRUEBA Y DEPURACIÓN ─────────────────────────────────────
 // Define esto como 'true' si quieres probar el seguidor de línea de forma autónoma
 // inmediatamente al encenderse, sin esperar comandos MQTT del servidor.
 const bool MODO_PRUEBA_OFFLINE = false;
 
-// Habilitar/Deshabilitar el sensor de ultrasonidos (HC-SR04)
-// Si no tienes el sensor conectado, configúralo en 'false' para evitar lecturas flotantes falsas.
-const bool USAR_ULTRASONIDO = true;
+// ─── CONFIGURACIÓN DE INVERSIÓN FÍSICA (FÁCIL CALIBRACIÓN) ────────────────────
+// Si tu motor izquierdo gira al revés, cambia esto a 'true'
+const bool INVERTIR_MOTOR_IZQ = false;
+// Si tu motor derecho gira al revés, cambia esto a 'true'
+const bool INVERTIR_MOTOR_DER = false;
+// Si el carro gira a la izquierda cuando debería ir a la derecha (o viceversa), pon esto en 'true'
+const bool INVERTIR_DIRECCION_GIRO = false;
 
 // ─── CONFIGURACIÓN DE SEGUIDOR DE LÍNEA ──────────────────────────────────────
 // MODO_STRADDLE = true: La línea negra va EN MEDIO de los dos sensores frontales.
@@ -40,7 +43,7 @@ const bool MODO_STRADDLE = true;
 // Si tus sensores entregan HIGH (1) sobre la línea NEGRA y LOW (0) sobre la superficie BLANCA:
 //   #define ESTADO_NEGRO HIGH
 //   #define ESTADO_BLANCO LOW
-// Si tus sensores entregan LOW (0) sobre la línea NEGRA y HIGH (1) sobre la superficie BLANCA (invertidos):
+// Si tus sensores entregan LOW (0) sobre la línea NEGRA y HIGH (1) sobre la superficie BLANCA:
 //   #define ESTADO_NEGRO LOW
 //   #define ESTADO_BLANCO HIGH
 #define ESTADO_NEGRO HIGH
@@ -61,18 +64,21 @@ const char* topic_comando    = "logismart/carro/comando";
 const int CARRO_ID = 1;
 
 // ─── MAPEO DE PINES ──────────────────────────────────────────────────────────
-#define PIN_LINE_LEFT   32   // Sensor frontal izquierdo
-#define PIN_LINE_RIGHT  33   // Sensor frontal derecho
-#define PIN_NODE_RIGHT  25   // Sensor contador de nodos lateral derecho
-#define PIN_TRIG        26   // HC-SR04 Trig
-#define PIN_ECHO        27   // HC-SR04 Echo
-#define PIN_MOTOR_LEFT  18   // Servomotor izquierdo
-#define PIN_MOTOR_RIGHT 19   // Servomotor derecho
-#define PIN_BATTERY     34   // Medidor de batería analógica
+// Sensores ópticos
+#define PIN_LINE_LEFT   32   // Sensor frontal izquierdo (S1)
+#define PIN_LINE_RIGHT  18   // Sensor frontal derecho (S2)
+#define PIN_NODE_LEFT   34   // Sensor lateral izquierdo (S3)
+#define PIN_NODE_RIGHT  35   // Sensor lateral derecho (S4)
+
+// Puente H Motores N20
+#define PIN_MOTOR_IN1   25   // Motor Izquierdo dir 1
+#define PIN_MOTOR_IN2   14   // Motor Izquierdo dir 2
+#define PIN_MOTOR_ENA   33   // Motor Izquierdo velocidad (PWM)
+#define PIN_MOTOR_IN3   21   // Motor Derecho dir 1
+#define PIN_MOTOR_IN4   19   // Motor Derecho dir 2
+#define PIN_MOTOR_ENB   23   // Motor Derecho velocidad (PWM)
 
 // ─── VARIABLES GLOBALES Y ESTADOS ────────────────────────────────────────────
-Servo motorLeft;
-Servo motorRight;
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -100,16 +106,15 @@ String cajaId = "";
 // Sensores
 bool valLineLeft = false;
 bool valLineRight = false;
+bool valNodeLeft = false;
 bool valNodeRight = false;
-bool valObstacle = false;
-float distanceCm = 999.0;
 int batteryPct = 100;
 
-// Variables de Velocidad (us)
-// Ajusta baseSpeedForward si el carro no tiene fuerza (zumba pero no se mueve)
-int baseSpeedForward = 250; // Rango típico: 100 a 400 (sobre 1500us)
-int speedLeft = 1500;
-int speedRight = 1500;
+// Variables de Velocidad (PWM 0-255)
+// Ajusta baseSpeedForward según la velocidad física deseada para tu robot
+int baseSpeedForward = 120; // Rango típico N20: 80 a 200 (de 255)
+int speedLeft = 0;
+int speedRight = 0;
 
 // Timers no bloqueantes
 unsigned long lastTelemetryTime = 0;
@@ -123,8 +128,7 @@ void setupWiFi();
 void callback(char* topic, byte* payload, unsigned int length);
 void reconnectMQTTNonBlocking();
 void publishTelemetry(const char* action = NULL);
-float readDistance();
-int getBatteryPercentage();
+void setMotorsSpeed(int speedL, int speedR);
 void updateLineFollowing();
 void stopMotors();
 void parseMoverCommand(JsonDocument& doc);
@@ -135,24 +139,22 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
   Serial.println("\n=============================================");
-  Serial.println("     INICIANDO LOGISMART AGV ROBOT v1.3      ");
+  Serial.println("     INICIANDO LOGISMART AGV ROBOT v1.4      ");
   Serial.println("=============================================");
 
   // Configuración de pines de sensores
   pinMode(PIN_LINE_LEFT, INPUT_PULLUP);
   pinMode(PIN_LINE_RIGHT, INPUT_PULLUP);
+  pinMode(PIN_NODE_LEFT, INPUT_PULLUP);
   pinMode(PIN_NODE_RIGHT, INPUT_PULLUP);
-  pinMode(PIN_TRIG, OUTPUT);
-  pinMode(PIN_ECHO, INPUT);
-  pinMode(PIN_BATTERY, INPUT);
 
-  // Adjuntar servomotores
-  ESP32PWM::allocateTimer(0);
-  ESP32PWM::allocateTimer(1);
-  motorLeft.setPeriodHertz(50);
-  motorRight.setPeriodHertz(50);
-  motorLeft.attach(PIN_MOTOR_LEFT, 1000, 2000);
-  motorRight.attach(PIN_MOTOR_RIGHT, 1000, 2000);
+  // Configuración de pines de motores
+  pinMode(PIN_MOTOR_IN1, OUTPUT);
+  pinMode(PIN_MOTOR_IN2, OUTPUT);
+  pinMode(PIN_MOTOR_ENA, OUTPUT);
+  pinMode(PIN_MOTOR_IN3, OUTPUT);
+  pinMode(PIN_MOTOR_IN4, OUTPUT);
+  pinMode(PIN_MOTOR_ENB, OUTPUT);
 
   stopMotors();
 
@@ -190,38 +192,24 @@ void loop() {
   valLineLeft  = (digitalRead(PIN_LINE_LEFT) == ESTADO_NEGRO);
   valLineRight = (digitalRead(PIN_LINE_RIGHT) == ESTADO_NEGRO);
   
-  // El sensor contador de nodos también se activa al cruzar una línea negra transversal
+  // Sensores laterales para detectar nodos (transversales)
+  valNodeLeft  = (digitalRead(PIN_NODE_LEFT) == ESTADO_NEGRO);
   valNodeRight = (digitalRead(PIN_NODE_RIGHT) == ESTADO_NEGRO);
   
-  // Detección de distancia
-  if (USAR_ULTRASONIDO) {
-    distanceCm = readDistance();
-    // Obstáculo si la distancia es real y menor a 15cm (evitamos lecturas erróneas de 0cm)
-    valObstacle = (distanceCm > 2.0 && distanceCm < 15.0);
-  } else {
-    distanceCm = 999.0;
-    valObstacle = false;
-  }
+  // Detección de intersección (si cualquiera de los sensores del costado pisa la línea negra)
+  bool nodeDetected = (valNodeLeft || valNodeRight);
 
   // 2. Control de Movimiento y Máquina de Estados
-  if (valObstacle) {
-    // Freno inmediato si hay obstáculos detectados en el camino
-    stopMotors();
-    if (currentState == MOVIENDO || currentState == REGRESANDO) {
-      Serial.printf("[OBSTÁCULO] ¡Detenido! Distancia: %.1f cm. Reanudará cuando el camino esté libre.\n", distanceCm);
-      publishTelemetry("obstaculo");
-    }
-  } 
-  else if (currentState == MOVIENDO || currentState == REGRESANDO) {
+  if (currentState == MOVIENDO || currentState == REGRESANDO) {
     // Seguir la línea negra
     updateLineFollowing();
 
-    // Detección de nodos en el lado derecho (conteo de intersecciones)
-    if (valNodeRight && (millis() - lastNodeDetectionTime > nodeDebounceInterval)) {
+    // Detección de nodos en los costados (conteo de intersecciones)
+    if (nodeDetected && (millis() - lastNodeDetectionTime > nodeDebounceInterval)) {
       lastNodeDetectionTime = millis();
       
       if (MODO_PRUEBA_OFFLINE) {
-        Serial.println("[NODO] Detectado (Modo Prueba Offline).");
+        Serial.printf("[NODO] Detectado (Modo Prueba Offline). Sensores: Izq=%d Der=%d\n", valNodeLeft, valNodeRight);
       } 
       else if (currentStep < rutaSize) {
         posX = ruta[currentStep].x;
@@ -254,26 +242,67 @@ void loop() {
   // 3. Telemetría Periódica (Cada 1 segundo)
   if (millis() - lastTelemetryTime > telemetryInterval) {
     lastTelemetryTime = millis();
-    batteryPct = getBatteryPercentage();
+    
+    // Decrementamos la batería de forma virtual mientras el robot esté en movimiento
+    if ((currentState == MOVIENDO || currentState == REGRESANDO) && batteryPct > 0) {
+      batteryPct = max(0, batteryPct - 1);
+    }
     
     if (client.connected()) {
       publishTelemetry();
     } else {
       // Si está offline, imprime el estado en el Monitor Serial para facilitar la calibración física
-      Serial.printf("[DIAGNÓSTICO OFFLINE] Estado: %d | Pos: (%d,%d) | Bat: %d%% | Dist: %.1f cm | Sensores: L=%d R=%d Node=%d\n", 
-                    currentState, posX, posY, batteryPct, distanceCm, valLineLeft, valLineRight, valNodeRight);
+      Serial.printf("[DIAGNÓSTICO OFFLINE] Estado: %d | Pos: (%d,%d) | Bat: %d%% | Sensores: L_ext=%d L_int=%d R_int=%d R_ext=%d\n", 
+                    currentState, posX, posY, batteryPct, valNodeLeft, valLineLeft, valLineRight, valNodeRight);
     }
   }
 
   delay(20);
 }
 
+// ─── CONTROL DE MOTORES DC CON PUENTE H ──────────────────────────────────────
+void setMotorsSpeed(int speedL, int speedR) {
+  // Ajuste por inversión física de motores
+  if (INVERTIR_MOTOR_IZQ) speedL = -speedL;
+  if (INVERTIR_MOTOR_DER) speedR = -speedR;
+
+  // Límite de seguridad de velocidades (0 a 255)
+  speedL = constrain(speedL, -255, 255);
+  speedR = constrain(speedR, -255, 255);
+
+  // Motor Izquierdo (M1)
+  if (speedL > 0) {
+    digitalWrite(PIN_MOTOR_IN1, LOW);
+    digitalWrite(PIN_MOTOR_IN2, HIGH);
+    analogWrite(PIN_MOTOR_ENA, speedL);
+  } else if (speedL < 0) {
+    digitalWrite(PIN_MOTOR_IN1, HIGH);
+    digitalWrite(PIN_MOTOR_IN2, LOW);
+    analogWrite(PIN_MOTOR_ENA, -speedL);
+  } else {
+    digitalWrite(PIN_MOTOR_IN1, LOW);
+    digitalWrite(PIN_MOTOR_IN2, LOW);
+    analogWrite(PIN_MOTOR_ENA, 0);
+  }
+
+  // Motor Derecho (M2)
+  if (speedR > 0) {
+    digitalWrite(PIN_MOTOR_IN3, LOW);
+    digitalWrite(PIN_MOTOR_IN4, HIGH);
+    analogWrite(PIN_MOTOR_ENB, speedR);
+  } else if (speedR < 0) {
+    digitalWrite(PIN_MOTOR_IN3, HIGH);
+    digitalWrite(PIN_MOTOR_IN4, LOW);
+    analogWrite(PIN_MOTOR_ENB, -speedR);
+  } else {
+    digitalWrite(PIN_MOTOR_IN3, LOW);
+    digitalWrite(PIN_MOTOR_IN4, LOW);
+    analogWrite(PIN_MOTOR_ENB, 0);
+  }
+}
+
 // ─── SEGUIMIENTO DE LÍNEA ADAPTATIVO ─────────────────────────────────────────
 void updateLineFollowing() {
-  // Configuración de giro y dirección para servomotores de rotación continua:
-  // Motor Izquierdo adelante -> velocidad > 1500 (us)
-  // Motor Derecho adelante   -> velocidad < 1500 (us) (sentido inverso por montaje físico)
-  
   bool irRecto = false;
   bool girarIzquierda = false;
   bool girarDerecha = false;
@@ -306,62 +335,43 @@ void updateLineFollowing() {
       // El sensor derecho se salió de la línea (le Blanco). Corregir a la izquierda.
       girarIzquierda = true;
     } else {
-      // Ambos leen blanco (se perdió la línea): Continuar recto a baja velocidad para reencontrarla
+      // Ambos leen blanco (se perdió la línea): Continuar recto a baja velocidad
       irRecto = true;
     }
   }
 
-  // Cálculo de los pulsos para los servomotores
-  if (irRecto) {
-    speedLeft = 1500 + baseSpeedForward;
-    speedRight = 1500 - baseSpeedForward;
-  } 
-  else if (girarIzquierda) {
-    // Para girar a la izquierda: desacelerar o retroceder rueda izquierda, avanzar derecha
-    speedLeft = 1500 - (baseSpeedForward / 2);
-    speedRight = 1500 - baseSpeedForward;
-  } 
-  else if (girarDerecha) {
-    // Para girar a la derecha: avanzar rueda izquierda, desacelerar o retroceder derecha
-    speedLeft = 1500 + baseSpeedForward;
-    speedRight = 1500 + (baseSpeedForward / 2);
+  // Ajuste por inversión de giro de software
+  if (INVERTIR_DIRECCION_GIRO) {
+    if (girarIzquierda || girarDerecha) {
+      bool temp = girarIzquierda;
+      girarIzquierda = girarDerecha;
+      girarDerecha = temp;
+    }
   }
 
-  motorLeft.writeMicroseconds(speedLeft);
-  motorRight.writeMicroseconds(speedRight);
+  // Velocidades aplicadas a motores
+  if (irRecto) {
+    speedLeft = baseSpeedForward;
+    speedRight = baseSpeedForward;
+  } 
+  else if (girarIzquierda) {
+    // Para girar a la izquierda: detener o retroceder rueda izquierda, avanzar derecha
+    speedLeft = -baseSpeedForward / 2;
+    speedRight = baseSpeedForward;
+  } 
+  else if (girarDerecha) {
+    // Para girar a la derecha: avanzar rueda izquierda, detener o retroceder derecha
+    speedLeft = baseSpeedForward;
+    speedRight = -baseSpeedForward / 2;
+  }
+
+  setMotorsSpeed(speedLeft, speedRight);
 }
 
 void stopMotors() {
-  speedLeft = 1500;
-  speedRight = 1500;
-  motorLeft.writeMicroseconds(1500);
-  motorRight.writeMicroseconds(1500);
-}
-
-// ─── LEER ULTRASONIDO HC-SR04 ────────────────────────────────────────────────
-float readDistance() {
-  digitalWrite(PIN_TRIG, LOW);
-  delayMicroseconds(2);
-  digitalWrite(PIN_TRIG, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(PIN_TRIG, LOW);
-  
-  // Timeout de 25ms (aprox. 4 metros de rango máximo)
-  long duration = pulseIn(PIN_ECHO, HIGH, 25000); 
-  if (duration == 0) return 999.0;
-  
-  return duration * 0.0343 / 2.0;
-}
-
-// ─── BATERÍA ─────────────────────────────────────────────────────────────────
-int getBatteryPercentage() {
-  int raw = analogRead(PIN_BATTERY);
-  // Asumiendo divisor de voltaje resistivo y batería de 7.4V (Lipo 2S)
-  float voltage = (raw / 4095.0) * 3.3 * 2.5; 
-  int pct = map(voltage * 100, 640, 840, 0, 100);
-  if (pct > 100) pct = 100;
-  if (pct < 0) pct = 0;
-  return pct;
+  speedLeft = 0;
+  speedRight = 0;
+  setMotorsSpeed(0, 0);
 }
 
 // ─── CONEXIÓN WIFI ───────────────────────────────────────────────────────────
@@ -427,7 +437,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   if (action == "mover") {
     parseMoverCommand(doc);
   } 
-  else if (action == "stop") {
+  else if (action == "stop" || action == "detener") {
     currentState = ESPANDO;
     stopMotors();
     Serial.println("Comando STOP. Robot detenido.");
@@ -483,11 +493,12 @@ void publishTelemetry(const char* action) {
   doc["parada_actual"] = currentStep;
   doc["bateria_pct"] = batteryPct;
 
-  doc["sensor_opt_izq_ext"] = false;
+  // Mapeamos los 4 sensores ópticos a la telemetría esperada por la base de datos
+  doc["sensor_opt_izq_ext"] = valNodeLeft;
   doc["sensor_opt_izq_int"] = valLineLeft;
   doc["sensor_opt_der_int"] = valLineRight;
   doc["sensor_opt_der_ext"] = valNodeRight;
-  doc["sensor_obstaculo_frontal"] = valObstacle;
+  doc["sensor_obstaculo_frontal"] = false;
   doc["sensor_obstaculo_trasero"] = false;
 
   doc["motor_izq_vel"] = speedLeft;
@@ -519,29 +530,28 @@ void processSerialCommands() {
       // Lecturas en tiempo real
       bool rLeft = digitalRead(PIN_LINE_LEFT);
       bool rRight = digitalRead(PIN_LINE_RIGHT);
-      bool rNode = digitalRead(PIN_NODE_RIGHT);
+      bool rNodeL = digitalRead(PIN_NODE_LEFT);
+      bool rNodeR = digitalRead(PIN_NODE_RIGHT);
       
       Serial.println("\n=============================================");
       Serial.println("           DIAGNÓSTICO DE SENSORES           ");
       Serial.println("=============================================");
-      Serial.printf("Sensor Frontal Izquierdo (Pin %d): %s (Físico: %d)\n", 
+      Serial.printf("Sensor Lateral Izquierdo S3 (Pin %d): %s (Físico: %d)\n", 
+                    PIN_NODE_LEFT, (rNodeL == ESTADO_NEGRO) ? "NEGRO" : "BLANCO", rNodeL);
+      Serial.printf("Sensor Frontal Izquierdo S1 (Pin %d): %s (Físico: %d)\n", 
                     PIN_LINE_LEFT, (rLeft == ESTADO_NEGRO) ? "NEGRO" : "BLANCO", rLeft);
-      Serial.printf("Sensor Frontal Derecho   (Pin %d): %s (Físico: %d)\n", 
+      Serial.printf("Sensor Frontal Derecho   S2 (Pin %d): %s (Físico: %d)\n", 
                     PIN_LINE_RIGHT, (rRight == ESTADO_NEGRO) ? "NEGRO" : "BLANCO", rRight);
-      Serial.printf("Sensor Contador Nodos    (Pin %d): %s (Físico: %d)\n", 
-                    PIN_NODE_RIGHT, (rNode == ESTADO_NEGRO) ? "NEGRO" : "BLANCO", rNode);
-      if (USAR_ULTRASONIDO) {
-        Serial.printf("Sensor de Ultrasonidos  (Trig %d/Echo %d): %.1f cm (Obstáculo: %s)\n", 
-                      PIN_TRIG, PIN_ECHO, distanceCm, valObstacle ? "SÍ (Detenido)" : "NO");
-      } else {
-        Serial.println("Sensor de Ultrasonidos  : DESACTIVADO");
-      }
-      Serial.printf("Motores: Izquierda = %d us | Derecha = %d us\n", speedLeft, speedRight);
-      Serial.printf("Estado del AGV: %d (%s)\n", 
+      Serial.printf("Sensor Lateral Derecho   S4 (Pin %d): %s (Físico: %d)\n", 
+                    PIN_NODE_RIGHT, (rNodeR == ESTADO_NEGRO) ? "NEGRO" : "BLANCO", rNodeR);
+      Serial.println("---------------------------------------------");
+      Serial.printf("Motores DC N20: Izquierda = %d | Derecha = %d\n", speedLeft, speedRight);
+      Serial.printf("Estado del AGV: %d (%s) | Batería: %d%%\n", 
                     currentState, 
                     (currentState == ESPANDO) ? "ESPERANDO" : 
                     (currentState == MOVIENDO) ? "MOVIENDO" : 
-                    (currentState == LLEGO) ? "LLEGÓ" : "REGRESANDO");
+                    (currentState == LLEGO) ? "LLEGÓ" : "REGRESANDO",
+                    batteryPct);
       Serial.println("=============================================");
     }
   }
