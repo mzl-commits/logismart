@@ -29,11 +29,20 @@ export default function NuevaCaja() {
       setProveedores(getData(rp));
       setMedidas(getData(rm));
       setUsuarios(getData(ru));
-      setCategorias(getData(rcat));
+      
+      const cats = getData(rcat);
+      setCategorias(cats);
 
-      if (rsug.data?.id_sugerido) {
-        setForm(f => ({ ...f, id: rsug.data.id_sugerido }));
-      }
+      setForm(f => {
+        const nextForm = { ...f };
+        if (rsug.data?.id_sugerido) {
+          nextForm.id = rsug.data.id_sugerido;
+        }
+        if (!nextForm.categoria) {
+          nextForm.categoria = cats.length ? cats[0].slug : 'electronica';
+        }
+        return nextForm;
+      });
     } catch(e) {
       console.error(e);
     }

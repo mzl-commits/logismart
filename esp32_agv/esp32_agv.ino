@@ -5,7 +5,7 @@
 // ==========================================
 // 1. CREDENCIALES DE RED Y SERVIDOR VPS
 // ==========================================
-const char* ssid = "iPhone de Yuri";           // <-- REEMPLAZA CON TU WIFI si es necesario
+const char* ssid = "Wash";           // <-- REEMPLAZA CON TU WIFI
 const char* password = "12345678";             // <-- REEMPLAZA CON TU CLAVE
 
 const char* mqtt_server = "38.250.116.213";
@@ -27,7 +27,7 @@ PubSubClient client(espClient);
 // ==========================================
 const int senFrontalIzq = 32; // S1
 const int senFrontalDer = 18; // S2
-const int senLateralDer = 35; // S4 (Nodos)
+const int senLateralDer = 35; // S4 (Detección de Nodos/Intersecciones)
 
 // Motor Izquierdo (M1)
 const int enA = 33; 
@@ -265,18 +265,18 @@ void loop() {
     int valS4 = digitalRead(senLateralDer);
 
     if (valS4 == 0) { 
-      // Hemos cruzado un marcador lateral (Nodo)
+      // Marcador lateral detectado (Nodo de la cuadrícula)
       frenar();
       
-      // 1. Reportar el evento de nodo al servidor Django para actualizar coordenadas
+      // 1. Reportar el evento de cruce al backend Django
       publicarAvanzar();
       
-      // 2. Avanzar un poco para cruzar la línea física del nodo y no ciclarse
+      // 2. Avanzar para despejar la intersección física y evitar dobles activaciones
       avanzar(150); 
       delay(400); 
     }
     else {
-      // Seguidor de línea clásico con S1 y S2
+      // Algoritmo seguidor de línea clásico (S1 y S2)
       if (valS1 == 1 && valS2 == 1) avanzar(110);
       else if (valS1 == 0 && valS2 == 1) girarIzquierda(130);
       else if (valS1 == 1 && valS2 == 0) girarDerecha(130);
