@@ -17,6 +17,8 @@ class MainActivity : ComponentActivity() {
                 AppNavGraph(
                     sessionManager = app.sessionManager,
                     authRepository = app.authRepository,
+                    dashboardRepository = app.dashboardRepository,
+                    onTestNotification = {},
                 )
             }
         }

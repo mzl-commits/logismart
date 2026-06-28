@@ -21,12 +21,17 @@ import com.logismart.mobile.core.session.SessionManager
 import com.logismart.mobile.feature.auth.AuthRepository
 import com.logismart.mobile.feature.auth.AuthViewModel
 import com.logismart.mobile.feature.auth.LoginScreen
+import com.logismart.mobile.feature.dashboard.DashboardRepository
+import com.logismart.mobile.feature.dashboard.DashboardScreen
+import com.logismart.mobile.feature.dashboard.DashboardViewModel
 import kotlinx.coroutines.flow.first
 
 @Composable
 fun AppNavGraph(
     sessionManager: SessionManager,
     authRepository: AuthRepository,
+    dashboardRepository: DashboardRepository,
+    onTestNotification: () -> Unit,
 ) {
     val navController = rememberNavController()
     val session by sessionManager.session.collectAsState(initial = null)
@@ -63,9 +68,20 @@ fun AppNavGraph(
             )
         }
         composable(Routes.Dashboard.route) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Dashboard LogiSmart")
-            }
+            val dashboardViewModel: DashboardViewModel = viewModel(
+                factory = DashboardViewModel.factory(
+                    repository = dashboardRepository,
+                    onUnauthorized = sessionManager::clear,
+                )
+            )
+            val dashboardState by dashboardViewModel.uiState.collectAsState()
+            DashboardScreen(
+                state = dashboardState,
+                userName = session?.fullName.orEmpty(),
+                onRefresh = dashboardViewModel::refresh,
+                onLogout = authViewModel::logout,
+                onTestNotification = onTestNotification,
+            )
         }
     }
 
