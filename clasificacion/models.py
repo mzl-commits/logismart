@@ -183,7 +183,7 @@ class ConfigCarro(models.Model):
     alto_cm        = models.DecimalField(max_digits=8, decimal_places=1, default=120)
     peso_maximo_kg = models.DecimalField(max_digits=8, decimal_places=2, default=150)
     max_paradas    = models.IntegerField(default=10)
-    pos_base_x     = models.IntegerField(default=0)
+    pos_base_x     = models.IntegerField(default=1)
     pos_base_y     = models.IntegerField(default=0)
     notas          = models.TextField(blank=True)
 

@@ -122,7 +122,7 @@
         <h2 class="text-2xl font-bold text-white flex items-center gap-3">
             <i class="bi bi-plus-circle text-emerald-400"></i> Registrar Cajas
         </h2>
-        <p class="text-slate-500 text-sm mt-1">Agrega cajas a la cola y luego envía el carro con ruta optimizada.</p>
+        <p class="text-slate-500 text-sm mt-1">Agrega cajas a la cola para generar la guía de ruta con optimización.</p>
     </div>
 </div>
 
@@ -252,7 +252,7 @@
                     <div class="text-center py-12 text-slate-500" id="cola-vacia">
                         <i class="bi bi-inbox text-5xl block mb-3 opacity-30"></i>
                         <p class="text-base font-medium">La cola está vacía.</p>
-                        <p class="text-sm">Agrega cajas para enviar el carro.</p>
+                        <p class="text-sm">Agrega cajas para generar la guía de ruta.</p>
                     </div>
                 </div>
 
@@ -267,7 +267,7 @@
                         </select>
                     </div>
                     <button class="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:hover:bg-sky-600 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 transition-all" id="btn-enviar-carro" disabled onclick="enviarCarro(this)">
-                        <i class="bi bi-truck text-lg"></i> Enviar carro con ruta optimizada
+                        <i class="bi bi-file-earmark-pdf text-lg"></i> Procesar cola y previsualizar guía
                     </button>
                 </div>
             </div>
@@ -280,7 +280,7 @@
     <div class="bg-surface border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl animate-[fadeInUp_0.2s_ease-out] flex flex-col max-h-[90vh]">
         <!-- Header -->
         <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/30 flex items-center justify-between">
-            <h3 class="font-bold text-white flex items-center gap-2"><i class="bi bi-eye text-sky-400"></i> Previsualización e Itinerario del Lote</h3>
+            <h3 class="font-bold text-white flex items-center gap-2"><i class="bi bi-eye text-sky-400"></i> Previsualización de la Cola y Asignación de Estantes</h3>
             <button onclick="cerrarPreview()" class="text-slate-400 hover:text-white transition-colors"><i class="bi bi-x-lg"></i></button>
         </div>
         
@@ -297,7 +297,7 @@
             <div class="flex gap-3">
                 <button onclick="cerrarPreview()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-light text-xs font-semibold rounded-xl transition-all">Cancelar</button>
                 <button onclick="confirmarYProcesar()" class="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5" id="btn-confirmar-lote">
-                    <i class="bi bi-check-lg"></i> Confirmar y Enviar Carro
+                    <i class="bi bi-file-earmark-pdf"></i> Confirmar Cola y Generar Guía PDF
                 </button>
             </div>
         </div>
@@ -458,10 +458,10 @@ document.getElementById('formCaja').addEventListener('submit', async (e) => {
 
 let currentPreviewData = null;
 
-// ── Enviar carro (Previsualización) ──────────────────────────────────────────
+// ── Procesar cola (Previsualización) ──────────────────────────────────────────
 async function enviarCarro(btn) {
     const usuarioId = document.getElementById('select-usuario-envio').value;
-    if (!usuarioId) { mostrarToast('Selecciona un operador antes de enviar.', 'warning'); return; }
+    if (!usuarioId) { mostrarToast('Selecciona un operador responsable antes de procesar.', 'warning'); return; }
     
     btnCargando(btn, true);
     try {
@@ -545,7 +545,7 @@ function cerrarPreview() {
 
 async function confirmarYProcesar() {
     const usuarioId = document.getElementById('select-usuario-envio').value;
-    if (!usuarioId) { mostrarToast('Selecciona un operador antes de enviar.', 'warning'); return; }
+    if (!usuarioId) { mostrarToast('Selecciona un operador responsable antes de procesar.', 'warning'); return; }
     
     // Agrupar asignaciones manuales seleccionadas
     const asignaciones = {};
@@ -585,13 +585,18 @@ async function confirmarYProcesar() {
         if (res.ok) {
             cerrarPreview();
             
+            // Abrir PDF en pestaña nueva inmediatamente antes de cualquier diálogo de bloqueo
+            if (data.pdf_url) {
+                window.open(data.pdf_url, '_blank');
+            }
+            
             const paradas = (data.paradas || []).map((p, i) => `<li class="py-1 border-b border-slate-700/50 last:border-0"><span class="text-sky-400 font-bold mr-2">${i+1}.</span> <strong class="text-white">${p.ubicacion_nombre}</strong> <span class="text-slate-400 mx-2">—</span> ${p.producto}</li>`).join('');
-            mostrarModalInfo('🚗 Carro en camino', `
+            mostrarModalInfo('📋 Guía de Ruta Generada', `
                 <div class="bg-sky-500/10 border border-sky-500/30 rounded-xl p-4 mb-4">
-                    <p class="text-sky-200 m-0">${data.mensaje}. Ruta optimizada con <strong class="text-white">${data.total_paradas} parada(s)</strong>.</p>
+                    <p class="text-sky-200 m-0">${data.mensaje}. Ruta optimizada con <strong class="text-white">${data.total_paradas} parada(s)</strong>. El PDF de la guía se ha abierto en una pestaña nueva para su recorrido manual.</p>
                 </div>
                 <div class="bg-slate-800/50 rounded-xl border border-slate-700 p-4">
-                    <h6 class="text-slate-300 font-bold mb-3 uppercase tracking-wider text-xs">Itinerario de Paradas</h6>
+                    <h6 class="text-slate-300 font-bold mb-3 uppercase tracking-wider text-xs">Itinerario de Paradas (Ruta Manual)</h6>
                     <ul class="list-none p-0 m-0 text-sm">${paradas}</ul>
                 </div>
                 ${data.sin_ubicacion?.length ? `<div class="mt-4 bg-amber-500/10 border border-amber-500/30 text-amber-400 p-3 rounded-xl text-sm"><i class="bi bi-exclamation-triangle mr-2"></i>Sin ubicación asignada: <strong>${data.sin_ubicacion.join(', ')}</strong></div>` : ''}

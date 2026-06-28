@@ -4,15 +4,28 @@ class RutaService:
 
     @staticmethod
     def generar_ruta(origen_x, origen_y, destino_x, destino_y):
-        """Ruta Manhattan paso a paso: primero X, luego Y."""
+        """
+        Ruta paso a paso: primero Y (por la Avenida Central en x=1), luego X.
+        Si la posición Y cambia y no estamos en la Avenida Central, primero salimos horizontalmente a x=1.
+        """
         ruta = []
         x, y = origen_x, origen_y
-        while x != destino_x:
-            x += 1 if x < destino_x else -1
+        
+        # 1. Regresar a la avenida central (x=1) si no estamos ahí y cambia la altura (Y)
+        if y != destino_y and x != 1:
+            x = 1
             ruta.append({'x': x, 'y': y})
+            
+        # 2. Moverse en Y hasta destino_y (manteniendo x=1)
         while y != destino_y:
             y += 1 if y < destino_y else -1
             ruta.append({'x': x, 'y': y})
+            
+        # 3. Moverse en X desde la avenida central (x=1) hasta el destino
+        while x != destino_x:
+            x += 1 if x < destino_x else -1
+            ruta.append({'x': x, 'y': y})
+            
         return ruta
 
     @staticmethod

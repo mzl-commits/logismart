@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
+from .permissions import HasExternalAPIKey
 
 from .models import Caja, Medida, Proveedor, Ubicacion, Usuario, HistorialMovimientos, Despacho
 
@@ -63,7 +64,7 @@ class CajaV1ListView(APIView):
     GET  /api/v1/cajas  → Lista todas las cajas (formato simplificado)
     POST /api/v1/cajas  → Registra una nueva caja desde el equipo externo
     """
-    permission_classes = [AllowAny]  # CORS abierto, sin sesión requerida
+    permission_classes = [HasExternalAPIKey]  # Protegido con X-API-Key
 
     def get(self, request):
         cajas = Caja.objects.exclude(estado='despachada').select_related(
@@ -172,7 +173,7 @@ class CajaV1ListView(APIView):
                 peso_kg=data.get('peso_kg') or 0,
                 prioridad=prioridad,
                 categoria=data.get('categoria', 'otro').lower()[:30],
-                es_fragil=bool(data.get('es_fragil', False)),
+                es_fragil=str(data.get('es_fragil', False)).strip().lower() in ('true', '1') if isinstance(data.get('es_fragil'), str) else bool(data.get('es_fragil', False)),
                 estado=estado,
             )
         except Exception as e:
@@ -216,7 +217,7 @@ class CajaV1EstadoView(APIView):
     """
     PATCH /api/v1/cajas/{id_caja}/estado → Actualiza el estado y ubicación de una caja
     """
-    permission_classes = [AllowAny]
+    permission_classes = [HasExternalAPIKey]
 
     def patch(self, request, id_caja):
         try:
@@ -295,7 +296,7 @@ class DespachoV1CreateView(APIView):
     """
     POST /api/v1/despachos → Procesa el despacho y salida definitiva de una caja
     """
-    permission_classes = [AllowAny]
+    permission_classes = [HasExternalAPIKey]
 
     def post(self, request):
         data = request.data

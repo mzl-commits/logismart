@@ -88,7 +88,7 @@ export default function AlmacenVisual() {
   const [cajas,       setCajas]       = useState([]);
   const [carro,       setCarro]       = useState(null);
   const [loading,     setLoading]     = useState(true);
-  const [tab,         setTab]         = useState('carro');
+  const [tab,         setTab]         = useState('ruta');
   const [ubiSel,      setUbiSel]      = useState(null);
   const [flash,       setFlash]       = useState(false);
 
@@ -177,13 +177,13 @@ export default function AlmacenVisual() {
             onClick={async () => { await avanzarCarro(); cargarTodo(); }}
             className="flex items-center gap-1.5 bg-[#1E1912] hover:bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold px-3 py-2 rounded-lg transition-all"
           >
-            <i className="bi bi-skip-forward-fill" /> Avanzar
+            <i className="bi bi-skip-forward-fill" /> Avanzar posición
           </button>
           <button
-            onClick={async () => { if (confirm('¿Reiniciar carro al origen?')) { await resetCarro(); cargarTodo(); } }}
+            onClick={async () => { if (confirm('¿Reiniciar la ruta al punto de origen?')) { await resetCarro(); cargarTodo(); } }}
             className="flex items-center gap-1.5 bg-[#1E1212] hover:bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-semibold px-3 py-2 rounded-lg transition-all"
           >
-            <i className="bi bi-x-circle" /> Reset
+            <i className="bi bi-x-circle" /> Reiniciar
           </button>
         </div>
       </div>
@@ -193,7 +193,7 @@ export default function AlmacenVisual() {
         <StatCard icon="📦" label="Total celdas"  value={totalUbi} />
         <StatCard icon="✅" label="Libres"        value={libres} />
         <StatCard icon="🔴" label="Ocupadas"      value={ocupadas}  sub={`${pct}% ocupación`} />
-        <StatCard icon="🤖" label="Estado carro"  value={estadoCarro} />
+        <StatCard icon="📋" label="Estado de Ruta"  value={estadoCarro} />
       </div>
 
       {/* ── LAYOUT PRINCIPAL ─────────────────── */}
@@ -207,7 +207,7 @@ export default function AlmacenVisual() {
             {[
               { color: 'bg-[#121214] border border-[#2A2A30]', label: 'Libre' },
               { color: 'bg-[#1E1E22] border border-[#2A2A30]', label: 'Ocupada' },
-              { color: 'bg-[#22242B] border border-[#8E95A5] shadow-[0_0_6px_rgba(142,149,165,0.4)]', label: 'Carro 🤖' },
+              { color: 'bg-[#22242B] border border-[#8E95A5] shadow-[0_0_6px_rgba(142,149,165,0.4)]', label: 'Operador 👤' },
               { color: 'bg-[#1E1912] border border-amber-500/60', label: 'Parada' },
               { color: 'border-2 border-dashed border-amber-500/40 bg-transparent', label: 'En ruta' },
               { color: 'bg-[#121E19] border border-[#52A27F]', label: 'Parada actual' },
@@ -297,8 +297,8 @@ export default function AlmacenVisual() {
                           >
                             <div className="text-[9px] text-slate-500 font-bold text-center uppercase tracking-widest mb-1 flex items-center justify-between px-1">
                               <span>Est {est}</span>
-                              {isCarFront && <span className="text-[9px] text-sky-400 font-black animate-pulse" title="AGV al Frente">🤖A</span>}
-                              {isCarBack && <span className="text-[9px] text-sky-400 font-black animate-pulse" title="AGV Atrás">🤖P</span>}
+                              {isCarFront && <span className="text-[9px] text-sky-400 font-black animate-pulse" title="Operador al Frente">👤A</span>}
+                              {isCarBack && <span className="text-[9px] text-sky-400 font-black animate-pulse" title="Operador Atrás">👤P</span>}
                             </div>
                             <div className="flex flex-col gap-2">
                               {[3, 2, 1].map(lvlNum => {
@@ -347,7 +347,7 @@ export default function AlmacenVisual() {
           {/* tabs */}
           <div className="flex border-b border-surface2">
             {[
-              { key: 'carro',    icon: 'bi-robot',   label: 'Carro AGV' },
+              { key: 'ruta',    icon: 'bi-compass',   label: 'Guía de Ruta' },
               { key: 'ubicacion', icon: 'bi-geo-alt', label: 'Ubicación'  },
             ].map(({ key, icon, label }) => (
               <button
@@ -365,19 +365,19 @@ export default function AlmacenVisual() {
 
           <div className="p-5 overflow-y-auto flex-1">
 
-            {/* ── TAB CARRO ── */}
-            {tab === 'carro' && (
+            {/* ── TAB RUTA ── */}
+            {tab === 'ruta' && (
               !carro
-                ? <p className="text-slate-500 text-center py-8 text-sm">Sin datos del carro.</p>
+                ? <p className="text-slate-500 text-center py-8 text-sm">Sin datos de la ruta.</p>
                 : (
                   <div className="space-y-4">
                     {/* estado badge */}
                     <div className={`flex items-center justify-between p-4 rounded-xl border ${carroClase}`}>
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">🤖</span>
+                        <span className="text-2xl">📋</span>
                         <div>
-                          <div className="font-bold text-sm text-white">Carro Automatizado</div>
-                          <div className="text-[11px] opacity-70">AGV LogiSmart</div>
+                          <div className="font-bold text-sm text-white">Ruta Activa</div>
+                          <div className="text-[11px] opacity-70">Guía Manual de Almacén</div>
                         </div>
                       </div>
                       <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${carroClase}`}>
@@ -389,7 +389,7 @@ export default function AlmacenVisual() {
                     {carro.estado === 'llego' && carro.paradas?.length > 0 && (
                       <div className="bg-[#121E19] border border-[#52A27F]/40 rounded-xl p-4 text-center">
                         <div className="text-3xl mb-2">🎯</div>
-                        <h5 className="text-[#52A27F] font-black mb-1">¡Carro llegó!</h5>
+                        <h5 className="text-[#52A27F] font-black mb-1">¡Ubicación alcanzada!</h5>
                         <p className="text-white font-bold text-sm mb-3">
                           {carro.paradas[carro.parada_actual]?.ubicacion_nombre}
                         </p>
@@ -397,7 +397,7 @@ export default function AlmacenVisual() {
                           className="w-full bg-[#1E1E22] hover:bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold py-2.5 rounded-xl transition-all flex items-center justify-center gap-2"
                           onClick={async () => { await confirmarParada({ id_usuario: 1 }); cargarTodo(); }}
                         >
-                          <i className="bi bi-check-circle-fill" /> Confirmar entrega
+                          <i className="bi bi-check-circle-fill" /> Confirmar colocación
                         </button>
                       </div>
                     )}
@@ -406,7 +406,7 @@ export default function AlmacenVisual() {
                     {carro.estado === 'regresando' && (
                       <div className="bg-surface2/50 border border-accent/20 rounded-xl p-4 text-center">
                         <div className="text-3xl mb-2">🏠</div>
-                        <h5 className="text-light font-bold">Regresando a base</h5>
+                        <h5 className="text-light font-bold">Retornando al origen</h5>
                       </div>
                     )}
 

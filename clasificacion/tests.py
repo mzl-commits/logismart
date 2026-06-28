@@ -159,22 +159,26 @@ class RutaServiceTests(TestCase):
         self.assertEqual(xs, [1, 2, 3])
 
     def test_ruta_solo_y(self):
+        # Primero debe ir a la Avenida Central (x=1), subir en Y y luego ir a destino_x (0)
         ruta = RutaService.generar_ruta(0, 0, 0, 2)
         ys = [p['y'] for p in ruta]
-        self.assertEqual(ys, [1, 2])
+        xs = [p['x'] for p in ruta]
+        self.assertEqual(xs, [1, 1, 1, 0])
+        self.assertEqual(ys, [0, 1, 2, 2])
 
-    def test_ruta_diagonal_va_x_primero(self):
+    def test_ruta_diagonal_va_por_avenida(self):
         ruta = RutaService.generar_ruta(0, 0, 2, 2)
-        # Primero mueve en X
+        # Primero va a la Avenida Central (1, 0)
         self.assertEqual(ruta[0], {'x': 1, 'y': 0})
-        self.assertEqual(ruta[1], {'x': 2, 'y': 0})
-        # Luego en Y
-        self.assertEqual(ruta[2], {'x': 2, 'y': 1})
+        # Luego avanza por la avenida en Y
+        self.assertEqual(ruta[1], {'x': 1, 'y': 1})
+        self.assertEqual(ruta[2], {'x': 1, 'y': 2})
+        # Finalmente dobla hacia el estante
         self.assertEqual(ruta[3], {'x': 2, 'y': 2})
 
     def test_ruta_retroceso(self):
         ruta = RutaService.generar_ruta(3, 3, 1, 1)
-        self.assertEqual(ruta[0]['x'], 2)
+        self.assertEqual(ruta[0], {'x': 1, 'y': 3})
         self.assertEqual(ruta[-1], {'x': 1, 'y': 1})
 
 
@@ -183,6 +187,9 @@ class RutaServiceTests(TestCase):
 class TransicionEstadoTests(TestCase):
 
     def setUp(self):
+        from django.contrib.auth import get_user_model
+        user = get_user_model().objects.create_user(username='test_op_user', password='password')
+        self.client.force_login(user)
         self.medida = crear_medida()
         self.proveedor = crear_proveedor()
         self.usuario = Usuario.objects.create(nombre='Test Op', rol='operador')
@@ -224,6 +231,9 @@ class TransicionEstadoTests(TestCase):
 class BatchPreviewAndOverrideTests(TestCase):
 
     def setUp(self):
+        from django.contrib.auth import get_user_model
+        user = get_user_model().objects.create_user(username='test_batch_user', password='password')
+        self.client.force_login(user)
         self.medida = crear_medida()
         self.proveedor = crear_proveedor()
         self.usuario = Usuario.objects.create(nombre='Test Op', rol='operador')
@@ -280,4 +290,16 @@ class BatchPreviewAndOverrideTests(TestCase):
         # Recommended one should remain free
         self.ubi_sugerida.refresh_from_db()
         self.assertFalse(self.ubi_sugerida.estado_ocupacion)
+
+    def test_descargar_pdf_lote(self):
+        # Asignar ubicación y cambiar a en_transito
+        self.caja.id_ubicacion = self.ubi_sugerida
+        self.caja.estado = 'en_transito'
+        self.caja.save()
+        
+        url = f'/api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id={self.usuario.id_usuario}'
+        res = self.client.get(url)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res['Content-Type'], 'application/pdf')
+
 

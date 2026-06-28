@@ -135,9 +135,11 @@ def _enviar_esp32(x, y, caja_id=None, carro_id=1, publish_mqtt=True):
 # ── WarehouseMap Custom Flowable for ReportLab ──────────────────────────────
 
 class WarehouseMap(Flowable):
-    def __init__(self, paradas, width=540, height=220):
+    def __init__(self, paradas, base_x=1, base_y=0, width=540, height=220):
         super().__init__()
         self.paradas = paradas
+        self.base_x = base_x
+        self.base_y = base_y
         self.width = width
         self.height = height
 
@@ -156,53 +158,59 @@ class WarehouseMap(Flowable):
         grid_w = self.width - 2 * margin_x
         grid_h = self.height - 2 * margin_y
 
-        scale_x = grid_w / 3.0
-        scale_y = grid_h / 2.0
+        scale_x = grid_w / 2.0
+        scale_y = grid_h / 3.0
 
         def to_canvas(gx, gy):
             cx = margin_x + gx * scale_x
             cy = margin_y + gy * scale_y
             return cx, cy
 
-        # Rejilla del almacén (Pasillos y Estantes)
+        # Dibujar la Avenida Central (vertical en x = 1)
+        cx_av, cy_start = to_canvas(1, 0)
+        _, cy_end = to_canvas(1, 3)
+        canvas.setStrokeColor(colors.HexColor("#94a3b8")) # slate-400
+        canvas.setLineWidth(3)
+        canvas.line(cx_av, cy_start, cx_av, cy_end)
+        
+        # Etiqueta de la Avenida Central (debajo)
+        canvas.setFillColor(colors.HexColor("#475569"))
+        canvas.setFont("Helvetica-Bold", 8)
+        canvas.drawCentredString(cx_av, 15, "Avenida Central")
+
+        # Dibujar pasillos horizontales (y = 0, 1, 2, 3)
         canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
         canvas.setLineWidth(1)
-        
-        # Dibujar líneas de rejilla
-        for x in range(4):
-            cx, cy_start = to_canvas(x, 0)
-            _, cy_end = to_canvas(x, 2)
-            canvas.line(cx, cy_start, cx, cy_end)
-            # Etiqueta X (Pasillos)
-            if x < 3:
-                pasillo_nombre = chr(ord('A') + x)
-                canvas.setFillColor(colors.HexColor("#64748b"))
-                canvas.setFont("Helvetica-Bold", 8)
-                canvas.drawCentredString(cx + scale_x/2.0, 15, f"Pasillo {pasillo_nombre}")
-
-        for y in range(3):
+        for y in range(4):
             cx_start, cy = to_canvas(0, y)
-            cx_end, _ = to_canvas(3, cy)
+            cx_end, _ = to_canvas(2, cy)
             canvas.line(cx_start, cy, cx_end, cy)
-            # Etiqueta Y (Estantes)
+            # Etiqueta Pasillo Y
             if y > 0:
                 canvas.setFillColor(colors.HexColor("#64748b"))
                 canvas.setFont("Helvetica-Bold", 8)
-                canvas.drawString(15, cy - 3, f"Estante {y}")
+                canvas.drawString(15, cy - 3, f"Pasillo {y}")
 
-        # Dibujar estantes visuales (como rectángulos discretos grises a los lados de los pasillos)
-        canvas.setFillColor(colors.HexColor("#e2e8f0"))
+        # Dibujar estantes visuales entre las líneas de pasillo (Estante 1, 2, 3 en columnas Izq/Der)
+        canvas.setFillColor(colors.HexColor("#f1f5f9"))
         canvas.setStrokeColor(colors.HexColor("#cbd5e1"))
-        for x in range(3):
-            for y in (1, 2):
-                # Estante izquierdo
-                cx, cy = to_canvas(x, y)
-                canvas.rect(cx + 8, cy - 12, scale_x/2.0 - 16, 24, fill=1, stroke=1)
-                # Estante derecho
-                canvas.rect(cx + scale_x/2.0 + 8, cy - 12, scale_x/2.0 - 16, 24, fill=1, stroke=1)
+        for x in (0, 1): # x=0: izquierdo, x=1: derecho
+            for est in (1, 2, 3):
+                cx, cy_low = to_canvas(x, est - 1)
+                _, cy_high = to_canvas(x, est)
+                cy_center = (cy_low + cy_high) / 2.0
+                rect_h = (cy_high - cy_low) - 16 # Deja margen para los pasillos
+
+                canvas.rect(cx + 12, cy_center - rect_h/2.0, scale_x - 24, rect_h, fill=1, stroke=1)
+
+                # Nombre del estante dentro del bloque
+                canvas.setFillColor(colors.HexColor("#94a3b8"))
+                canvas.setFont("Helvetica-Bold", 7.5)
+                lado_txt = "Izq" if x == 0 else "Der"
+                canvas.drawCentredString(cx + scale_x/2.0, cy_center - 2.5, f"Estante {est} ({lado_txt})")
 
         # Dibujar base
-        bx, by = to_canvas(0, 0)
+        bx, by = to_canvas(self.base_x, self.base_y)
         canvas.setFillColor(colors.HexColor("#10b981"))
         canvas.circle(bx, by, 8, fill=1, stroke=0)
         canvas.setFillColor(colors.white)
@@ -386,8 +394,8 @@ class CajaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
  
-        # Heurística TSP (Vecino más cercano) para ordenar la secuencia desde base (0,0)
-        paradas_ordenadas = RutaService.optimizar_paradas(0, 0, paradas)
+        # Heurística TSP (Vecino más cercano) para ordenar la secuencia desde la base configurada
+        paradas_ordenadas = RutaService.optimizar_paradas(config.pos_base_x, config.pos_base_y, paradas)
         cajas_ids_str = ",".join([p['caja_id'] for p in paradas_ordenadas])
         
         # URL dinámica para la descarga del PDF
@@ -461,8 +469,13 @@ class CajaViewSet(viewsets.ModelViewSet):
         if not paradas:
             return HttpResponse("Las cajas del lote no tienen ubicaciones asignadas.", status=400)
             
-        # Ordenar las paradas por la ruta óptima TSP desde la base (0,0)
-        paradas_ordenadas = RutaService.optimizar_paradas(0, 0, paradas)
+        # Obtener configuración para determinar la base
+        config = ConfigCarro.get_config()
+        base_x = config.pos_base_x
+        base_y = config.pos_base_y
+        
+        # Ordenar las paradas por la ruta óptima TSP desde la base
+        paradas_ordenadas = RutaService.optimizar_paradas(base_x, base_y, paradas)
         
         # Generar reporte PDF
         buffer = io.BytesIO()
@@ -522,15 +535,40 @@ class CajaViewSet(viewsets.ModelViewSet):
         
         # 2. Mapa visual del recorrido
         story.append(Paragraph("MAPA DE RUTA EN EL GRID DEL ALMACÉN", heading_style))
-        story.append(WarehouseMap(paradas_ordenadas, width=540, height=220))
+        story.append(WarehouseMap(paradas_ordenadas, base_x=base_x, base_y=base_y, width=540, height=220))
         story.append(Spacer(1, 10))
         
-        # 3. Tabla detallada de cajas y justificaciones
-        story.append(Paragraph("DETALLE DE CAJAS Y JUSTIFICACIÓN DE UBICACIÓN", heading_style))
-        
+        # Estilo para encabezados de tabla
         header_text_style = ParagraphStyle(
             'HeaderTextStyle', parent=body_bold, textColor=colors.white
         )
+
+        # 3. Criterios de Optimización Logística
+        story.append(Paragraph("CRITERIOS Y PARÁMETROS DE OPTIMIZACIÓN APLICADOS", heading_style))
+        reglas_data = [
+            [Paragraph("<b>Regla / Criterio</b>", header_text_style), Paragraph("<b>Descripción y Justificación Logística</b>", header_text_style)],
+            [Paragraph("⚖️ Carga Pesada (&gt;= 20kg)", body_style), Paragraph("Prioridad en Nivel 1 (cerca del suelo) por ergonomía, estabilidad y seguridad estructural.", body_style)],
+            [Paragraph("🏺 Carga Frágil", body_style), Paragraph("Restringido a estantes aptos. Prioridad alta en Nivel 2 (protección media). Penaliza niveles superiores.", body_style)],
+            [Paragraph("🧪 Carga Química", body_style), Paragraph("Permitido exclusivamente en estantes con compatibilidad química habilitada.", body_style)],
+            [Paragraph("⚡ Prioridad / Urgencia", body_style), Paragraph("Cajas urgentes se ubican prioritariamente en Pasillo A para reducir tiempos de despacho.", body_style)],
+            [Paragraph("📦 Especialización de Estante", body_style), Paragraph("Bonificación por coincidencia con la categoría preferida del estante.", body_style)],
+            [Paragraph("🔋 Uso de Capacidad", body_style), Paragraph("Bonificación (+10 pts) al ocupar de manera balanceada entre el 40% y 90% del límite del estante.", body_style)]
+        ]
+        reglas_table = Table(reglas_data, colWidths=[150, 390])
+        reglas_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor("#1e293b")),
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('PADDING', (0,0), (-1,-1), 5),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor("#f8fafc")]),
+        ]))
+        story.append(reglas_table)
+        story.append(Spacer(1, 10))
+        
+        # 4. Tabla detallada de cajas y justificaciones
+        story.append(Paragraph("DETALLE DE CAJAS Y JUSTIFICACIÓN DE UBICACIÓN", heading_style))
+        
         table_data = [[
             Paragraph("<b>N°</b>", header_text_style),
             Paragraph("<b>ID Caja</b>", header_text_style),

@@ -91,7 +91,7 @@ export default function NuevaCaja() {
     }
   };
 
-  const handleEnviarCarro = async () => {
+  const handlePrevisualizarCola = async () => {
     if (!usuarioEnvio) {
       alert('Selecciona un operador responsable.');
       return;
@@ -118,7 +118,7 @@ export default function NuevaCaja() {
 
       setShowPreview(true);
     } catch (error) {
-      alert('Error al generar la previsualización del lote');
+      alert('Error al generar la previsualización de la cola');
       console.error(error);
     } finally {
       setLoadingEnvio(false);
@@ -132,7 +132,7 @@ export default function NuevaCaja() {
     }));
   };
 
-  const confirmarYProcesarLote = async () => {
+  const confirmarYProcesarCola = async () => {
     if (!usuarioEnvio) {
       alert('Selecciona un operador responsable.');
       return;
@@ -151,14 +151,15 @@ export default function NuevaCaja() {
         id_usuario: parseInt(usuarioEnvio),
         asignaciones: asignaciones
       });
-      alert(res.data.mensaje || 'Lote procesado con éxito. Descargando guía de ruta...');
+      // Abrimos el PDF primero para evitar el bloqueo del popup del navegador
       if (res.data.pdf_url) {
         window.open(window.location.origin + res.data.pdf_url, '_blank');
       }
+      alert(res.data.mensaje || 'Cola procesada con éxito. Descargando guía de ruta...');
       setShowPreview(false);
       load();
     } catch (error) {
-      alert(error.response?.data?.error || 'Error al procesar el lote');
+      alert(error.response?.data?.error || 'Error al procesar la cola');
       console.error(error);
     } finally {
       setLoadingConfirmar(false);
@@ -180,7 +181,7 @@ export default function NuevaCaja() {
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
             <i className="bi bi-plus-circle text-emerald-400"></i> Registrar Cajas
           </h2>
-          <p className="text-slate-500 text-sm mt-1">Agrega cajas a la cola y luego envía el carro con ruta optimizada.</p>
+          <p className="text-slate-500 text-sm mt-1">Agrega cajas a la cola y luego genera la guía de ruta optimizada en PDF.</p>
         </div>
       </div>
 
@@ -315,7 +316,7 @@ export default function NuevaCaja() {
                   <div className="text-center py-12 text-slate-500">
                     <i className="bi bi-inbox text-5xl block mb-3 opacity-30"></i>
                     <p className="text-base font-medium">La cola está vacía.</p>
-                    <p className="text-sm">Agrega cajas para enviar el carro.</p>
+                    <p className="text-sm">Agrega cajas para generar la guía de ruta.</p>
                   </div>
                 ) : cajas.map(c => (
                   <div key={c.id} className="p-4 rounded-xl border border-slate-700 bg-slate-800/40 flex items-center gap-4 animate-[fadeInUp_0.3s_ease]">
@@ -342,8 +343,8 @@ export default function NuevaCaja() {
                   </select>
                 </div>
                 <button className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:hover:bg-sky-600 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 transition-all" 
-                        disabled={!cajas.length || loadingEnvio} onClick={handleEnviarCarro}>
-                  <i className="bi bi-truck text-lg"></i> {loadingEnvio ? 'Enviando...' : 'Enviar carro con ruta optimizada'}
+                        disabled={!cajas.length || loadingEnvio} onClick={handlePrevisualizarCola}>
+                  <i className="bi bi-file-earmark-pdf text-lg"></i> {loadingEnvio ? 'Cargando...' : 'Procesar cola y previsualizar guía'}
                 </button>
               </div>
             </div>
@@ -357,7 +358,7 @@ export default function NuevaCaja() {
             {/* Header */}
             <div className="px-6 py-4 border-b border-slate-800 bg-slate-900/30 flex items-center justify-between">
               <h3 className="font-bold text-white flex items-center gap-2">
-                <i className="bi bi-eye text-sky-400"></i> Previsualización del Lote y Asignación de Estantes
+                <i className="bi bi-eye text-sky-400"></i> Previsualización de la Cola y Asignación de Estantes
               </h3>
               <button type="button" onClick={() => setShowPreview(false)} className="text-slate-400 hover:text-white transition-colors">
                 <i className="bi bi-x-lg"></i>
@@ -369,9 +370,9 @@ export default function NuevaCaja() {
               
               {/* Left Column: Cajas */}
               <div className="lg:col-span-4 flex flex-col gap-3 overflow-y-auto max-h-[55vh] pr-2">
-                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cajas a despachar (haz clic para modificar)</div>
+                <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cajas en la cola (haz clic para modificar)</div>
                 {previewData.cajas.length === 0 ? (
-                  <p className="text-slate-400 text-sm">No hay cajas compatibles para procesar en este lote.</p>
+                  <p className="text-slate-400 text-sm">No hay cajas compatibles para procesar en esta cola.</p>
                 ) : (
                   previewData.cajas.map(caja => {
                     const active = selectedBoxId === caja.id;
@@ -547,7 +548,7 @@ export default function NuevaCaja() {
             {/* Footer */}
             <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/10 flex justify-between items-center gap-3 shrink-0">
               <div className="text-xs text-slate-500">
-                Peso total del lote: <span className="text-slate-300 font-bold">{previewData.peso_total?.toFixed(1)}</span> kg / {previewData.max_paradas} paradas máx.
+                Peso total de la cola: <span className="text-slate-300 font-bold">{previewData.peso_total?.toFixed(1)}</span> kg / {previewData.max_paradas} paradas máx.
               </div>
               <div className="flex gap-3">
                 <button 
@@ -559,11 +560,11 @@ export default function NuevaCaja() {
                 </button>
                 <button 
                   type="button"
-                  onClick={confirmarYProcesarLote}
+                  onClick={confirmarYProcesarCola}
                   disabled={loadingConfirmar}
                   className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg shadow-sky-500/20"
                 >
-                  <i className="bi bi-check-lg"></i> {loadingConfirmar ? 'Procesando...' : 'Confirmar y Enviar Carro'}
+                  <i className="bi bi-check-lg"></i> {loadingConfirmar ? 'Procesando...' : 'Confirmar Cola y Generar Guía PDF'}
                 </button>
               </div>
             </div>

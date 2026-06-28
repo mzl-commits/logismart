@@ -6,6 +6,12 @@ from .serializers import EstadoCarroSerializer
 
 class CarroConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        user = self.scope.get("user")
+        if not user or user.is_anonymous:
+            # Rehusar conexión si el usuario no está autenticado
+            await self.close(code=4401)
+            return
+
         self.group_name = "carro_group"
 
         # Join group
