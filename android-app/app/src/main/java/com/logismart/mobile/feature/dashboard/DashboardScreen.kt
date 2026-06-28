@@ -15,10 +15,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SmartToy
@@ -70,7 +70,11 @@ fun DashboardScreen(
                         Icon(Icons.Default.Refresh, contentDescription = "Actualizar", tint = Color.White)
                     }
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.Default.Logout, contentDescription = "Cerrar sesión", tint = Color.White)
+                        Icon(
+                            Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = "Cerrar sesión",
+                            tint = Color.White,
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -131,12 +135,18 @@ fun DashboardScreen(
                         title = "Estado del carro",
                         value = state.summary.carStatus,
                         icon = Icons.Default.SmartToy,
+                        accent = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
                     )
                     SummaryCard(
                         title = "Alertas activas",
                         value = state.summary.activeAlerts.toString(),
                         icon = Icons.Default.Notifications,
+                        accent = if (state.summary.activeAlerts > 0) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.secondary
+                        },
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -148,12 +158,14 @@ fun DashboardScreen(
                         title = "Cajas pendientes",
                         value = state.summary.pendingBoxes.toString(),
                         icon = Icons.Default.Inventory2,
+                        accent = MaterialTheme.colorScheme.secondary,
                         modifier = Modifier.weight(1f),
                     )
                     SummaryCard(
                         title = "Despachos",
                         value = state.summary.completedDispatches.toString(),
                         icon = Icons.Default.LocalShipping,
+                        accent = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -214,12 +226,13 @@ private fun SummaryCard(
     title: String,
     value: String,
     icon: ImageVector,
+    accent: Color,
     modifier: Modifier = Modifier,
 ) {
     Card(
-        modifier = modifier.height(150.dp),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = modifier.height(156.dp),
+        shape = RoundedCornerShape(22.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
     ) {
         Column(
@@ -232,12 +245,12 @@ private fun SummaryCard(
                 modifier = Modifier
                     .size(40.dp)
                     .background(
-                        MaterialTheme.colorScheme.primaryContainer,
+                        accent.copy(alpha = .12f),
                         RoundedCornerShape(12.dp),
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Icon(icon, contentDescription = null, tint = accent)
             }
             Text(
                 value,
