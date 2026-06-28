@@ -25,6 +25,7 @@ import com.tecsup.logismart_movil.ui.boxes.BoxesScreen
 import com.tecsup.logismart_movil.ui.history.HistoryScreen
 import com.tecsup.logismart_movil.ui.history.TripDetailScreen
 import com.tecsup.logismart_movil.ui.settings.SettingsScreen
+import com.tecsup.logismart_movil.ui.shelves.ShelvesScreen
 import com.tecsup.logismart_movil.ui.theme.DarkBackground
 import com.tecsup.logismart_movil.ui.theme.LogismartmovilTheme
 import com.tecsup.logismart_movil.ui.theme.TextPrimary
@@ -119,6 +120,3 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-                }
-            }
-        }
