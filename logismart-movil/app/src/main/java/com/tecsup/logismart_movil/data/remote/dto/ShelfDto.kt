@@ -14,7 +14,16 @@ data class ShelfDto(
     val currentOccupation: Int? = null,
 
     @SerializedName("assigned_boxes")
-    val assignedBoxes: Int? = null
+    val assignedBoxes: Int? = null,
+
+    @SerializedName("occupation_pct")
+    val occupationPct: Int? = null,
+
+    @SerializedName("status")
+    val status: String? = null,
+
+    @SerializedName("tipo_estante")
+    val tipoEstante: String? = null,
 ) {
     fun toDomain(): Shelf {
         return Shelf(
@@ -22,7 +31,11 @@ data class ShelfDto(
             name = name ?: "Estante sin nombre",
             capacity = capacity ?: 0,
             currentOccupation = currentOccupation ?: 0,
-            assignedBoxes = assignedBoxes ?: 0
+            assignedBoxes = assignedBoxes ?: 0,
+            occupationPct = occupationPct ?: 0,
+            status = status ?: "Disponible",
+            tipoEstante = tipoEstante ?: "General",
         )
     }
 }
+

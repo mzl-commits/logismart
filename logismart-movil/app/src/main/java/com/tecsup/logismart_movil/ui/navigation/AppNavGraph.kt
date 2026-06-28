@@ -177,22 +177,10 @@ fun AppNavGraph(
         }
         composable(Routes.Shelves.route) {
             val shelvesViewModel: ShelvesViewModel = hiltViewModel()
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = { Text("Estantería de Almacén") },
-                        navigationIcon = {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                            }
-                        }
-                    )
-                }
-            ) { innerPadding ->
-                Box(Modifier.padding(innerPadding)) {
-                    ShelvesScreen(viewModel = shelvesViewModel)
-                }
-            }
+            ShelvesScreen(
+                viewModel = shelvesViewModel,
+                onBack = { navController.popBackStack() }
+            )
         }
         composable(Routes.Settings.route) {
             Scaffold(

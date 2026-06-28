@@ -5,15 +5,11 @@ data class Shelf(
     val name: String,
     val capacity: Int,
     val currentOccupation: Int,
-    val assignedBoxes: Int
+    val assignedBoxes: Int,
+    val occupationPct: Int = 0,
+    val status: String = "Disponible",
+    val tipoEstante: String = "General",
 ) {
     val occupationPercentage: Float
-        get() = if (capacity == 0) 0f else (currentOccupation.toFloat() / capacity.toFloat()) * 100f
-
-    val status: String
-        get() = when {
-            occupationPercentage >= 90f -> "Alerta"
-            occupationPercentage >= 70f -> "Ocupado"
-            else -> "Disponible"
-        }
+        get() = occupationPct.toFloat()
 }
