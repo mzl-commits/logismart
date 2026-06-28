@@ -10,7 +10,7 @@ val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
-// Premium UI Colors
+// Premium UI Colors (Yuri)
 val DarkBackground = Color(0xFF0F172A)  // Deep Navy/Slate 900
 val DarkCard = Color(0xFF1E293B)        // Slate 800
 val DarkCardBorder = Color(0xFF334155)  // Slate 700
@@ -24,3 +24,16 @@ val RoseDanger = Color(0xFFEF4444)      // Rose 500
 val TextPrimary = Color(0xFFF8FAFC)     // Slate 50
 val TextSecondary = Color(0xFF94A3B8)   // Slate 400
 val GlassOverlay = Color(0x1AFFFFFF)     // Translucent White
+
+// UI Component Colors (Gisela)
+val PrimaryBlue = Color(0xFF1565C0)
+val PrimaryDarkBlue = Color(0xFF0D47A1)
+val SecondaryBlue = Color(0xFF42A5F5)
+
+val SuccessGreen = Color(0xFF2E7D32)
+val WarningOrange = Color(0xFFF57C00)
+val ErrorRed = Color(0xFFC62828)
+
+val BackgroundLight = Color(0xFFF8FAFC)
+val SurfaceLight = Color(0xFFFFFFFF)
+val TextDark = Color(0xFF1F2937)
