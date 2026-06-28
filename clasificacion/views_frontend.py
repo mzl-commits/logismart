@@ -207,3 +207,45 @@ def login_view(request):
 def logout_view(request):
     auth_logout(request)
     return redirect('login')
+
+
+@login_required
+def planillas_historial(request):
+    from .models import Planilla
+    if request.user.is_superuser:
+        planillas_list = Planilla.objects.all().select_related('operador')
+    else:
+        planillas_list = Planilla.objects.filter(operador=request.user).select_related('operador')
+        
+    planillas_con_cajas = []
+    for p in planillas_list:
+        cajas = Caja.objects.filter(id__in=p.cajas_ids)
+        cajas_ids_str = ",".join(p.cajas_ids)
+        pdf_url = f"/api/cajas/descargar_pdf_lote/?cajas={cajas_ids_str}&usuario_id={p.operador.id}"
+        view_url = f"/ver-pdf-lote/?cajas={cajas_ids_str}&usuario_id={p.operador.id}"
+        
+        planillas_con_cajas.append({
+            'planilla': p,
+            'cajas': cajas,
+            'cajas_ids_str': cajas_ids_str,
+            'pdf_url': pdf_url,
+            'view_url': view_url,
+            'total_cajas': len(p.cajas_ids)
+        })
+        
+    return render(request, 'clasificacion/planillas.html', {
+        'planillas': planillas_con_cajas
+    })
+
+
+@login_required
+def ver_pdf_lote(request):
+    cajas_param = request.GET.get('cajas', '')
+    usuario_id = request.GET.get('usuario_id', '')
+    
+    download_url = f"/api/cajas/descargar_pdf_lote/?cajas={cajas_param}&usuario_id={usuario_id}"
+    
+    return render(request, 'clasificacion/ver_pdf.html', {
+        'pdf_url': download_url,
+        'download_url': download_url
+    })

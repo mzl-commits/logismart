@@ -292,6 +292,9 @@
         <a href="/despachos/" class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 no-underline transition-all {% if request.path == '/despachos/' %}text-light bg-surface2/40{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-truck"></i> Despachos
         </a>
+        <a href="/planillas/" class="px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-1.5 no-underline transition-all {% if request.path == '/planillas/' %}text-light bg-surface2/40{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
+            <i class="bi bi-file-earmark-text"></i> Planillas
+        </a>
 
         {% if user.is_superuser %}
         <!-- Admin dropdown -->
@@ -402,6 +405,9 @@
         </a>
         <a href="/despachos/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/despachos/' %}text-light bg-surface2/60{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
             <i class="bi bi-truck w-4"></i> Despachos
+        </a>
+        <a href="/planillas/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/planillas/' %}text-light bg-surface2/60{% else %}text-muted hover:text-light hover:bg-surface2/20{% endif %}">
+            <i class="bi bi-file-earmark-text w-4"></i> Planillas
         </a>
         <a href="/suscripcion/" class="px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 no-underline transition-colors {% if request.path == '/suscripcion/' %}text-amber-300 bg-amber-500/10{% else %}text-amber-500/70 hover:text-amber-300 hover:bg-amber-500/10{% endif %}">
             <i class="bi bi-stars w-4"></i> Suscripción

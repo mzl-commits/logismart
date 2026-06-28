@@ -100,6 +100,7 @@ class MobilePlanillasView(APIView):
                 'id_planilla': p.id_planilla,
                 'fecha_creacion': p.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
                 'total_cajas': len(p.cajas_ids),
+                'operador_id': p.operador.id,
                 'pdf_url': pdf_url,
                 'cajas': cajas_detalles
             })
