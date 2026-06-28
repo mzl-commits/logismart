@@ -78,7 +78,7 @@ export default function Dashboard() {
   const pctOcupacion = totalUbic ? Math.round((ocupadas / totalUbic) * 100) : 0;
 
   if (loading) return (
-    <div className="flex flex-col items-center justify-center min-h-[300px] text-[#AFB3B7]">
+    <div className="flex flex-col items-center justify-center min-h-[300px] text-light">
       <div className="spinner mb-3"></div>
       Cargando dashboard...
     </div>
@@ -103,25 +103,25 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-        <div className="fade-in relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-blue-600/20 to-blue-900/40 border border-blue-500/30 shadow-[0_0_15px_rgba(37,99,235,0.1)] group hover:shadow-[0_0_25px_rgba(37,99,235,0.2)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-white drop-shadow-md">{activas.length}</div>
-          <div className="text-sm font-semibold text-blue-200 mt-2 uppercase tracking-wider">Total cajas</div>
-          <i className="bi bi-box-seam absolute -right-2 -bottom-4 text-7xl text-blue-400/20 group-hover:text-blue-400/40 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-accent shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
+          <div className="text-5xl font-black text-light drop-shadow-md">{activas.length}</div>
+          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">Total cajas</div>
+          <i className="bi bi-box-seam absolute -right-2 -bottom-4 text-7xl text-slate-700/20 group-hover:text-slate-700/30 transition-colors transform group-hover:scale-110"></i>
         </div>
-        <div className="fade-in fade-d1 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-amber-600/20 to-amber-900/40 border border-amber-500/30 shadow-[0_0_15px_rgba(245,158,11,0.1)] group hover:shadow-[0_0_25px_rgba(245,158,11,0.2)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-amber-400 drop-shadow-md">{pendientes}</div>
-          <div className="text-sm font-semibold text-amber-200 mt-2 uppercase tracking-wider">Pendientes</div>
-          <i className="bi bi-hourglass-split absolute -right-2 -bottom-4 text-7xl text-amber-400/20 group-hover:text-amber-400/40 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in fade-d1 relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-amber-600/80 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
+          <div className="text-5xl font-black text-amber-500/90 drop-shadow-md">{pendientes}</div>
+          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">Pendientes</div>
+          <i className="bi bi-hourglass-split absolute -right-2 -bottom-4 text-7xl text-amber-600/10 group-hover:text-amber-600/20 transition-colors transform group-hover:scale-110"></i>
         </div>
-        <div className="fade-in fade-d2 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-cyan-600/20 to-cyan-900/40 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.1)] group hover:shadow-[0_0_25px_rgba(6,182,212,0.2)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-sky-400 drop-shadow-md">{enTransito}</div>
-          <div className="text-sm font-semibold text-cyan-200 mt-2 uppercase tracking-wider">En tránsito</div>
-          <i className="bi bi-truck absolute -right-2 -bottom-4 text-7xl text-cyan-400/20 group-hover:text-cyan-400/40 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in fade-d2 relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-sky-600/80 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
+          <div className="text-5xl font-black text-sky-400/90 drop-shadow-md">{enTransito}</div>
+          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">En tránsito</div>
+          <i className="bi bi-truck absolute -right-2 -bottom-4 text-7xl text-sky-600/10 group-hover:text-sky-600/20 transition-colors transform group-hover:scale-110"></i>
         </div>
-        <div className="fade-in fade-d3 relative overflow-hidden rounded-2xl p-6 bg-gradient-to-br from-emerald-600/20 to-emerald-900/40 border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)] group hover:shadow-[0_0_25px_rgba(16,185,129,0.2)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-emerald-400 drop-shadow-md">{almacenadas}</div>
-          <div className="text-sm font-semibold text-emerald-200 mt-2 uppercase tracking-wider">Almacenadas</div>
-          <i className="bi bi-check-circle absolute -right-2 -bottom-4 text-7xl text-emerald-400/20 group-hover:text-emerald-400/40 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in fade-d3 relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-emerald-600/80 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
+          <div className="text-5xl font-black text-[#52A27F] drop-shadow-md">{almacenadas}</div>
+          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">Almacenadas</div>
+          <i className="bi bi-check-circle absolute -right-2 -bottom-4 text-7xl text-emerald-600/10 group-hover:text-emerald-600/20 transition-colors transform group-hover:scale-110"></i>
         </div>
       </div>
 
@@ -135,8 +135,8 @@ export default function Dashboard() {
               <span className="text-slate-600"> / {totalUbic}</span> · <strong className="text-white">{pctOcupacion}%</strong>
             </span>
           </div>
-          <div className="h-2.5 bg-slate-800 rounded-full overflow-hidden">
-            <div className={`h-full rounded-full transition-all duration-700 ${pctOcupacion >= 90 ? 'bg-gradient-to-r from-red-600 to-red-500' : pctOcupacion >= 70 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-emerald-500 to-teal-500'}`} style={{ width: `${pctOcupacion}%` }}></div>
+          <div className="h-2.5 bg-[#2A2A30] rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-700 ${pctOcupacion >= 90 ? 'bg-gradient-to-r from-red-600 to-red-500' : pctOcupacion >= 70 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-emerald-600 to-emerald-500'}`} style={{ width: `${pctOcupacion}%` }}></div>
           </div>
           <div className="flex justify-between mt-3 text-xs text-slate-500">
             <span>{libres} libres</span>
@@ -148,8 +148,8 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie data={[{ value: ocupadas }, { value: libres }]} innerRadius={35} outerRadius={50} dataKey="value" stroke="none">
-                  <Cell fill={pctOcupacion >= 90 ? '#dc2626' : pctOcupacion >= 70 ? '#d97706' : '#10b981'} />
-                  <Cell fill="#1e293b" />
+                  <Cell fill={pctOcupacion >= 90 ? '#dc2626' : pctOcupacion >= 70 ? '#d97706' : '#52A27F'} />
+                  <Cell fill="#2A2A30" />
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
@@ -288,16 +288,16 @@ export default function Dashboard() {
         <div style={{ height: 320, width: '100%' }}>
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="fecha" tick={{fill:'#64748b',fontSize:12}} axisLine={false} tickLine={false} />
-              <YAxis tick={{fill:'#64748b',fontSize:12}} axisLine={false} tickLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#2A2A30" vertical={false} />
+              <XAxis dataKey="fecha" tick={{fill:'#94A3B8',fontSize:12}} axisLine={false} tickLine={false} />
+              <YAxis tick={{fill:'#94A3B8',fontSize:12}} axisLine={false} tickLine={false} />
               <Tooltip
-                contentStyle={{background:'#132E35',border:'1px solid #2D4A53',borderRadius:8,fontSize:13,color:'#AFB3B7'}}
-                itemStyle={{color:'#fff'}}
+                contentStyle={{background:'#121214',border:'1px solid #2A2A30',borderRadius:8,fontSize:13,color:'#F8FAFC'}}
+                itemStyle={{color:'#F8FAFC'}}
               />
-              <Legend wrapperStyle={{fontSize:13, color:'#94a3b8'}} />
-              <Line type="monotone" dataKey="ingresos" stroke="#0ea5e9" strokeWidth={3} dot={false} name="Cajas Ingresadas" />
-              <Line type="monotone" dataKey="salidas" stroke="#10b981" strokeWidth={3} dot={false} name="Cajas Despachadas" />
+              <Legend wrapperStyle={{fontSize:13, color:'#94A3B8'}} />
+              <Line type="monotone" dataKey="ingresos" stroke="#8E95A5" strokeWidth={3} dot={false} name="Cajas Ingresadas" />
+              <Line type="monotone" dataKey="salidas" stroke="#52A27F" strokeWidth={3} dot={false} name="Cajas Despachadas" />
             </LineChart>
           </ResponsiveContainer>
         </div>

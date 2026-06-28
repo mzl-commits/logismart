@@ -13,8 +13,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.tecsup.logismart_movil.ui.screens.CarCommandsScreen
 import com.tecsup.logismart_movil.ui.screens.CarParamsScreen
+import com.tecsup.logismart_movil.ui.boxes.BoxesScreen
+import com.tecsup.logismart_movil.ui.history.HistoryScreen
+import com.tecsup.logismart_movil.ui.history.TripDetailScreen
 import com.tecsup.logismart_movil.ui.theme.DarkBackground
 import com.tecsup.logismart_movil.ui.theme.LogismartmovilTheme
 import com.tecsup.logismart_movil.ui.theme.TextPrimary
@@ -29,7 +38,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+
         setContent {
             LogismartmovilTheme {
                 var selectedTab by remember { mutableStateOf(0) }

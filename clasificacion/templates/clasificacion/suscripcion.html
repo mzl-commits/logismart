@@ -1,0 +1,240 @@
+{% extends 'clasificacion/base.html' %}
+{% block title %}Suscripción — LogiSmart{% endblock %}
+
+{% block content %}
+
+{% if success %}
+<div class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/75 backdrop-blur-sm" id="success-overlay">
+  <div class="bg-surface border border-[#222227] rounded-3xl p-10 max-w-md w-full text-center shadow-2xl shadow-emerald-500/5 fade-in">
+    <div class="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-6">
+      <i class="bi bi-check-circle-fill text-emerald-400 text-4xl"></i>
+    </div>
+    <h2 class="text-2xl font-bold text-white mb-2">¡Suscripción activada!</h2>
+    <p class="text-slate-400 text-sm mb-8">Tu plan LogiSmart Básico está activo. Recibirás un correo de confirmación de Stripe.</p>
+    <a href="/" class="bg-surface2 hover:bg-surface border border-accent/25 text-light font-bold px-8 py-3 rounded-xl inline-flex items-center gap-2 transition-all no-underline">
+      <i class="bi bi-speedometer2"></i> Ir al Dashboard
+    </a>
+  </div>
+</div>
+{% endif %}
+
+{% if canceled %}
+<div class="mb-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl px-6 py-4 text-amber-400 flex items-center gap-3 fade-in">
+  <i class="bi bi-exclamation-triangle text-xl"></i>
+  <span>Pago cancelado. Puedes intentarlo de nuevo cuando quieras.</span>
+</div>
+{% endif %}
+
+<!-- Header -->
+<div class="text-center mb-12 fade-in">
+  <div class="inline-flex items-center gap-2 bg-surface2 border border-accent/20 text-light text-xs font-bold px-4 py-1.5 rounded-full mb-4 uppercase tracking-widest">
+    <i class="bi bi-stars"></i> Planes y Suscripción
+  </div>
+  <h2 class="text-4xl font-extrabold text-white mb-3 tracking-tight">Elige tu plan</h2>
+  <p class="text-slate-400 text-base max-w-xl mx-auto">
+    Acceso completo a LogiSmart. Sin contratos largos — cancela cuando quieras.
+  </p>
+</div>
+
+<!-- Pricing Cards -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-4xl mx-auto mb-16">
+
+  <!-- Plan Básico -->
+  <div class="relative bg-surface border border-surface2 rounded-3xl p-8 shadow-2xl shadow-black/30 flex flex-col fade-in hover:border-accent/40 transition-all duration-300 group">
+    <!-- Badge -->
+    <div class="absolute -top-3.5 left-8">
+      <span class="bg-surface2 text-light border border-accent/30 text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+        MÁS POPULAR
+      </span>
+    </div>
+
+    <div class="mb-6 pt-2">
+      <div class="w-12 h-12 bg-surface2 border border-surface2 rounded-2xl flex items-center justify-center text-2xl mb-4">
+        📦
+      </div>
+      <h3 class="text-xl font-bold text-white">Plan Básico</h3>
+      <p class="text-slate-400 text-sm mt-1">Todo lo que necesitas para gestionar tu almacén inteligente.</p>
+    </div>
+
+    <!-- Price -->
+    <div class="mb-8">
+      <div class="flex items-end gap-2">
+        <span class="text-5xl font-extrabold text-white">$300</span>
+        <span class="text-slate-400 text-sm mb-2">/ mes</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Facturado mensualmente · Cancela en cualquier momento</p>
+    </div>
+
+    <!-- Features -->
+    <ul class="space-y-3 mb-8 flex-grow">
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Dashboard en tiempo real</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Control AGV (Robot de clasificación)</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Gestión de almacén y ubicaciones</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Despachos y trazabilidad completa</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> API REST documentada (Swagger)</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Hasta 2 usuarios (admin + controlador)</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Soporte por email</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-check-circle-fill text-emerald-500 shrink-0"></i> Actualizaciones incluidas</li>
+    </ul>
+
+    <!-- CTA -->
+    <button onclick="iniciarPago()" id="btn-checkout"
+            class="w-full bg-surface2 text-light hover:bg-accent/10 border border-accent/30 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all text-base hover:-translate-y-0.5">
+      <i class="bi bi-credit-card text-lg"></i> Suscribirse ahora
+    </button>
+    <p class="text-center text-xs text-slate-600 mt-3 flex items-center justify-center gap-1">
+      <i class="bi bi-lock-fill"></i> Pago seguro con Stripe ·  <!-- Plan Enterprise -->
+  <div class="relative bg-surface border border-surface2 rounded-3xl p-8 shadow-2xl shadow-black/30 flex flex-col fade-in fade-d1 hover:border-accent/40 transition-all duration-300">
+    <div class="absolute -top-3.5 left-8">
+      <span class="bg-surface2 text-amber-500 border border-amber-500/30 text-xs font-bold px-4 py-1.5 rounded-full shadow-lg">
+        ENTERPRISE
+      </span>
+    </div>
+
+    <div class="mb-6 pt-2">
+      <div class="w-12 h-12 bg-surface2 border border-surface2 rounded-2xl flex items-center justify-center text-2xl mb-4">
+        🏭
+      </div>
+      <h3 class="text-xl font-bold text-white">Plan Personalizado</h3>
+      <p class="text-slate-400 text-sm mt-1">Para operaciones con necesidades únicas o a gran escala.</p>
+    </div>
+
+    <div class="mb-8">
+      <div class="flex items-end gap-2">
+        <span class="text-4xl font-extrabold text-light">A medida</span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">Precio según requerimientos · Cotización sin costo</p>
+    </div>
+
+    <ul class="space-y-3 mb-8 flex-grow">
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Todo lo del Plan Básico</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Usuarios ilimitados</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Integraciones con sistemas externos (ERP / WMS)</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Módulos adicionales a pedido</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Soporte prioritario 24/7</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Capacitación para tu equipo</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> SLA garantizado</li>
+      <li class="flex items-center gap-3 text-sm text-slate-300"><i class="bi bi-stars text-accent shrink-0"></i> Instalación on-premise disponible</li>
+    </ul>
+
+    <!-- Cotización Form -->
+    <div class="space-y-3" id="form-cotizacion">
+      <input type="text" id="cot-empresa" placeholder="Nombre de tu empresa"
+             class="w-full bg-base border border-surface2 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-all">
+      <input type="email" id="cot-email" placeholder="Correo de contacto"
+             class="w-full bg-base border border-surface2 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-all">
+      <textarea id="cot-necesidad" rows="2" placeholder="Describe brevemente qué necesitas..."
+                class="w-full bg-base border border-surface2 rounded-xl px-4 py-3 text-white text-sm placeholder-slate-600 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-all resize-none"></textarea>
+      <button onclick="enviarCotizacion(this)"
+              class="w-full bg-surface2 text-amber-500 border border-amber-500/30 hover:bg-amber-500/10 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 transition-all text-base">
+        <i class="bi bi-envelope-fill text-lg"></i> Solicitar cotización
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Feature comparison teaser -->
+<div class="max-w-4xl mx-auto bg-surface border border-surface2 rounded-2xl p-6 fade-in fade-d2">
+  <div class="flex items-center gap-3 mb-4">
+    <i class="bi bi-shield-check text-[#52A27F] text-xl"></i>
+    <span class="font-semibold text-white">¿Por qué LogiSmart?</span>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+    <div class="p-4">
+      <div class="text-2xl font-extrabold text-white">99.9%</div>
+      <div class="text-xs text-slate-500 mt-1">Uptime garantizado</div>
+    </div>
+    <div class="p-4">
+      <div class="text-2xl font-extrabold text-white">MQTT</div>
+      <div class="text-xs text-slate-500 mt-1">Telemetría en tiempo real</div>
+    </div>
+    <div class="p-4">
+      <div class="text-2xl font-extrabold text-white">API</div>
+      <div class="text-xs text-slate-500 mt-1">Integración con cualquier sistema</div>
+    </div>
+    <div class="p-4">
+      <div class="text-2xl font-extrabold text-white">SSL</div>
+      <div class="text-xs text-slate-500 mt-1">Datos siempre cifrados</div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function iniciarPago() {
+    {% if not user.is_authenticated %}
+    window.location.href = '/login/?next=/suscripcion/';
+    return;
+    {% endif %}
+
+    const btn = document.getElementById('btn-checkout');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> Redirigiendo...';
+
+    try {
+        const res = await fetch('/suscripcion/checkout/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.checkout_url) {
+            window.location.href = data.checkout_url;
+        } else {
+            mostrarToast(data.error || 'Error al iniciar el pago.', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-credit-card text-lg"></i> Suscribirse ahora';
+        }
+    } catch(e) {
+        mostrarToast('Error de conexión.', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-credit-card text-lg"></i> Suscribirse ahora';
+    }
+}
+
+async function enviarCotizacion(btn) {
+    {% if not user.is_authenticated %}
+    window.location.href = '/login/?next=/suscripcion/';
+    return;
+    {% endif %}
+
+    const empresa = document.getElementById('cot-empresa').value.trim();
+    const email = document.getElementById('cot-email').value.trim();
+    const necesidad = document.getElementById('cot-necesidad').value.trim();
+
+    if (!empresa || !email) return mostrarToast('Completa empresa y correo.', 'warning');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="animate-spin inline-block w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full"></span> Enviando...';
+
+    try {
+        const res = await fetch('/suscripcion/cotizacion/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ empresa, email, necesidad })
+        });
+        const data = await res.json();
+        if (data.ok) {
+            mostrarToast(data.mensaje, 'success');
+            document.getElementById('form-cotizacion').innerHTML = `
+                <div class="text-center py-6">
+                    <i class="bi bi-check-circle-fill text-emerald-400 text-4xl block mb-3"></i>
+                    <p class="text-white font-semibold">Solicitud enviada</p>
+                    <p class="text-slate-400 text-sm mt-1">Te contactaremos pronto a <strong>${email}</strong></p>
+                </div>`;
+        } else {
+            mostrarToast('Error al enviar.', 'danger');
+        }
+    } catch(e) {
+        mostrarToast('Error de conexión.', 'danger');
+    } finally {
+        if (btn.disabled) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-envelope-fill text-lg"></i> Solicitar cotización';
+        }
+    }
+}
+</script>
+{% endblock %}

@@ -9,13 +9,13 @@ from rest_framework.response import Response
 from .models import (
     Caja, Ubicacion, Medida, Proveedor, Usuario,
     HistorialMovimientos, Despacho, EstadoCarro, Categoria, ConfigCarro,
-    Vehiculo, Destino
+    Vehiculo, Destino, SolicitudDespacho
 )
 from .serializers import (
     CajaSerializer, UbicacionSerializer, MedidaSerializer,
     ProveedorSerializer, UsuarioSerializer, HistorialSerializer,
     DespachoSerializer, EstadoCarroSerializer, CategoriaSerializer, ConfigCarroSerializer,
-    VehiculoSerializer, DestinoSerializer
+    VehiculoSerializer, DestinoSerializer, SolicitudDespachoSerializer
 )
 
 class VehiculoViewSet(viewsets.ModelViewSet):
@@ -41,7 +41,37 @@ _CARRO_DEFAULTS = {
     'destino_x': 0, 'destino_y': 0,
     'ruta': [], 'estado': 'esperando',
     'paradas': [], 'parada_actual': 0,
+    'sensor_opt_izq_ext': False,
+    'sensor_opt_izq_int': False,
+    'sensor_opt_der_int': False,
+    'sensor_opt_der_ext': False,
+    'sensor_obstaculo_frontal': False,
+    'sensor_obstaculo_trasero': False,
+    'motor_izq_vel': 1500,
+    'motor_der_vel': 1500,
 }
+
+def _publicar_mqtt_comando(payload):
+    import paho.mqtt.publish as publish
+    import json
+    from django.conf import settings
+    try:
+        mqtt_cfg = settings.MQTT_CONFIG
+        auth = None
+        if mqtt_cfg['USER'] and mqtt_cfg['PASS']:
+            auth = {'username': mqtt_cfg['USER'], 'password': mqtt_cfg['PASS']}
+        
+        publish.single(
+            mqtt_cfg['TOPIC_COMANDO'],
+            payload=json.dumps(payload),
+            hostname=mqtt_cfg['BROKER'],
+            port=mqtt_cfg['PORT'],
+            auth=auth
+        )
+        logger.info("Publicado comando MQTT a %s: %s", mqtt_cfg['TOPIC_COMANDO'], payload)
+    except Exception as e:
+        logger.error("Error al publicar comando MQTT: %s", e)
+
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -60,16 +90,37 @@ def _registrar_historial(caja, estado_anterior, usuario_id):
         logger.error("Usuario id=%s no encontrado para caja %s.", usuario_id, caja.id)
 
 
-def _get_or_create_carro():
-    carro, _ = EstadoCarro.objects.get_or_create(id=1, defaults=_CARRO_DEFAULTS)
+def _get_or_create_carro(carro_id=1):
+    carro, _ = EstadoCarro.objects.get_or_create(id=carro_id, defaults=_CARRO_DEFAULTS)
     return carro
 
 
-def _enviar_esp32(x, y):
+def _enviar_esp32(x, y, caja_id=None, carro_id=1, publish_mqtt=True):
     esp32 = ESP32Service()
     resultado = esp32.enviar_coordenadas(x, y)
     esp32.cerrar()
+
+    if publish_mqtt:
+        try:
+            from clasificacion.services.ruta_service import RutaService
+            carro = EstadoCarro.objects.filter(id=carro_id).first()
+            pos_x = carro.pos_x if carro else 0
+            pos_y = carro.pos_y if carro else 0
+            ruta = RutaService.generar_ruta(pos_x, pos_y, int(x), int(y))
+            
+            _publicar_mqtt_comando({
+                'action': 'mover',
+                'destino_x': int(x),
+                'destino_y': int(y),
+                'ruta': ruta,
+                'caja_id': caja_id,
+                'carro_id': carro_id
+            })
+        except Exception as e:
+            logger.error("Error al publicar comando MQTT en _enviar_esp32: %s", e)
+            
     return resultado
+
 
 
 # ── CajaViewSet ───────────────────────────────────────────────────────────────
@@ -104,12 +155,129 @@ class CajaViewSet(viewsets.ModelViewSet):
         """
         Procesa cajas pendientes respetando la capacidad del carro:
         - Filtra hasta alcanzar el límite de peso, volumen o paradas.
-        - Clasifica y asigna ubicación óptima a cada una.
+        - Asigna ubicación óptima (o manual, si se provee asignaciones).
         - Genera ruta multi-parada optimizada para el carro.
         """
         usuario_id = request.data.get('id_usuario')
+        asignaciones = request.data.get('asignaciones', {})  # Diccionario { "id_caja": id_ubicacion_manual }
         cajas_pendientes = list(Caja.objects.filter(estado='pendiente').select_related('id_medida'))
+ 
+        if not cajas_pendientes:
+            return Response(
+                {'error': 'No hay cajas pendientes para procesar'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+ 
+        config = ConfigCarro.get_config()
+        peso_acumulado = 0.0
+        volumen_acumulado = 0.0
+        cajas_a_procesar = []
+ 
+        # Seleccionar cajas que caben en el carro
+        for caja in cajas_pendientes:
+            if len(cajas_a_procesar) >= config.max_paradas:
+                break
+            
+            peso_caja = float(caja.peso_kg)
+            vol_caja = float(caja.id_medida.volumen) if caja.id_medida and caja.id_medida.volumen else 0.0
+ 
+            if peso_acumulado + peso_caja <= float(config.peso_maximo_kg) and \
+               (volumen_acumulado + vol_caja <= float(config.volumen_cm3) or vol_caja == 0):
+                peso_acumulado += peso_caja
+                volumen_acumulado += vol_caja
+                cajas_a_procesar.append(caja)
+ 
+        if not cajas_a_procesar:
+            return Response(
+                {'error': 'Ninguna caja pendiente cabe en el carro con la configuración actual'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+ 
+        paradas = []
+        sin_ubicacion = []
+ 
+        for caja in cajas_a_procesar:
+            caja_id_str = str(caja.id)
+            mejor_ubi = None
+            detalle = None
+ 
+            # Verificar si el usuario asignó una ubicación manualmente
+            if caja_id_str in asignaciones and asignaciones[caja_id_str] is not None:
+                try:
+                    from .models import Ubicacion
+                    manual_ubi_id = int(asignaciones[caja_id_str])
+                    mejor_ubi = Ubicacion.objects.get(pk=manual_ubi_id)
+                    detalle = {'score': 100, 'tipo': 'Manual'}
+                except (Ubicacion.DoesNotExist, ValueError):
+                    pass
+ 
+            # Si no hay asignación manual, buscar la recomendada
+            if not mejor_ubi:
+                clasificacion = ClasificadorCajas.clasificar(caja)
+                mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
+                    clasificacion, caja=caja, incluir_detalle=True
+                )
+ 
+            if not mejor_ubi:
+                sin_ubicacion.append(caja.id)
+                continue
+ 
+            with transaction.atomic():
+                caja.id_ubicacion = mejor_ubi
+                caja.estado = 'en_transito'
+                caja.save()
+                OptimizadorUbicaciones.ocupar_ubicacion(mejor_ubi)
+                _registrar_historial(caja, 'pendiente', usuario_id)
+ 
+            paradas.append({
+                'caja_id': caja.id,
+                'producto': caja.producto,
+                'x': mejor_ubi.coord_x,
+                'y': mejor_ubi.coord_y,
+                'ubicacion_id': mejor_ubi.id_ubicacion,
+                'ubicacion_nombre': str(mejor_ubi),
+                'score': detalle.get('score') if detalle else None,
+            })
+ 
+        if not paradas:
+            return Response(
+                {'error': 'Ninguna caja pudo ser asignada a una ubicación'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+ 
+        carro_id = int(request.data.get('carro_id', 1))
+        carro = _get_or_create_carro(carro_id)
+        paradas_ordenadas = RutaService.optimizar_paradas(carro.pos_x, carro.pos_y, paradas)
+        primera = paradas_ordenadas[0]
+        ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, primera['x'], primera['y'])
+ 
+        carro.paradas = paradas_ordenadas
+        carro.parada_actual = 0
+        carro.destino_x = primera['x']
+        carro.destino_y = primera['y']
+        carro.ruta = ruta
+        carro.estado = 'moviendo'
+        carro.caja_id = primera['caja_id']
+        carro.save()
+ 
+        esp32_resultado = _enviar_esp32(primera['x'], primera['y'], caja_id=primera['caja_id'], carro_id=carro_id)
+        logger.info("Lote procesado: %d paradas, primera → %s", len(paradas_ordenadas), primera['ubicacion_nombre'])
+ 
+        return Response({
+            'mensaje': f'{len(paradas)} caja(s) procesada(s)',
+            'total_paradas': len(paradas_ordenadas),
+            'paradas': paradas_ordenadas,
+            'sin_ubicacion': sin_ubicacion,
+            'esp32': esp32_resultado,
+        })
 
+    @action(detail=False, methods=['get', 'post'])
+    def previsualizar_lote(self, request):
+        """
+        Previsualiza qué cajas se procesarán y sus ubicaciones sugeridas,
+        así como todas las ubicaciones libres en el almacén.
+        """
+        cajas_pendientes = list(Caja.objects.filter(estado='pendiente').select_related('id_medida'))
         if not cajas_pendientes:
             return Response(
                 {'error': 'No hay cajas pendientes para procesar'},
@@ -141,64 +309,36 @@ class CajaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        paradas = []
-        sin_ubicacion = []
-
+        cajas_preview = []
         for caja in cajas_a_procesar:
             clasificacion = ClasificadorCajas.clasificar(caja)
             mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
                 clasificacion, caja=caja, incluir_detalle=True
             )
-            if not mejor_ubi:
-                sin_ubicacion.append(caja.id)
-                continue
-
-            with transaction.atomic():
-                caja.id_ubicacion = mejor_ubi
-                caja.estado = 'en_transito'
-                caja.save()
-                OptimizadorUbicaciones.ocupar_ubicacion(mejor_ubi)
-                _registrar_historial(caja, 'pendiente', usuario_id)
-
-            paradas.append({
-                'caja_id': caja.id,
+            cajas_preview.append({
+                'id': caja.id,
                 'producto': caja.producto,
-                'x': mejor_ubi.coord_x,
-                'y': mejor_ubi.coord_y,
-                'ubicacion_id': mejor_ubi.id_ubicacion,
-                'ubicacion_nombre': str(mejor_ubi),
-                'score': detalle.get('score') if detalle else None,
+                'peso_kg': float(caja.peso_kg),
+                'categoria': caja.categoria,
+                'es_fragil': caja.es_fragil,
+                'sugerida_id': mejor_ubi.id_ubicacion if mejor_ubi else None,
+                'sugerida_nombre': str(mejor_ubi) if mejor_ubi else 'Ninguna compatible',
             })
 
-        if not paradas:
-            return Response(
-                {'error': 'Ninguna caja pudo ser asignada a una ubicación'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        carro = _get_or_create_carro()
-        paradas_ordenadas = RutaService.optimizar_paradas(carro.pos_x, carro.pos_y, paradas)
-        primera = paradas_ordenadas[0]
-        ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, primera['x'], primera['y'])
-
-        carro.paradas = paradas_ordenadas
-        carro.parada_actual = 0
-        carro.destino_x = primera['x']
-        carro.destino_y = primera['y']
-        carro.ruta = ruta
-        carro.estado = 'moviendo'
-        carro.caja_id = primera['caja_id']
-        carro.save()
-
-        esp32_resultado = _enviar_esp32(primera['x'], primera['y'])
-        logger.info("Lote procesado: %d paradas, primera → %s", len(paradas_ordenadas), primera['ubicacion_nombre'])
+        # Todas las ubicaciones desocupadas
+        from .models import Ubicacion
+        libres_qs = Ubicacion.objects.filter(estado_ocupacion=False)
+        ubicaciones_libres = [
+            {'id_ubicacion': u.id_ubicacion, 'nombre': str(u)}
+            for u in libres_qs
+        ]
 
         return Response({
-            'mensaje': f'{len(paradas)} caja(s) procesada(s)',
-            'total_paradas': len(paradas_ordenadas),
-            'paradas': paradas_ordenadas,
-            'sin_ubicacion': sin_ubicacion,
-            'esp32': esp32_resultado,
+            'cajas': cajas_preview,
+            'ubicaciones_libres': ubicaciones_libres,
+            'peso_total': peso_acumulado,
+            'volumen_total': volumen_acumulado,
+            'max_paradas': config.max_paradas,
         })
 
     @action(detail=True, methods=['get'])
@@ -251,7 +391,8 @@ class CajaViewSet(viewsets.ModelViewSet):
             OptimizadorUbicaciones.ocupar_ubicacion(mejor_ubi)
             _registrar_historial(caja, estado_anterior, usuario_id)
 
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', 1))
+        carro = _get_or_create_carro(carro_id)
         ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, mejor_ubi.coord_x, mejor_ubi.coord_y)
         carro.paradas = [{'caja_id': caja.id, 'producto': caja.producto,
                           'x': mejor_ubi.coord_x, 'y': mejor_ubi.coord_y,
@@ -264,7 +405,7 @@ class CajaViewSet(viewsets.ModelViewSet):
         carro.caja_id = caja.id
         carro.save()
 
-        esp32_resultado = _enviar_esp32(mejor_ubi.coord_x, mejor_ubi.coord_y)
+        esp32_resultado = _enviar_esp32(mejor_ubi.coord_x, mejor_ubi.coord_y, caja_id=caja.id, carro_id=carro_id)
         return Response({
             'mensaje': '✅ Caja procesada',
             'caja': CajaSerializer(caja).data,
@@ -338,6 +479,7 @@ class CajaViewSet(viewsets.ModelViewSet):
 class UbicacionViewSet(viewsets.ModelViewSet):
     queryset = Ubicacion.objects.all()
     serializer_class = UbicacionSerializer
+    pagination_class = None
 
     @action(detail=False, methods=['get'])
     def disponibles(self, request):
@@ -356,23 +498,32 @@ class CategoriaViewSet(viewsets.ModelViewSet):
 
 
 class ConfigCarroViewSet(viewsets.ModelViewSet):
-    """Singleton de configuración del carro. Siempre trabaja con id=1."""
+    """Configuración de carros. Soporta carro_id dinámico."""
     serializer_class = ConfigCarroSerializer
 
     def get_queryset(self):
         return ConfigCarro.objects.all()
 
     def get_object(self):
-        return ConfigCarro.get_config()
+        pk = self.kwargs.get('pk')
+        if pk:
+            try:
+                return ConfigCarro.objects.get(pk=pk)
+            except ConfigCarro.DoesNotExist:
+                return ConfigCarro.get_config(int(pk))
+        carro_id = int(self.request.query_params.get('carro_id', 1))
+        return ConfigCarro.get_config(carro_id)
 
     @action(detail=False, methods=['get'])
     def actual(self, request):
-        config = ConfigCarro.get_config()
+        carro_id = int(request.query_params.get('carro_id', 1))
+        config = ConfigCarro.get_config(carro_id)
         return Response(ConfigCarroSerializer(config).data)
 
     @action(detail=False, methods=['patch', 'put'])
     def actualizar(self, request):
-        config = ConfigCarro.get_config()
+        carro_id = int(request.query_params.get('carro_id', 1))
+        config = ConfigCarro.get_config(carro_id)
         serializer = ConfigCarroSerializer(config, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
@@ -405,7 +556,8 @@ class DespachoViewSet(viewsets.ModelViewSet):
 class EstadoCarroViewSet(viewsets.ViewSet):
 
     def list(self, request):
-        carro = _get_or_create_carro()
+        carro_id = int(request.query_params.get('carro_id', 1))
+        carro = _get_or_create_carro(carro_id)
         return Response(EstadoCarroSerializer(carro).data)
 
     @action(detail=False, methods=['post'])
@@ -415,7 +567,8 @@ class EstadoCarroViewSet(viewsets.ViewSet):
         - Marca la caja como almacenada.
         - Avanza a la siguiente parada (o finaliza si era la última).
         """
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
         paradas = carro.paradas or []
         usuario_id = request.data.get('id_usuario')
 
@@ -441,7 +594,7 @@ class EstadoCarroViewSet(viewsets.ViewSet):
 
         if siguiente_idx >= len(paradas):
             # Todas las paradas completadas — regresar a base
-            config = ConfigCarro.get_config()
+            config = ConfigCarro.get_config(carro_id)
             bx, by = config.pos_base_x, config.pos_base_y
             if carro.pos_x != bx or carro.pos_y != by:
                 ruta_regreso = RutaService.generar_ruta(carro.pos_x, carro.pos_y, bx, by)
@@ -449,9 +602,21 @@ class EstadoCarroViewSet(viewsets.ViewSet):
                 carro.destino_x = bx
                 carro.destino_y = by
                 carro.ruta = ruta_regreso
+                
+                # Publicar comando mover a base por MQTT
+                _publicar_mqtt_comando({
+                    'action': 'mover',
+                    'destino_x': bx,
+                    'destino_y': by,
+                    'ruta': ruta_regreso,
+                    'caja_id': None,
+                    'carro_id': carro_id
+                })
             else:
                 carro.estado = 'esperando'
                 carro.ruta = []
+                # Publicar comando stop por MQTT
+                _publicar_mqtt_comando({'action': 'stop', 'carro_id': carro_id})
             carro.paradas = []
             carro.parada_actual = 0
             carro.caja_id = None
@@ -474,7 +639,17 @@ class EstadoCarroViewSet(viewsets.ViewSet):
         carro.caja_id = siguiente['caja_id']
         carro.save()
 
-        esp32_resultado = _enviar_esp32(siguiente['x'], siguiente['y'])
+        # Publicar comando mover a siguiente parada por MQTT
+        _publicar_mqtt_comando({
+            'action': 'mover',
+            'destino_x': siguiente['x'],
+            'destino_y': siguiente['y'],
+            'ruta': ruta,
+            'caja_id': siguiente['caja_id'],
+            'carro_id': carro_id
+        })
+
+        esp32_resultado = _enviar_esp32(siguiente['x'], siguiente['y'], publish_mqtt=False)
         logger.info("Avanzando a parada %d → %s", siguiente_idx, siguiente['ubicacion_nombre'])
 
         return Response({
@@ -488,7 +663,8 @@ class EstadoCarroViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def avanzar(self, request):
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
         ruta = carro.ruta or []
         if ruta:
             siguiente = ruta.pop(0)
@@ -504,6 +680,8 @@ class EstadoCarroViewSet(viewsets.ViewSet):
                     carro.estado = 'esperando'  # llegó a base → listo
                     carro.caja_id = None
                     logger.info("Carro llegó a base (%d,%d).", carro.pos_x, carro.pos_y)
+                    # Publicar stop por MQTT
+                    _publicar_mqtt_comando({'action': 'stop', 'carro_id': carro_id})
                 else:
                     carro.estado = 'llego'
             carro.save()
@@ -511,7 +689,8 @@ class EstadoCarroViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def mover(self, request):
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
         destino_x = int(request.data.get('destino_x', 0))
         destino_y = int(request.data.get('destino_y', 0))
         ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, destino_x, destino_y)
@@ -521,13 +700,134 @@ class EstadoCarroViewSet(viewsets.ViewSet):
         carro.estado = 'moviendo'
         carro.caja_id = request.data.get('caja_id')
         carro.save()
+        
+        # Publicar comando mover por MQTT
+        _publicar_mqtt_comando({
+            'action': 'mover',
+            'destino_x': destino_x,
+            'destino_y': destino_y,
+            'ruta': ruta,
+            'caja_id': request.data.get('caja_id'),
+            'carro_id': carro_id
+        })
+        
         return Response({'mensaje': 'Ruta generada', 'ruta': ruta})
 
     @action(detail=False, methods=['post'])
     def reset(self, request):
-        carro = _get_or_create_carro()
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
         for k, v in _CARRO_DEFAULTS.items():
             setattr(carro, k, v)
         carro.caja_id = None
         carro.save()
+        
+        # Publicar comando reset por MQTT
+        _publicar_mqtt_comando({'action': 'reset', 'carro_id': carro_id})
+        
         return Response({'mensaje': 'Carro reiniciado'})
+
+    @action(detail=False, methods=['post', 'patch'])
+    def telemetria(self, request):
+        carro_id = int(request.data.get('carro_id', request.query_params.get('carro_id', 1)))
+        carro = _get_or_create_carro(carro_id)
+        campos = [
+            'sensor_opt_izq_ext', 'sensor_opt_izq_int', 'sensor_opt_der_int', 'sensor_opt_der_ext',
+            'sensor_obstaculo_frontal', 'sensor_obstaculo_trasero', 'motor_izq_vel', 'motor_der_vel'
+        ]
+        for c in campos:
+            if c in request.data:
+                val = request.data[c]
+                if c in ['motor_izq_vel', 'motor_der_vel']:
+                    val = int(val)
+                else:
+                    val = str(val).lower() == 'true'
+                setattr(carro, c, val)
+        carro.save()
+        return Response(EstadoCarroSerializer(carro).data)
+
+
+class SolicitudDespachoViewSet(viewsets.ModelViewSet):
+    queryset = SolicitudDespacho.objects.all().order_by('-fecha_solicitud')
+    serializer_class = SolicitudDespachoSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(usuario_solicita=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def aprobar(self, request, pk=None):
+        if not request.user.is_superuser:
+            return Response({'error': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+        
+        solicitud = self.get_object()
+        if solicitud.estado != 'pendiente':
+            return Response({'error': 'La solicitud ya ha sido procesada.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        cajas = Caja.objects.filter(id__in=solicitud.cajas_ids)
+        if not cajas.exists():
+            return Response({'error': 'No se encontraron las cajas asociadas.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        errores = []
+        with transaction.atomic():
+            for caja in cajas:
+                if caja.estado != 'almacenada':
+                    errores.append(f"Caja {caja.id} no está almacenada (estado: {caja.estado})")
+                    continue
+                
+                estado_anterior = caja.estado
+                ubicacion_anterior = caja.id_ubicacion
+                
+                caja.estado = 'despachada'
+                caja.id_ubicacion = None
+                caja.save()
+                
+                if ubicacion_anterior:
+                    OptimizadorUbicaciones.liberar_ubicacion(ubicacion_anterior)
+                    
+                _registrar_historial(caja, estado_anterior, solicitud.operador_responsable.id_usuario)
+                
+                Despacho.objects.create(
+                    id_caja=caja,
+                    id_usuario_despacho=solicitud.operador_responsable,
+                    destino=solicitud.destino,
+                    transporte_placa=solicitud.transporte_placa
+                )
+            
+            solicitud.estado = 'aprobada'
+            solicitud.save()
+            
+        if errores:
+            return Response({'mensaje': 'Aprobada con advertencias', 'errores': errores})
+        return Response({'mensaje': 'Solicitud aprobada y despacho procesado con éxito.'})
+
+    @action(detail=True, methods=['post'])
+    def rechazar(self, request, pk=None):
+        if not request.user.is_superuser:
+            return Response({'error': 'No autorizado'}, status=status.HTTP_403_FORBIDDEN)
+        
+        solicitud = self.get_object()
+        if solicitud.estado != 'pendiente':
+            return Response({'error': 'La solicitud ya ha sido procesada.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        solicitud.estado = 'rechazada'
+        solicitud.save()
+        return Response({'mensaje': 'Solicitud rechazada.'})
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def current_user(request):
+    if request.user.is_authenticated:
+        return Response({
+            'is_authenticated': True,
+            'username': request.user.username,
+            'is_superuser': request.user.is_superuser,
+        })
+    return Response({
+        'is_authenticated': False,
+        'username': '',
+        'is_superuser': False,
+    })

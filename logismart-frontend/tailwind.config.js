@@ -11,12 +11,12 @@ export default {
         sans: ['Inter', 'sans-serif']
       },
       colors: {
-        'main-bg': '#0D1F23',
-        surface: '#132E35',
-        surface2: '#2D4A53',
-        accent: '#69818D',
-        muted: '#5A636A',
-        light: '#AFB3B7',
+        'main-bg': 'var(--color-main-bg)',     // Dinámico por tema
+        surface: 'var(--color-surface)',       // Dinámico por tema
+        surface2: 'var(--color-surface2)',     // Dinámico por tema
+        accent: 'var(--color-accent)',         // Dinámico por tema
+        muted: 'var(--color-muted)',           // Dinámico por tema
+        light: 'var(--color-light)',           // Dinámico por tema
       }
     }
   },

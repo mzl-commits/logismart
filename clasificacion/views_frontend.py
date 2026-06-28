@@ -1,8 +1,11 @@
-from django.shortcuts import render
-from .models import Caja, Ubicacion, HistorialMovimientos, Medida, Proveedor, Usuario, Categoria, ConfigCarro, Vehiculo, Destino
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
+from .models import Caja, Ubicacion, HistorialMovimientos, Medida, Proveedor, Usuario, Categoria, ConfigCarro, Vehiculo, Destino, SolicitudDespacho
 from .services import ClasificadorCajas, OptimizadorUbicaciones
 
 
+@login_required
 def dashboard(request):
     # Solo cajas activas (excluye despachadas)
     cajas_activas = Caja.objects.exclude(estado='despachada').select_related(
@@ -83,11 +86,15 @@ def dashboard(request):
 
 
 
+@login_required
 def almacen_visual(request):
     return render(request, 'clasificacion/almacen_visual.html')
 
 
+@login_required
 def nueva_caja(request):
+    if not request.user.is_superuser:
+        return redirect('/?error=no_access')
     return render(request, 'clasificacion/nueva_caja.html', {
         'proveedores': Proveedor.objects.all(),
         'medidas': Medida.objects.all(),
@@ -96,8 +103,14 @@ def nueva_caja(request):
     })
 
 
+@login_required
 def configuracion(request):
-    config = ConfigCarro.get_config()
+    if not request.user.is_superuser:
+        return redirect('/?error=no_access')
+    carro_id = int(request.GET.get('carro_id', 1))
+    if carro_id not in [1, 2]:
+        carro_id = 1
+    config = ConfigCarro.get_config(carro_id)
     medidas = list(Medida.objects.all())
     cart_vol = config.volumen_cm3
     cart_peso = float(config.peso_maximo_kg)
@@ -134,12 +147,14 @@ def configuracion(request):
 
     return render(request, 'clasificacion/configuracion.html', {
         'config': config,
+        'carro_id': carro_id,
         'breakdown': breakdown,
         'resumen': resumen,
         'cart_vol': round(cart_vol),
     })
 
 
+@login_required
 def despachos(request):
     from .models import Despacho
     cajas_almacenadas = Caja.objects.filter(estado='almacenada')
@@ -154,10 +169,40 @@ def despachos(request):
     })
 
 
+@login_required
 def administracion(request):
+    if not request.user.is_superuser:
+        return redirect('/?error=no_access')
     return render(request, 'clasificacion/administracion.html', {
         'usuarios': Usuario.objects.all(),
         'proveedores': Proveedor.objects.all(),
         'vehiculos': Vehiculo.objects.all(),
         'destinos': Destino.objects.all(),
+        'solicitudes_pendientes': SolicitudDespacho.objects.filter(estado='pendiente').select_related('usuario_solicita', 'operador_responsable'),
     })
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    error = None
+    if request.method == 'POST':
+        u = request.POST.get('username')
+        p = request.POST.get('password')
+        user = authenticate(request, username=u, password=p)
+        if user is not None:
+            auth_login(request, user)
+            next_url = request.GET.get('next', 'dashboard')
+            if not next_url or not next_url.startswith('/'):
+                next_url = '/'
+            return redirect(next_url)
+        else:
+            error = "Usuario o contraseña incorrectos."
+            
+    return render(request, 'clasificacion/login.html', {'error': error})
+
+
+def logout_view(request):
+    auth_logout(request)
+    return redirect('login')

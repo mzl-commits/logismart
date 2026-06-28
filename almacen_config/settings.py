@@ -38,9 +38,16 @@ DEBUG = _get_env('DJANGO_DEBUG', default='True').lower() == 'true'
 
 ALLOWED_HOSTS = _get_env('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://logistica.promube.com',
+    'http://logistica.promube.com',
+]
+
 
 # ─── Aplicaciones ─────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -93,6 +100,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'almacen_config.wsgi.application'
+ASGI_APPLICATION = 'almacen_config.asgi.application'
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 
 
 # ─── Configuración ESP32 ──────────────────────────────────────────────────────
@@ -190,3 +204,23 @@ LOGGING = {
         },
     },
 }
+
+# ─── Configuración MQTT ───────────────────────────────────────────────────────
+MQTT_CONFIG = {
+    'BROKER': _get_env('MQTT_BROKER', default='38.250.116.213'),  # Por defecto el broker del VPS
+    'PORT': int(_get_env('MQTT_PORT', default=1883)),
+    'USER': _get_env('MQTT_USER', default='yuri'),
+    'PASS': _get_env('MQTT_PASS', default='Montescoli3'),
+    'TOPIC_TELEMETRIA': 'logismart/carro/telemetria',
+    'TOPIC_COMANDO': 'logismart/carro/comando',
+}
+
+LOGIN_URL = '/login/'
+
+# ─── Stripe ────────────────────────────────────────────────────────────────────
+# Reemplaza estos valores con tus claves reales de https://dashboard.stripe.com/apikeys
+# Modo TEST (empieza con sk_test_ / pk_test_) para pruebas sin cobro real.
+STRIPE_SECRET_KEY      = _get_env('STRIPE_SECRET_KEY',      default='sk_test_REEMPLAZA_CON_TU_CLAVE')
+STRIPE_PUBLISHABLE_KEY = _get_env('STRIPE_PUBLISHABLE_KEY', default='pk_test_REEMPLAZA_CON_TU_CLAVE')
+STRIPE_PRICE_ID        = _get_env('STRIPE_PRICE_ID',        default='')   # ID del precio mensual en Stripe Dashboard
+STRIPE_WEBHOOK_SECRET  = _get_env('STRIPE_WEBHOOK_SECRET',  default='')   # whsec_... del webhook configurado

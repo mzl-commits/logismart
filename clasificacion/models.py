@@ -85,21 +85,32 @@ class Ubicacion(models.Model):
         default='sin_preferencia'
     )
 
+    lado = models.CharField(max_length=20, choices=[('adelante', 'Adelante'), ('posterior', 'Posterior')], default='adelante')
+    casillero = models.IntegerField(choices=[(1, 'Casillero 1'), (2, 'Casillero 2')], default=1)
+
     class Meta:
         db_table = 'ubicaciones'
-        unique_together = ('pasillo', 'estante', 'nivel')
+        unique_together = ('pasillo', 'estante', 'nivel', 'lado', 'casillero')
     
     @property
     def coord_x(self):
-        # Convierte pasillo (A,B,C...) a número
-        return ord(self.pasillo.upper()) - ord('A')
+        # Convierte pasillo (A,B,C...) a número.
+        # Si es del lado posterior, se accede desde el pasillo siguiente (x + 1)
+        x = ord(self.pasillo.upper()) - ord('A')
+        if self.lado == 'posterior':
+            return x + 1
+        return x
     
     @property
     def coord_y(self):
         return self.estante
     
     def __str__(self):
-        return f"{self.pasillo}{self.estante}-N{self.nivel}"
+        lado_char = self.lado[0].upper() if self.lado else 'A'
+        caja_num = 3 if self.lado == 'posterior' and self.casillero == 1 else \
+                   4 if self.lado == 'posterior' and self.casillero == 2 else \
+                   1 if self.casillero == 1 else 2
+        return f"{self.pasillo}{self.estante}-N{self.nivel}-{lado_char}{self.casillero} (Caja {caja_num})"
 
 
 class Usuario(models.Model):
@@ -184,12 +195,13 @@ class ConfigCarro(models.Model):
         return float(self.largo_cm) * float(self.ancho_cm) * float(self.alto_cm)
 
     @classmethod
-    def get_config(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
+    def get_config(cls, carro_id=1):
+        obj, _ = cls.objects.get_or_create(pk=carro_id, defaults={'nombre': f'Carro {carro_id}'})
         return obj
 
     def save(self, *args, **kwargs):
-        self.pk = 1  # Singleton: siempre id=1
+        if not self.pk:
+            self.pk = 1
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -271,8 +283,44 @@ class EstadoCarro(models.Model):
     parada_actual = models.IntegerField(default=0)
     actualizado_en = models.DateTimeField(auto_now=True)
 
+    # Telemetría de sensores
+    sensor_opt_izq_ext = models.BooleanField(default=False)
+    sensor_opt_izq_int = models.BooleanField(default=False)
+    sensor_opt_der_int = models.BooleanField(default=False)
+    sensor_opt_der_ext = models.BooleanField(default=False)
+    sensor_obstaculo_frontal = models.BooleanField(default=False)
+    sensor_obstaculo_trasero = models.BooleanField(default=False)
+
+    # Telemetría de motores (us: 1000 - 2000, 1500 = detenido)
+    motor_izq_vel = models.IntegerField(default=1500)
+    motor_der_vel = models.IntegerField(default=1500)
+    bateria_pct = models.IntegerField(default=100)
+
     class Meta:
         db_table = 'estado_carro'
 
     def __str__(self):
         return f"Carro ({self.pos_x},{self.pos_y}) -> ({self.destino_x},{self.destino_y}) [{self.estado}]"
+
+
+class SolicitudDespacho(models.Model):
+    ESTADOS = [
+        ('pendiente', 'Pendiente'),
+        ('aprobada', 'Aprobada'),
+        ('rechazada', 'Rechazada'),
+    ]
+    id_solicitud = models.AutoField(primary_key=True)
+    cajas_ids = models.JSONField(default=list)  # Lista de IDs de cajas
+    usuario_solicita = models.ForeignKey('auth.User', on_delete=models.PROTECT, db_column='id_usuario_solicita')
+    operador_responsable = models.ForeignKey(Usuario, on_delete=models.PROTECT, db_column='id_operador_responsable')
+    destino = models.CharField(max_length=200)
+    transporte_placa = models.CharField(max_length=20)
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
+    fecha_solicitud = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'solicitud_despacho'
+        ordering = ['-fecha_solicitud']
+
+    def __str__(self):
+        return f"Solicitud {self.id_solicitud} ({self.estado})"

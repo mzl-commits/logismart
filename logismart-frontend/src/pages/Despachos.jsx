@@ -77,7 +77,7 @@ export default function Despachos() {
 
   if (loading && !cajas.length && !despachos.length) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] text-[#AFB3B7]">
+      <div className="flex flex-col items-center justify-center min-h-[300px] text-light">
         <div className="spinner mb-3"></div>
         Cargando despachos...
       </div>

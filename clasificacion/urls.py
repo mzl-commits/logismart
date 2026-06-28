@@ -6,7 +6,8 @@ from .views import (
     CajaViewSet, UbicacionViewSet, MedidaViewSet,
     ProveedorViewSet, UsuarioViewSet, HistorialViewSet,
     DespachoViewSet, EstadoCarroViewSet, CategoriaViewSet, ConfigCarroViewSet,
-    VehiculoViewSet, DestinoViewSet
+    VehiculoViewSet, DestinoViewSet, SolicitudDespachoViewSet,
+    current_user
 )
 
 router = DefaultRouter()
@@ -18,11 +19,14 @@ router.register(r'usuarios', UsuarioViewSet)
 router.register(r'historial', HistorialViewSet)
 router.register(r'despachos', DespachoViewSet)
 router.register(r'carro', EstadoCarroViewSet, basename='carro')
+router.register(r'estado-carro', EstadoCarroViewSet, basename='estado-carro')
 router.register(r'categorias', CategoriaViewSet)
 router.register(r'config-carro', ConfigCarroViewSet, basename='config-carro')
 router.register(r'vehiculos', VehiculoViewSet)
 router.register(r'destinos', DestinoViewSet)
+router.register(r'solicitudes-despacho', SolicitudDespachoViewSet, basename='solicitudes-despacho')
 
 urlpatterns = [
+    path('me/', current_user),
     path('', include(router.urls)),
 ]
