@@ -47,12 +47,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+import androidx.compose.material.icons.filled.Settings
+
 @Composable
 fun LoginScreen(
     state: AuthUiState,
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onLogin: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
@@ -62,11 +65,23 @@ fun LoginScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(20.dp),
-        contentAlignment = Alignment.Center,
     ) {
+        IconButton(
+            onClick = onNavigateToSettings,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 10.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Settings,
+                contentDescription = "Configurar Servidor"
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .align(Alignment.Center)
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {

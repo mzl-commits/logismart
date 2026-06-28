@@ -73,6 +73,7 @@ fun AppNavGraph(
                 onUsernameChange = authViewModel::onUsernameChange,
                 onPasswordChange = authViewModel::onPasswordChange,
                 onLogin = authViewModel::login,
+                onNavigateToSettings = { navController.navigate(Routes.Settings.route) }
             )
         }
         composable(Routes.Dashboard.route) {
