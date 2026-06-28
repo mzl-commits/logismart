@@ -8,7 +8,7 @@ import javax.inject.Inject
 
 data class SettingsUiState(
     val userName: String = "Gisela Morales",
-    val serverUrl: String = "http://10.0.2.2:8000/",
+    val serverUrl: String = "https://logistica.promube.com/",
     val notificationsEnabled: Boolean = true,
     val darkModeEnabled: Boolean = false
 )

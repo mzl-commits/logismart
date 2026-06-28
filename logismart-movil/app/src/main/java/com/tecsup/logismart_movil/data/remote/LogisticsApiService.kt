@@ -21,7 +21,7 @@ object LogisticsApiClient {
      * 10.0.2.2 se usa cuando pruebas desde el emulador Android
      * y el backend Django está corriendo en tu propia computadora.
      */
-    private const val BASE_URL = "http://10.0.2.2:8000/"
+    private const val BASE_URL = "https://logistica.promube.com/"
 
     val service: LogisticsApiService by lazy {
         Retrofit.Builder()

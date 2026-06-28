@@ -5,7 +5,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class ShelvesRemoteDataSource(
-    private val baseUrl: String = "http://10.0.2.2:8000/"
+    private val baseUrl: String = "https://logistica.promube.com/"
 ) {
     private val api: ShelvesApi = Retrofit.Builder()
         .baseUrl(baseUrl)

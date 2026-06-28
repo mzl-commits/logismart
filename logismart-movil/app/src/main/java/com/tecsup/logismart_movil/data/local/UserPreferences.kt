@@ -25,7 +25,7 @@ class UserPreferences(
     }
 
     val serverUrl: Flow<String> = context.settingsDataStore.data.map { preferences ->
-        preferences[Keys.SERVER_URL] ?: "http://10.0.2.2:8000/"
+        preferences[Keys.SERVER_URL] ?: "https://logistica.promube.com/"
     }
 
     val notificationsEnabled: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->

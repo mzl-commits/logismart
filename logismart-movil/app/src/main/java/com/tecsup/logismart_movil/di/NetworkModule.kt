@@ -34,7 +34,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    const val DEFAULT_BASE_URL = "http://10.0.2.2:8000/"
+    const val DEFAULT_BASE_URL = "https://logistica.promube.com/"
 
     @Provides
     @Singleton

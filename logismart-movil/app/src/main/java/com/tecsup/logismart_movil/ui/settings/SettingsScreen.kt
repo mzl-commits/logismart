@@ -42,7 +42,7 @@ fun SettingsScreen() {
     }
 
     val savedUserName by preferences.userName.collectAsState(initial = "Gisela Morales")
-    val savedServerUrl by preferences.serverUrl.collectAsState(initial = "http://10.0.2.2:8000/")
+    val savedServerUrl by preferences.serverUrl.collectAsState(initial = "https://logistica.promube.com/")
     val notificationsEnabled by preferences.notificationsEnabled.collectAsState(initial = true)
     val darkModeEnabled by preferences.darkModeEnabled.collectAsState(initial = false)
 
