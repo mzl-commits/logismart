@@ -60,24 +60,7 @@ object NetworkModule {
             level = HttpLoggingInterceptor.Level.BODY
         }
         return OkHttpClient.Builder()
-            // 1. Dynamic base URL rewriter based on Gisela's UserPreferences settings
-            .addInterceptor { chain ->
-                var request = chain.request()
-                val savedBaseUrl = runBlocking { userPreferences.serverUrl.first() }
-                if (savedBaseUrl.isNotBlank()) {
-                    val newHttpUrl = savedBaseUrl.toHttpUrlOrNull()
-                    if (newHttpUrl != null) {
-                        val newUrl = request.url.newBuilder()
-                            .scheme(newHttpUrl.scheme)
-                            .host(newHttpUrl.host)
-                            .port(newHttpUrl.port)
-                            .build()
-                        request = request.newBuilder().url(newUrl).build()
-                    }
-                }
-                chain.proceed(request)
-            }
-            // 2. Authentication header injector (Bearer JWT) based on Wash's SessionManager
+            // 1. Authentication header injector (Bearer JWT) based on Wash's SessionManager
             .addInterceptor { chain ->
                 val token = runBlocking { sessionManager.session.first()?.token }
                 val request = chain.request().newBuilder().apply {
