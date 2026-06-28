@@ -95,10 +95,11 @@ def almacen_visual(request):
 def nueva_caja(request):
     if not request.user.is_superuser:
         return redirect('/?error=no_access')
+    from django.contrib.auth.models import User
     return render(request, 'clasificacion/nueva_caja.html', {
         'proveedores': Proveedor.objects.all(),
         'medidas': Medida.objects.all(),
-        'usuarios': Usuario.objects.all(),
+        'usuarios': User.objects.filter(is_active=True),
         'categorias': Categoria.objects.all(),
     })
 

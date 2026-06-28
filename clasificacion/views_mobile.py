@@ -62,30 +62,46 @@ class MobileDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        carro = EstadoCarro.objects.order_by('id').first()
-        status_labels = {
-            'esperando': 'Operativo',
-            'moviendo': 'En movimiento',
-            'llego': 'En destino',
-            'regresando': 'Regresando',
-        }
-        car_status = status_labels.get(
-            getattr(carro, 'estado', None),
-            'Sin conexión',
-        )
-
-        active_alerts = 0
-        if carro:
-            # Estos campos son opcionales para mantener compatibilidad con
-            # instalaciones donde la telemetría avanzada aún no fue migrada.
-            active_alerts += int(getattr(carro, 'sensor_obstaculo_frontal', False))
-            active_alerts += int(getattr(carro, 'sensor_obstaculo_trasero', False))
-            active_alerts += int(getattr(carro, 'bateria_pct', 100) < 20)
+        from .models import Planilla
+        planillas_count = Planilla.objects.filter(operador=request.user).count()
 
         return Response({
-            'car_status': car_status,
-            'active_alerts': active_alerts,
             'pending_boxes': Caja.objects.filter(estado='pendiente').count(),
             'completed_dispatches': Despacho.objects.count(),
-            'quick_actions': ['Ver estado', 'Alertas', 'Cerrar sesión'],
+            'planillas_count': planillas_count,
+            'quick_actions': ['Ver planillas', 'Cerrar sesión'],
         })
+
+
+class MobilePlanillasView(APIView):
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .models import Planilla
+        planillas = Planilla.objects.filter(operador=request.user).order_by('-fecha_creacion')
+        
+        data = []
+        for p in planillas:
+            cajas = Caja.objects.filter(id__in=p.cajas_ids).select_related('id_ubicacion')
+            cajas_detalles = [{
+                'id': c.id,
+                'producto': c.producto,
+                'estado': c.get_estado_display(),
+                'prioridad': c.get_prioridad_display(),
+                'categoria': c.categoria,
+                'ubicacion': str(c.id_ubicacion) if c.id_ubicacion else 'No asignada'
+            } for c in cajas]
+            
+            cajas_ids_str = ",".join(p.cajas_ids)
+            pdf_url = f"/api/cajas/descargar_pdf_lote/?cajas={cajas_ids_str}&usuario_id={request.user.id}"
+            
+            data.append({
+                'id_planilla': p.id_planilla,
+                'fecha_creacion': p.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
+                'total_cajas': len(p.cajas_ids),
+                'pdf_url': pdf_url,
+                'cajas': cajas_detalles
+            })
+            
+        return Response(data)

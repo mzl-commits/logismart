@@ -323,4 +323,18 @@ class SolicitudDespacho(models.Model):
         ordering = ['-fecha_solicitud']
 
     def __str__(self):
-        return f"Solicitud {self.id_solicitud} ({self.estado})"
+        return f"Solicitud {self.id_solicitud} ({self.estado})"
+
+
+class Planilla(models.Model):
+    id_planilla = models.AutoField(primary_key=True)
+    cajas_ids = models.JSONField(default=list)  # Lista de IDs de cajas
+    operador = models.ForeignKey('auth.User', on_delete=models.CASCADE, db_column='id_operador')
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'planilla'
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return f"Planilla {self.id_planilla} - {self.operador.username}"

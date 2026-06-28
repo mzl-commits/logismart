@@ -401,6 +401,22 @@ class CajaViewSet(viewsets.ModelViewSet):
         # URL dinámica para la descarga del PDF
         pdf_url = f"/api/cajas/descargar_pdf_lote/?cajas={cajas_ids_str}&usuario_id={usuario_id or ''}"
         
+        # Registrar Planilla para el operador móvil (auth.User)
+        if usuario_id:
+            try:
+                from django.contrib.auth.models import User
+                from .models import Planilla
+                operador_user = User.objects.get(pk=int(usuario_id))
+                cajas_list = [p['caja_id'] for p in paradas_ordenadas]
+                
+                Planilla.objects.create(
+                    cajas_ids=cajas_list,
+                    operador=operador_user
+                )
+                logger.info("Planilla registrada para el operador: %s", operador_user.username)
+            except Exception as e:
+                logger.error("Error al registrar Planilla en procesar_lote: %s", str(e))
+
         logger.info("Lote procesado: %d paradas. Guía PDF generada: %s", len(paradas_ordenadas), pdf_url)
  
         return Response({
@@ -437,10 +453,15 @@ class CajaViewSet(viewsets.ModelViewSet):
         operador_nombre = "No especificado"
         if usuario_id:
             try:
-                operador = Usuario.objects.get(pk=int(usuario_id))
-                operador_nombre = f"{operador.nombre} ({operador.get_rol_display()})"
-            except (Usuario.DoesNotExist, ValueError):
-                pass
+                from django.contrib.auth.models import User
+                operador = User.objects.get(pk=int(usuario_id))
+                operador_nombre = f"{operador.first_name or operador.username} (Operador)"
+            except (User.DoesNotExist, ValueError):
+                try:
+                    operador = Usuario.objects.get(pk=int(usuario_id))
+                    operador_nombre = f"{operador.nombre} ({operador.get_rol_display()})"
+                except (Usuario.DoesNotExist, ValueError):
+                    pass
                 
         # Construir lista de paradas con justificaciones
         paradas = []
