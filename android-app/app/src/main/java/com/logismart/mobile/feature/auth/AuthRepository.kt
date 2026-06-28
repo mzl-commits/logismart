@@ -32,4 +32,8 @@ class AuthRepository(
                     ApiResult.Error("No se pudo conectar con LogiSmart. Verifica la red y el servidor.")
                 },
             )
+
+    suspend fun logout() {
+        sessionManager.clear()
+    }
 }

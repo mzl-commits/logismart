@@ -53,6 +53,13 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
         }
     }
 
+    fun logout() {
+        viewModelScope.launch {
+            repository.logout()
+            _uiState.value = AuthUiState()
+        }
+    }
+
     companion object {
         fun factory(repository: AuthRepository) = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
