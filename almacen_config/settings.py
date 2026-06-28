@@ -36,7 +36,7 @@ SECRET_KEY = _get_env(
 
 DEBUG = _get_env('DJANGO_DEBUG', default='True').lower() == 'true'
 
-ALLOWED_HOSTS = _get_env('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = _get_env('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1,10.0.2.2').split(',')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://logistica.promube.com',
