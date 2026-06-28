@@ -2,11 +2,13 @@ package com.tecsup.logismart_movil.ui.shelves
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.tecsup.logismart_movil.data.remote.ShelvesRemoteDataSource
+import com.tecsup.logismart_movil.data.remote.ShelvesApi
 import com.tecsup.logismart_movil.domain.model.Shelf
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class ShelvesUiState(
     val isLoading: Boolean = false,
@@ -14,9 +16,10 @@ data class ShelvesUiState(
     val errorMessage: String? = null
 )
 
-class ShelvesViewModel : ViewModel() {
-
-    private val remoteDataSource = ShelvesRemoteDataSource()
+@HiltViewModel
+class ShelvesViewModel @Inject constructor(
+    private val shelvesApi: ShelvesApi
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
         ShelvesUiState(shelves = demoShelves())
@@ -35,7 +38,7 @@ class ShelvesViewModel : ViewModel() {
             )
 
             try {
-                val shelves = remoteDataSource.getShelves()
+                val shelves = shelvesApi.getShelves().map { it.toDomain() }
 
                 _uiState.value = ShelvesUiState(
                     isLoading = false,

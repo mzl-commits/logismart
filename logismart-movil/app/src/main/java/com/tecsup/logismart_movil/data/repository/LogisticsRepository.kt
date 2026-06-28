@@ -4,11 +4,9 @@ import com.tecsup.logismart_movil.data.model.CajaDto
 import com.tecsup.logismart_movil.data.model.DespachoDto
 import com.tecsup.logismart_movil.data.model.LogisticBox
 import com.tecsup.logismart_movil.data.model.Trip
-import com.tecsup.logismart_movil.data.remote.LogisticsApiClient
+import com.tecsup.logismart_movil.data.remote.LogisticsApiService
 
-class LogisticsRepository {
-
-    private val api = LogisticsApiClient.service
+class LogisticsRepository(private val api: LogisticsApiService) {
 
     suspend fun getTrips(): List<Trip> {
         return runCatching {

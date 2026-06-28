@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tecsup.logismart_movil.data.model.Trip
 import com.tecsup.logismart_movil.data.repository.LogisticsRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class HistoryUiState(
     val loading: Boolean = true,
@@ -14,9 +16,10 @@ data class HistoryUiState(
     val filter: String = ""
 )
 
-class HistoryViewModel : ViewModel() {
-
-    private val repository = LogisticsRepository()
+@HiltViewModel
+class HistoryViewModel @Inject constructor(
+    private val repository: LogisticsRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HistoryUiState())
     val uiState: StateFlow<HistoryUiState> = _uiState
