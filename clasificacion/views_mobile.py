@@ -10,7 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Caja, Despacho, EstadoCarro
+from .models import Caja, Despacho, EstadoCarro, Ubicacion
 
 
 from .authentication import (
@@ -105,4 +105,59 @@ class MobilePlanillasView(APIView):
                 'cajas': cajas_detalles
             })
             
+        return Response(data)
+
+
+class MobileEstantesView(APIView):
+    """Devuelve los estantes del almacén con ocupación real, agrupados por pasillo-estante."""
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from itertools import groupby
+
+        ubicaciones = Ubicacion.objects.all().order_by('pasillo', 'estante')
+
+        # Agrupar por pasillo + estante
+        grupos = {}
+        for ub in ubicaciones:
+            key = (ub.pasillo, ub.estante)
+            if key not in grupos:
+                grupos[key] = []
+            grupos[key].append(ub)
+
+        data = []
+        for idx, ((pasillo, estante_num), slots) in enumerate(sorted(grupos.items()), start=1):
+            total_slots = len(slots)
+            slots_ocupados = sum(1 for s in slots if s.estado_ocupacion)
+            # Cajas activas asignadas a alguna de estas ubicaciones
+            cajas_asignadas = Caja.objects.filter(
+                id_ubicacion__in=[s.pk for s in slots],
+                estado__in=['en_almacen', 'procesada']
+            ).count()
+
+            # Porcentaje de ocupación de slots físicos
+            ocupacion_pct = round((slots_ocupados / total_slots) * 100) if total_slots > 0 else 0
+
+            # Estado legible
+            if ocupacion_pct >= 90:
+                estado = 'Lleno'
+            elif ocupacion_pct >= 50:
+                estado = 'Ocupado'
+            elif ocupacion_pct > 0:
+                estado = 'Parcial'
+            else:
+                estado = 'Disponible'
+
+            data.append({
+                'id': idx,
+                'name': f'Pasillo {pasillo} - Estante {estante_num:02d}',
+                'capacity': total_slots,
+                'current_occupation': slots_ocupados,
+                'assigned_boxes': cajas_asignadas,
+                'occupation_pct': ocupacion_pct,
+                'status': estado,
+                'tipo_estante': slots[0].get_tipo_estante_display() if slots else 'General',
+            })
+
         return Response(data)
