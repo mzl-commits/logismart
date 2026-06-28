@@ -31,6 +31,7 @@ import com.tecsup.logismart_movil.ui.history.TripDetailScreen
 import com.tecsup.logismart_movil.ui.history.TripDetailViewModel
 import com.tecsup.logismart_movil.ui.planillas.PlanillasScreen
 import com.tecsup.logismart_movil.ui.planillas.PlanillasViewModel
+import com.tecsup.logismart_movil.ui.planillas.PdfViewerScreen
 import com.tecsup.logismart_movil.ui.settings.SettingsScreen
 import com.tecsup.logismart_movil.ui.shelves.ShelvesScreen
 import com.tecsup.logismart_movil.ui.shelves.ShelvesViewModel
@@ -97,6 +98,24 @@ fun AppNavGraph(
             PlanillasScreen(
                 state = planillasState,
                 onRefresh = planillasViewModel::loadPlanillas,
+                onBack = { navController.popBackStack() },
+                onViewPdf = { cajas, userId ->
+                    navController.navigate(Routes.PdfViewer.createRoute(cajas, userId))
+                }
+            )
+        }
+        composable(
+            route = Routes.PdfViewer.route,
+            arguments = listOf(
+                navArgument("cajas") { type = NavType.StringType },
+                navArgument("userId") { type = NavType.IntType }
+            )
+        ) { backStackEntry ->
+            val cajas = backStackEntry.arguments?.getString("cajas") ?: ""
+            val userId = backStackEntry.arguments?.getInt("userId") ?: 0
+            PdfViewerScreen(
+                cajas = cajas,
+                userId = userId,
                 onBack = { navController.popBackStack() }
             )
         }

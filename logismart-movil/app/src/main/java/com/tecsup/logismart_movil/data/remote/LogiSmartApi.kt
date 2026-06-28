@@ -37,6 +37,7 @@ data class PlanillaDto(
     @SerializedName("id_planilla") val idPlanilla: Int,
     @SerializedName("fecha_creacion") val fechaCreacion: String,
     @SerializedName("total_cajas") val totalCajas: Int,
+    @SerializedName("operador_id") val operadorId: Int,
     @SerializedName("pdf_url") val pdfUrl: String,
     val cajas: List<BoxDto>,
 )

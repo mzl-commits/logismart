@@ -1,7 +1,6 @@
 package com.tecsup.logismart_movil.ui.planillas
 
-import android.content.Intent
-import android.net.Uri
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,8 +33,8 @@ fun PlanillasScreen(
     state: PlanillasUiState,
     onRefresh: () -> Unit,
     onBack: () -> Unit,
+    onViewPdf: (cajas: String, userId: Int) -> Unit = { _, _ -> },
 ) {
-    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -128,12 +127,8 @@ fun PlanillasScreen(
                         items(state.planillas, key = { it.idPlanilla }) { planilla ->
                             PlanillaItem(
                                 planilla = planilla,
-                                onDownloadPdf = { pdfUrl ->
-                                    val fullUrl = "https://logistica.promube.com$pdfUrl"
-                                    runCatching {
-                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl))
-                                        context.startActivity(intent)
-                                    }
+                                onViewPdf = { cajas, userId ->
+                                    onViewPdf(cajas, userId)
                                 }
                             )
                         }
@@ -147,7 +142,7 @@ fun PlanillasScreen(
 @Composable
 fun PlanillaItem(
     planilla: PlanillaDto,
-    onDownloadPdf: (String) -> Unit,
+    onViewPdf: (cajas: String, userId: Int) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -225,7 +220,10 @@ fun PlanillaItem(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
-                        onClick = { onDownloadPdf(planilla.pdfUrl) },
+                        onClick = {
+                            val cajas = planilla.cajas.joinToString(",") { it.id }
+                            onViewPdf(cajas, planilla.operadorId)
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -233,12 +231,12 @@ fun PlanillaItem(
                         )
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Description,
+                            imageVector = Icons.Default.Visibility,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Ver / Descargar Guía PDF", fontWeight = FontWeight.Bold)
+                        Text("Previsualizar Guía", fontWeight = FontWeight.Bold)
                     }
                 }
             }
