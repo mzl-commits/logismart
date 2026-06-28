@@ -8,6 +8,7 @@ from .views import (
     DespachoViewSet, EstadoCarroViewSet, CategoriaViewSet, ConfigCarroViewSet,
     VehiculoViewSet, DestinoViewSet
 )
+from .views_mobile import MobileDashboardView, MobileLoginView
 
 router = DefaultRouter()
 router.register(r'cajas', CajaViewSet, basename='caja')
@@ -24,5 +25,7 @@ router.register(r'vehiculos', VehiculoViewSet)
 router.register(r'destinos', DestinoViewSet)
 
 urlpatterns = [
+    path('mobile/login/', MobileLoginView.as_view(), name='mobile-login'),
+    path('mobile/dashboard/', MobileDashboardView.as_view(), name='mobile-dashboard'),
     path('', include(router.urls)),
 ]

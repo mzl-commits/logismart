@@ -10,5 +10,5 @@ class LogiSmartApplication : Application() {
     val sessionManager by lazy { SessionManager(this) }
     val api by lazy { ApiClient.create(sessionManager) }
     val authRepository by lazy { AuthRepository(api, sessionManager) }
-    val dashboardRepository by lazy { DashboardRepository() }
+    val dashboardRepository by lazy { DashboardRepository(api) }
 }
