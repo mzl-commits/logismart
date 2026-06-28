@@ -29,12 +29,11 @@ import com.tecsup.logismart_movil.ui.history.HistoryScreen
 import com.tecsup.logismart_movil.ui.history.HistoryViewModel
 import com.tecsup.logismart_movil.ui.history.TripDetailScreen
 import com.tecsup.logismart_movil.ui.history.TripDetailViewModel
-import com.tecsup.logismart_movil.ui.screens.CarCommandsScreen
-import com.tecsup.logismart_movil.ui.screens.CarParamsScreen
+import com.tecsup.logismart_movil.ui.planillas.PlanillasScreen
+import com.tecsup.logismart_movil.ui.planillas.PlanillasViewModel
 import com.tecsup.logismart_movil.ui.settings.SettingsScreen
 import com.tecsup.logismart_movil.ui.shelves.ShelvesScreen
 import com.tecsup.logismart_movil.ui.shelves.ShelvesViewModel
-import com.tecsup.logismart_movil.ui.viewmodel.CarViewModel
 import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,70 +83,22 @@ fun AppNavGraph(
                 onRefresh = dashboardViewModel::refresh,
                 onLogout = authViewModel::logout,
                 onTestNotification = onTestNotification,
-                onNavigateToCarControl = { navController.navigate(Routes.CarControl.route) },
+                onNavigateToPlanillas = { navController.navigate(Routes.Planillas.route) },
                 onNavigateToHistory = { navController.navigate(Routes.History.route) },
                 onNavigateToBoxes = { navController.navigate(Routes.Boxes.route) },
                 onNavigateToShelves = { navController.navigate(Routes.Shelves.route) },
                 onNavigateToSettings = { navController.navigate(Routes.Settings.route) },
             )
         }
-        composable(Routes.CarControl.route) {
-            val carViewModel: CarViewModel = hiltViewModel()
-            val connectionState by carViewModel.connectionState.collectAsState()
-            val telemetry by carViewModel.telemetryFlow.collectAsState()
-            val carState by carViewModel.carState.collectAsState()
-            val uiState by carViewModel.uiState.collectAsState()
+        composable(Routes.Planillas.route) {
+            val planillasViewModel: PlanillasViewModel = hiltViewModel()
+            val planillasState by planillasViewModel.uiState.collectAsState()
 
-            var selectedTab by remember { mutableStateOf(0) }
-            val tabs = listOf("Telemetría", "Controles")
-
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = { Text("LogiSmart AGV Telemetría") },
-                        navigationIcon = {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = { carViewModel.refreshState() }) {
-                                Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
-                            }
-                        }
-                    )
-                }
-            ) { innerPadding ->
-                Column(Modifier.padding(innerPadding)) {
-                    TabRow(selectedTabIndex = selectedTab) {
-                        tabs.forEachIndexed { index, title ->
-                            Tab(
-                                selected = selectedTab == index,
-                                onClick = { selectedTab = index },
-                                text = { Text(title) }
-                            )
-                        }
-                    }
-                    Box(Modifier.fillMaxSize()) {
-                        when (selectedTab) {
-                            0 -> CarParamsScreen(
-                                connectionState = connectionState,
-                                telemetry = telemetry,
-                                carState = carState,
-                                onRefresh = { carViewModel.refreshState() }
-                            )
-                            1 -> CarCommandsScreen(
-                                carState = carState,
-                                uiState = uiState,
-                                onMover = { x, y, caja -> carViewModel.moverCarro(x, y, caja) },
-                                onAvanzar = { carViewModel.avanzar() },
-                                onConfirmarParada = { usrId -> carViewModel.confirmarParada(usrId) },
-                                onReset = { carViewModel.reset() }
-                            )
-                        }
-                    }
-                }
-            }
+            PlanillasScreen(
+                state = planillasState,
+                onRefresh = planillasViewModel::loadPlanillas,
+                onBack = { navController.popBackStack() }
+            )
         }
         composable(Routes.History.route) {
             val historyViewModel: HistoryViewModel = hiltViewModel()

@@ -13,6 +13,7 @@ import com.tecsup.logismart_movil.data.repository.AuthRepository
 import com.tecsup.logismart_movil.data.repository.CarRepositoryImpl
 import com.tecsup.logismart_movil.data.repository.DashboardRepository
 import com.tecsup.logismart_movil.data.repository.LogisticsRepository
+import com.tecsup.logismart_movil.data.repository.PlanillaRepository
 import com.tecsup.logismart_movil.domain.repository.CarRepository
 import dagger.Binds
 import dagger.Module
@@ -136,6 +137,12 @@ object NetworkModule {
     @Singleton
     fun provideLogisticsRepository(api: LogisticsApiService): LogisticsRepository {
         return LogisticsRepository(api)
+    }
+
+    @Provides
+    @Singleton
+    fun providePlanillaRepository(api: LogiSmartApi): PlanillaRepository {
+        return PlanillaRepository(api)
     }
 }
 

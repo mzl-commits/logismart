@@ -21,7 +21,7 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocalShipping
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -53,7 +53,7 @@ fun DashboardScreen(
     onRefresh: () -> Unit,
     onLogout: () -> Unit,
     onTestNotification: () -> Unit,
-    onNavigateToCarControl: () -> Unit,
+    onNavigateToPlanillas: () -> Unit,
     onNavigateToHistory: () -> Unit,
     onNavigateToBoxes: () -> Unit,
     onNavigateToShelves: () -> Unit,
@@ -143,30 +143,13 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     SummaryCard(
-                        title = "Estado del carro",
-                        value = state.summary.carStatus,
-                        icon = Icons.Default.SmartToy,
+                        title = "Mis Planillas",
+                        value = state.summary.planillasCount.toString(),
+                        icon = Icons.AutoMirrored.Filled.Assignment,
                         accent = MaterialTheme.colorScheme.primary,
-                        onClick = onNavigateToCarControl,
+                        onClick = onNavigateToPlanillas,
                         modifier = Modifier.weight(1f),
                     )
-                    SummaryCard(
-                        title = "Alertas activas",
-                        value = state.summary.activeAlerts.toString(),
-                        icon = Icons.Default.Notifications,
-                        accent = if (state.summary.activeAlerts > 0) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.secondary
-                        },
-                        onClick = onNavigateToCarControl,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
                     SummaryCard(
                         title = "Cajas pendientes",
                         value = state.summary.pendingBoxes.toString(),
@@ -175,12 +158,25 @@ fun DashboardScreen(
                         onClick = onNavigateToBoxes,
                         modifier = Modifier.weight(1f),
                     )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     SummaryCard(
                         title = "Despachos",
                         value = state.summary.completedDispatches.toString(),
                         icon = Icons.Default.LocalShipping,
                         accent = MaterialTheme.colorScheme.primary,
                         onClick = onNavigateToHistory,
+                        modifier = Modifier.weight(1f),
+                    )
+                    SummaryCard(
+                        title = "Estantes",
+                        value = "Ver",
+                        icon = Icons.Default.Inventory2,
+                        accent = MaterialTheme.colorScheme.secondary,
+                        onClick = onNavigateToShelves,
                         modifier = Modifier.weight(1f),
                     )
                 }
@@ -203,8 +199,7 @@ fun DashboardScreen(
                                     .fillMaxWidth()
                                     .clickable {
                                         when (action) {
-                                            "Ver estado" -> onNavigateToCarControl()
-                                            "Alertas" -> onNavigateToShelves()
+                                            "Ver planillas" -> onNavigateToPlanillas()
                                             "Cerrar sesión" -> onLogout()
                                         }
                                     }

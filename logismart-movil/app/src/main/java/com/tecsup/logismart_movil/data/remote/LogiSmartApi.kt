@@ -18,11 +18,27 @@ data class LoginResponse(
 )
 
 data class DashboardResponse(
-    @SerializedName("car_status") val carStatus: String,
-    @SerializedName("active_alerts") val activeAlerts: Int,
     @SerializedName("pending_boxes") val pendingBoxes: Int,
     @SerializedName("completed_dispatches") val completedDispatches: Int,
+    @SerializedName("planillas_count") val planillasCount: Int,
     @SerializedName("quick_actions") val quickActions: List<String>,
+)
+
+data class BoxDto(
+    val id: String,
+    val producto: String,
+    val estado: String,
+    val prioridad: String,
+    val categoria: String,
+    val ubicacion: String,
+)
+
+data class PlanillaDto(
+    @SerializedName("id_planilla") val idPlanilla: Int,
+    @SerializedName("fecha_creacion") val fechaCreacion: String,
+    @SerializedName("total_cajas") val totalCajas: Int,
+    @SerializedName("pdf_url") val pdfUrl: String,
+    val cajas: List<BoxDto>,
 )
 
 data class ApiError(val detail: String?)
@@ -33,4 +49,7 @@ interface LogiSmartApi {
 
     @GET("api/mobile/dashboard/")
     suspend fun dashboard(): Response<DashboardResponse>
+
+    @GET("api/mobile/planillas/")
+    suspend fun getPlanillas(): Response<List<PlanillaDto>>
 }
