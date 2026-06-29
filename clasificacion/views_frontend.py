@@ -238,12 +238,40 @@ def planillas_historial(request):
     })
 
 
-@login_required
 def ver_pdf_lote(request):
+    from django.contrib.auth import get_user_model
+    from django.core import signing
+    from django.shortcuts import redirect
+    
+    token = request.GET.get('token', '')
+    user = None
+    
+    if token:
+        try:
+            payload = signing.loads(
+                token,
+                salt='logismart.mobile.auth',
+                max_age=8 * 60 * 60,
+            )
+            user = get_user_model().objects.get(
+                username=payload['username'],
+                is_active=True,
+            )
+        except Exception:
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden("Token de previsualización inválido o expirado.")
+    elif request.user.is_authenticated:
+        user = request.user
+        
+    if not user:
+        return redirect(f'/login/?next={request.get_full_path()}')
+
     cajas_param = request.GET.get('cajas', '')
     usuario_id = request.GET.get('usuario_id', '')
     
     download_url = f"/api/cajas/descargar_pdf_lote/?cajas={cajas_param}&usuario_id={usuario_id}"
+    if token:
+        download_url += f"&token={token}"
     
     return render(request, 'clasificacion/ver_pdf.html', {
         'pdf_url': download_url,
