@@ -2,6 +2,7 @@ package com.tecsup.logismart_movil.ui.boxes
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -36,62 +37,76 @@ fun BoxesScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0F172A))
-            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.background)
+            .padding(horizontal = 16.dp)
     ) {
-        Text(
-            text = "Cajas activas",
-            style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-            color = Color.White
-        )
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Estado Filtros
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // Contenedor unificado de Filtros
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            ),
+            shape = RoundedCornerShape(14.dp)
         ) {
-            statesList.forEach { status ->
-                val selected = state.selectedStatus == status
-                FilterChip(
-                    selected = selected,
-                    onClick = { viewModel.selectStatus(status) },
-                    label = { Text(status) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        containerColor = Color(0xFF1E293B),
-                        labelColor = Color(0xFF94A3B8),
-                        selectedContainerColor = MaterialTheme.colorScheme.primary,
-                        selectedLabelColor = Color.White
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Filtro Estado
+                Column {
+                    Text(
+                        text = "Estado de la caja",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
                     )
-                )
-            }
-        }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        statesList.forEach { status ->
+                            val selected = state.selectedStatus == status
+                            FilterChip(
+                                selected = selected,
+                                onClick = { viewModel.selectStatus(status) },
+                                label = { Text(status) }
+                            )
+                        }
+                    }
+                }
 
-        Spacer(modifier = Modifier.height(8.dp))
+                Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
 
-        // Categoria Filtros
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            categoriesList.forEach { category ->
-                val selected = state.selectedCategory == category
-                FilterChip(
-                    selected = selected,
-                    onClick = { viewModel.selectCategory(category) },
-                    label = { Text(category) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        containerColor = Color(0xFF1E293B),
-                        labelColor = Color(0xFF94A3B8),
-                        selectedContainerColor = MaterialTheme.colorScheme.secondary,
-                        selectedLabelColor = Color.White
+                // Filtro Categoría
+                Column {
+                    Text(
+                        text = "Categoría del producto",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = FontWeight.Bold
                     )
-                )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        categoriesList.forEach { category ->
+                            val selected = state.selectedCategory == category
+                            FilterChip(
+                                selected = selected,
+                                onClick = { viewModel.selectCategory(category) },
+                                label = { Text(category) }
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -99,12 +114,16 @@ fun BoxesScreen(
 
         if (state.loading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                CircularProgressIndicator()
             }
         } else {
             if (state.filteredBoxes.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No se encontraron cajas con estos filtros.", color = Color(0xFF94A3B8))
+                    Text(
+                        text = "No se encontraron cajas con estos filtros.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             } else {
                 LazyColumn(
@@ -125,11 +144,26 @@ fun BoxesScreen(
 private fun BoxCard(
     box: LogisticBox
 ) {
-    val statusColor = when (box.estado.lowercase().replace(" ", "_")) {
-        "pendiente" -> Color(0xFFEF4444) // Rojo
-        "en_transito", "en_tránsito" -> Color(0xFFF59E0B) // Ámbar/Naranja
-        "almacenada" -> Color(0xFF10B981) // Verde
-        else -> Color(0xFF64748B)
+    val isDark = isSystemInDarkTheme()
+    
+    // Configuración de colores del estado adaptativos
+    val (statusBg, statusFg) = when (box.estado.lowercase().replace(" ", "_")) {
+        "pendiente" -> Pair(
+            MaterialTheme.colorScheme.errorContainer,
+            MaterialTheme.colorScheme.onErrorContainer
+        )
+        "en_transito", "en_tránsito" -> Pair(
+            if (isDark) Color(0xFF78350F) else Color(0xFFFEF3C7),
+            if (isDark) Color(0xFFFDE68A) else Color(0xFF92400E)
+        )
+        "almacenada" -> Pair(
+            if (isDark) Color(0xFF064E3B) else Color(0xFFD1FAE5),
+            if (isDark) Color(0xFF6EE7B7) else Color(0xFF065F46)
+        )
+        else -> Pair(
+            MaterialTheme.colorScheme.surfaceVariant,
+            MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 
     val categoryEmoji = when (box.categoria.lowercase()) {
@@ -146,9 +180,13 @@ private fun BoxCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E293B)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, 
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+        )
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -161,18 +199,18 @@ private fun BoxCard(
                 Text(
                     text = box.id,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = statusColor.copy(alpha = 0.15f),
-                    contentColor = statusColor
+                    color = statusBg,
+                    contentColor = statusFg
                 ) {
                     Text(
                         text = box.estado.uppercase().replace("_", " "),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold)
                     )
                 }
             }
@@ -181,11 +219,11 @@ private fun BoxCard(
 
             Text(
                 text = "$categoryEmoji Producto: ${box.producto}",
-                color = Color(0xFFE2E8F0),
+                color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.bodyMedium
             )
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -193,17 +231,17 @@ private fun BoxCard(
             ) {
                 Text(
                     text = "Peso: ${box.pesoKg} kg",
-                    color = Color(0xFF94A3B8),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
                     text = "Cant: ${box.cantidad}",
-                    color = Color(0xFF94A3B8),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
                     text = "Cat: ${box.categoria}",
-                    color = Color(0xFF94A3B8),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
@@ -212,7 +250,7 @@ private fun BoxCard(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = "📍 Ubicación: ${box.ubicacion}",
-                    color = Color(0xFF38BDF8),
+                    color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
                 )
             }
@@ -221,7 +259,7 @@ private fun BoxCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "🤖 Carro: ${box.carroAsignado}",
-                    color = Color(0xFFA78BFA),
+                    color = MaterialTheme.colorScheme.secondary,
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
                 )
             }
@@ -230,17 +268,17 @@ private fun BoxCard(
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = "Frágil",
-                        tint = Color(0xFFF59E0B),
+                        tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
                         text = "CUIDADO: PRODUCTO FRÁGIL",
-                        color = Color(0xFFF59E0B),
+                        color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
                     )
                 }
