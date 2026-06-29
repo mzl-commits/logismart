@@ -111,11 +111,11 @@ data class DestinoDto(
 )
 
 data class UserActionRequest(
-    @SerializedName("id_usuario") val idUsuario: Int
+    @SerializedName("id_usuario") val idUsuario: Int?
 )
 
 data class DespachoRequest(
-    @SerializedName("id_usuario") val idUsuario: Int,
+    @SerializedName("id_usuario") val idUsuario: Int?,
     @SerializedName("transporte_placa") val transportePlaca: String,
     val destino: String
 )
