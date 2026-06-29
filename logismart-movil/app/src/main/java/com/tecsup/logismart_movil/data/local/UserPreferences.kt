@@ -18,6 +18,10 @@ class UserPreferences(
         val SERVER_URL = stringPreferencesKey("server_url")
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val DARK_MODE_ENABLED = booleanPreferencesKey("dark_mode_enabled")
+        val SHOW_NOTIFICATIONS_WIDGET = booleanPreferencesKey("show_notifications_widget")
+        val SHOW_PRIORITY_WIDGET = booleanPreferencesKey("show_priority_widget")
+        val COMPACT_DASHBOARD = booleanPreferencesKey("compact_dashboard")
+        val PRIORITY_WIDGET_FIRST = booleanPreferencesKey("priority_widget_first")
     }
 
     val userName: Flow<String> = context.settingsDataStore.data.map { preferences ->
@@ -35,6 +39,10 @@ class UserPreferences(
     val darkModeEnabled: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
         preferences[Keys.DARK_MODE_ENABLED] ?: false
     }
+    val showNotificationsWidget: Flow<Boolean> = context.settingsDataStore.data.map { it[Keys.SHOW_NOTIFICATIONS_WIDGET] ?: true }
+    val showPriorityWidget: Flow<Boolean> = context.settingsDataStore.data.map { it[Keys.SHOW_PRIORITY_WIDGET] ?: true }
+    val compactDashboard: Flow<Boolean> = context.settingsDataStore.data.map { it[Keys.COMPACT_DASHBOARD] ?: false }
+    val priorityWidgetFirst: Flow<Boolean> = context.settingsDataStore.data.map { it[Keys.PRIORITY_WIDGET_FIRST] ?: false }
 
     suspend fun saveUserName(value: String) {
         context.settingsDataStore.edit { preferences ->
@@ -59,4 +67,8 @@ class UserPreferences(
             preferences[Keys.DARK_MODE_ENABLED] = value
         }
     }
+    suspend fun saveShowNotificationsWidget(value: Boolean) { context.settingsDataStore.edit { it[Keys.SHOW_NOTIFICATIONS_WIDGET] = value } }
+    suspend fun saveShowPriorityWidget(value: Boolean) { context.settingsDataStore.edit { it[Keys.SHOW_PRIORITY_WIDGET] = value } }
+    suspend fun saveCompactDashboard(value: Boolean) { context.settingsDataStore.edit { it[Keys.COMPACT_DASHBOARD] = value } }
+    suspend fun savePriorityWidgetFirst(value: Boolean) { context.settingsDataStore.edit { it[Keys.PRIORITY_WIDGET_FIRST] = value } }
 }

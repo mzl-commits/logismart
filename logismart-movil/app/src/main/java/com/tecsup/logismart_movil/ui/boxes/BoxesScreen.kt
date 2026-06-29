@@ -1,10 +1,9 @@
 package com.tecsup.logismart_movil.ui.boxes
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,129 +16,63 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tecsup.logismart_movil.data.model.LogisticBox
+import com.tecsup.logismart_movil.ui.components.LoadingSkeleton
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BoxesScreen(
-    viewModel: BoxesViewModel = viewModel()
+    viewModel: BoxesViewModel = viewModel(),
+    onBoxClick: (String) -> Unit = {},
 ) {
-    val context = LocalContext.current
     val state by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     
     var dispatchBoxId by remember { mutableStateOf<String?>(null) }
+    var showFilters by remember { mutableStateOf(false) }
     
     val statesList = listOf("Todas", "Pendiente", "En tránsito", "Almacenada")
     val categoriesList = listOf("Todas cat.", "Alimento", "Electrónica", "Herramienta", "Otro", "Químico", "Textil")
 
+    Box(modifier = Modifier.fillMaxSize()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 16.dp)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Contenedor unificado de Filtros
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-            ),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(
-                modifier = Modifier.padding(14.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Filtro Estado
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Tune,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Estado de la caja",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        statesList.forEach { status ->
-                            val selected = state.selectedStatus == status
-                            LogismartFilterChip(
-                                selected = selected,
-                                label = status,
-                                onClick = { viewModel.selectStatus(status) }
-                            )
-                        }
-                    }
-                }
-
-                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-
-                // Filtro Categoría
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Category,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Categoría del producto",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        categoriesList.forEach { category ->
-                            val selected = state.selectedCategory == category
-                            LogismartFilterChip(
-                                selected = selected,
-                                label = category,
-                                onClick = { viewModel.selectCategory(category) }
-                            )
-                        }
-                    }
-                }
+            Column {
+                Text("${state.filteredBoxes.size} cajas", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    if (state.selectedStatus == "Todas" && state.selectedCategory == "Todas cat.") "Mostrando todo el inventario" else "Filtros aplicados",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            FilledTonalButton(onClick = { showFilters = true }, shape = RoundedCornerShape(12.dp)) {
+                Icon(Icons.Default.FilterAlt, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(7.dp))
+                Text("Filtrar")
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
         if (state.loading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            LoadingSkeleton(modifier = Modifier.fillMaxWidth(), rows = 3)
         } else {
             if (state.filteredBoxes.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -158,18 +91,19 @@ fun BoxesScreen(
                     items(state.filteredBoxes, key = { it.id }) { box ->
                         BoxCard(
                             box = box,
+                            onOpen = { onBoxClick(box.id) },
                             onProcesar = {
                                 viewModel.procesarBox(
                                     boxId = box.id,
-                                    onSuccess = { Toast.makeText(context, "Caja ${box.id} procesada ✓", Toast.LENGTH_SHORT).show() },
-                                    onError = { err -> Toast.makeText(context, err, Toast.LENGTH_LONG).show() }
+                                    onSuccess = { scope.launch { snackbarHostState.showSnackbar("Caja ${box.id} procesada correctamente") } },
+                                    onError = { err -> scope.launch { snackbarHostState.showSnackbar(err) } }
                                 )
                             },
                             onAlmacenar = {
                                 viewModel.confirmarAlmacenada(
                                     boxId = box.id,
-                                    onSuccess = { Toast.makeText(context, "Caja ${box.id} almacenada ✓", Toast.LENGTH_SHORT).show() },
-                                    onError = { err -> Toast.makeText(context, err, Toast.LENGTH_LONG).show() }
+                                    onSuccess = { scope.launch { snackbarHostState.showSnackbar("Caja ${box.id} almacenada correctamente") } },
+                                    onError = { err -> scope.launch { snackbarHostState.showSnackbar(err) } }
                                 )
                             },
                             onDespachar = {
@@ -180,6 +114,30 @@ fun BoxesScreen(
                 }
             }
         }
+    }
+
+    if (showFilters) {
+        ModalBottomSheet(onDismissRequest = { showFilters = false }) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column { Text("Filtrar cajas", style = MaterialTheme.typography.titleLarge); Text("Refina el inventario visible", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    TextButton(onClick = { viewModel.selectStatus("Todas"); viewModel.selectCategory("Todas cat.") }) { Text("Limpiar") }
+                }
+                FilterSection("Estado", Icons.Default.Tune, statesList, state.selectedStatus, viewModel::selectStatus)
+                FilterSection("Categoría", Icons.Default.Category, categoriesList, state.selectedCategory, viewModel::selectCategory)
+                Button(onClick = { showFilters = false }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(14.dp)) {
+                    Text("Ver ${state.filteredBoxes.size} cajas")
+                }
+            }
+        }
+    }
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
+        )
     }
 
     // Modal de Confirmación de Despacho
@@ -228,16 +186,20 @@ fun BoxesScreen(
                             placa = selectedPlaca,
                             destino = selectedDestino,
                             onSuccess = {
-                                Toast.makeText(context, "Caja $boxId despachada ✓", Toast.LENGTH_SHORT).show()
+                                scope.launch { snackbarHostState.showSnackbar("Caja $boxId despachada correctamente") }
                                 dispatchBoxId = null
                             },
                             onError = { err ->
-                                Toast.makeText(context, err, Toast.LENGTH_LONG).show()
+                                scope.launch { snackbarHostState.showSnackbar(err) }
                             }
                         )
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
+                    shape = RoundedCornerShape(14.dp),
+                    contentPadding = PaddingValues(horizontal = 18.dp, vertical = 13.dp)
                 ) {
+                    Icon(Icons.Default.LocalShipping, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
                     Text("Confirmar Salida", color = Color.White)
                 }
             },
@@ -331,11 +293,12 @@ fun DropdownSelector(
 @Composable
 private fun BoxCard(
     box: LogisticBox,
+    onOpen: () -> Unit,
     onProcesar: () -> Unit,
     onAlmacenar: () -> Unit,
     onDespachar: () -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val isDark = MaterialTheme.colorScheme.background.luminance() < .5f
     
     val (statusBg, statusFg) = when (box.estado.lowercase().replace(" ", "_")) {
         "pendiente" -> Pair(
@@ -355,24 +318,25 @@ private fun BoxCard(
             MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+    val animatedStatusBg by animateColorAsState(statusBg, label = "boxStatusBackground")
+    val animatedStatusFg by animateColorAsState(statusFg, label = "boxStatusContent")
 
-    val categoryEmoji = when (box.categoria.lowercase()) {
-        "alimento" -> "🍎"
-        "electronica", "electrónica" -> "💻"
-        "herramienta" -> "🔧"
-        "otro" -> "📦"
-        "quimico", "químico" -> "🧪"
-        "textil" -> "👕"
-        else -> "📦"
+    val categoryIcon = when (box.categoria.lowercase()) {
+        "alimento" -> Icons.Default.Restaurant
+        "electronica", "electrónica" -> Icons.Default.Devices
+        "herramienta" -> Icons.Default.Build
+        "quimico", "químico" -> Icons.Default.Science
+        "textil" -> Icons.Default.Checkroom
+        else -> Icons.Default.Inventory2
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
+        modifier = Modifier.fillMaxWidth().animateContentSize().clickable(onClick = onOpen),
+            shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         border = BorderStroke(
             1.dp, 
             MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -394,8 +358,8 @@ private fun BoxCard(
                 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = statusBg,
-                    contentColor = statusFg
+                    color = animatedStatusBg,
+                    contentColor = animatedStatusFg
                 ) {
                     Text(
                         text = box.estado.uppercase().replace("_", " "),
@@ -407,11 +371,10 @@ private fun BoxCard(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text = "$categoryEmoji Producto: ${box.producto}",
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Icon(categoryIcon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                Text("Producto: ${box.producto}", color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyMedium)
+            }
 
             Spacer(modifier = Modifier.height(6.dp))
 
@@ -438,20 +401,18 @@ private fun BoxCard(
 
             if (box.ubicacion.isNotBlank() && box.ubicacion != "Sin ubicación") {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "📍 Ubicación: ${box.ubicacion}",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.LocationOn, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                    Text("Ubicación: ${box.ubicacion}", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
+                }
             }
 
             if (box.carroAsignado.isNotBlank() && box.carroAsignado != "Sin asignar") {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "🤖 Carro: ${box.carroAsignado}",
-                    color = MaterialTheme.colorScheme.secondary,
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Icon(Icons.Default.SmartToy, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.secondary)
+                    Text("Carro: ${box.carroAsignado}", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
+                }
             }
 
             if (box.esFragil) {
@@ -484,7 +445,7 @@ private fun BoxCard(
                         onClick = onProcesar,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -500,7 +461,7 @@ private fun BoxCard(
                         onClick = onAlmacenar,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -516,18 +477,32 @@ private fun BoxCard(
                         onClick = onDespachar,
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.LocalShipping, contentDescription = null, tint = Color.White)
-                            Text("Autorizar Despacho", color = Color.White, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.LocalShipping, contentDescription = null)
+                            Text("Autorizar Despacho", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun FilterSection(title: String, icon: ImageVector, options: List<String>, selected: String, onSelect: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.width(8.dp)); Text(title, style = MaterialTheme.typography.titleSmall)
+        }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEach { option -> FilterChip(selected = selected == option, onClick = { onSelect(option) }, label = { Text(option) }) }
         }
     }
 }

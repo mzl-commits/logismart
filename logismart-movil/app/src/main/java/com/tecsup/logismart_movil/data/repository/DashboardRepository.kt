@@ -26,6 +26,8 @@ class DashboardRepository(private val api: LogiSmartApi) {
                                 pendingBoxes = body.pendingBoxes,
                                 completedDispatches = body.completedDispatches,
                                 planillasCount = body.planillasCount,
+                                completedPlanillas = body.completedPlanillas,
+                                isAdmin = body.isAdmin,
                                 quickActions = body.quickActions,
                             )
                         )

@@ -26,7 +26,7 @@ class AuthRepository(
                 onSuccess = { response ->
                     if (response.isSuccessful && response.body() != null) {
                         val login = response.body()!!
-                        sessionManager.save(login.token, login.username, login.fullName)
+                        sessionManager.save(login.token, login.username, login.fullName, login.role)
                         ApiResult.Success(login)
                     } else {
                         ApiResult.Error(

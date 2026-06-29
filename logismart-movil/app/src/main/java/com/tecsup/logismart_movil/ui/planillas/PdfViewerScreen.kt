@@ -84,13 +84,13 @@ fun PdfViewerScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Atrás",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -108,7 +108,7 @@ fun PdfViewerScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        CircularProgressIndicator(color = Color.White)
                         Text(
                             text = "Generando guía en PDF...",
                             color = Color.White,

@@ -1,6 +1,9 @@
 package com.tecsup.logismart_movil.ui.shelves
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -8,27 +11,35 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.tecsup.logismart_movil.domain.model.Shelf
 import com.tecsup.logismart_movil.domain.model.Slot
+import com.tecsup.logismart_movil.ui.components.LoadingSkeleton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShelvesScreen(
     viewModel: ShelvesViewModel = hiltViewModel(),
     onBack: () -> Unit = {},
+    showBack: Boolean = true,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -37,15 +48,21 @@ fun ShelvesScreen(
             TopAppBar(
                 title = { Text("Estantería de Almacén", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                    if (showBack) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                        }
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.loadShelves() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                )
             )
         }
     ) { paddingValues ->
@@ -56,7 +73,10 @@ fun ShelvesScreen(
         ) {
             when {
                 uiState.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    LoadingSkeleton(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        rows = 3
+                    )
                 }
                 else -> {
                     LazyColumn(
@@ -84,6 +104,28 @@ fun ShelvesScreen(
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.error
                                     )
+                                }
+                            }
+                        }
+
+                        item {
+                            val totalCapacity = uiState.shelves.sumOf { it.capacity }
+                            val occupied = uiState.shelves.sumOf { it.currentOccupation }
+                            Surface(
+                                color = MaterialTheme.colorScheme.primaryContainer,
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Inventory2, null, Modifier.size(28.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.width(12.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text("Estado del almacén", fontWeight = FontWeight.Bold)
+                                        Text("${uiState.shelves.size} estantes disponibles", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text("$occupied/$totalCapacity", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                                        Text("ocupadas", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
                                 }
                             }
                         }
@@ -120,15 +162,26 @@ fun ShelfCard(
     var isExpanded by remember { mutableStateOf(false) }
     val progress = (shelf.occupationPercentage / 100f).coerceIn(0f, 1f)
     val progressColor = getOccupationColor(shelf.status)
-    val backgroundColor = getOccupationBackgroundColor(shelf.status)
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        animationSpec = tween(260),
+        label = "shelfChevron"
+    )
+    val statusIcon = when (shelf.status) {
+        "Lleno" -> Icons.Default.WarningAmber
+        "Ocupado", "Parcial" -> Icons.Default.Inventory2
+        else -> Icons.Default.CheckCircle
+    }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .animateContentSize()
             .clickable { isExpanded = !isExpanded },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 5.dp)
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, progressColor.copy(alpha = .28f))
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -139,6 +192,13 @@ fun ShelfCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
+                Surface(
+                    color = progressColor.copy(alpha = .12f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(statusIcon, null, Modifier.padding(10.dp).size(22.dp), tint = progressColor)
+                }
+                Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = shelf.name,
@@ -164,9 +224,10 @@ fun ShelfCard(
                 ) {
                     OccupationBadge(status = shelf.status, color = progressColor)
                     Icon(
-                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        imageVector = Icons.Default.ExpandMore,
                         contentDescription = "Expandir/Colapsar",
-                        tint = progressColor
+                        tint = progressColor,
+                        modifier = Modifier.rotate(chevronRotation)
                     )
                 }
             }
@@ -212,16 +273,31 @@ fun ShelfGrid(slots: List<Slot>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF0F172A), shape = RoundedCornerShape(12.dp))
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .45f), RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text(
-            text = "Estructura Física (Adelante y Posterior)",
-            style = MaterialTheme.typography.labelMedium,
-            color = Color(0xFF38BDF8),
-            fontWeight = FontWeight.Bold
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(10.dp)) {
+                Icon(
+                    Icons.Default.GridView,
+                    contentDescription = null,
+                    modifier = Modifier.padding(8.dp).size(18.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Estructura física", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                Text("Vista frontal y posterior", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            GridLegend(color = Color(0xFF10B981), label = "Disponible")
+            GridLegend(color = MaterialTheme.colorScheme.error, label = "Ocupado")
+        }
 
         for (nivel in listOf(3, 2, 1)) {
             val nivelSlots = slotsByLevel[nivel] ?: emptyList()
@@ -234,14 +310,15 @@ fun ShelfGrid(slots: List<Slot>) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFF1E293B), shape = RoundedCornerShape(8.dp))
-                    .padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = "Nivel $nivel",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.LightGray,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.SemiBold
                 )
 
@@ -266,23 +343,37 @@ fun ShelfGrid(slots: List<Slot>) {
 }
 
 @Composable
+private fun GridLegend(color: Color, label: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(8.dp).background(color, CircleShape))
+        Spacer(Modifier.width(6.dp))
+        Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
 fun SlotCell(slot: Slot?, label: String, modifier: Modifier = Modifier) {
     if (slot == null) {
-        Box(modifier = modifier.height(38.dp))
+        Box(
+            modifier = modifier
+                .height(44.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .35f), RoundedCornerShape(10.dp))
+        )
         return
     }
 
     val isOcupado = slot.estadoOcupacion
-    val bgColor = if (isOcupado) Color(0xFF1E293B) else Color(0xFF065F46)
-    val borderColor = if (isOcupado) Color(0xFF475569) else Color(0xFF10B981)
-    val textColor = if (isOcupado) Color(0xFF94A3B8) else Color(0xFFA7F3D0)
+    val availableColor = Color(0xFF059669)
+    val bgColor = if (isOcupado) MaterialTheme.colorScheme.errorContainer.copy(alpha = .42f) else availableColor.copy(alpha = .10f)
+    val borderColor = if (isOcupado) MaterialTheme.colorScheme.error.copy(alpha = .30f) else availableColor.copy(alpha = .45f)
+    val textColor = if (isOcupado) MaterialTheme.colorScheme.onSurfaceVariant else Color(0xFF047857)
 
     Box(
         modifier = modifier
-            .height(38.dp)
-            .background(bgColor, shape = RoundedCornerShape(6.dp))
-            .border(1.dp, borderColor, shape = RoundedCornerShape(6.dp))
-            .padding(horizontal = 8.dp),
+            .height(44.dp)
+            .background(bgColor, shape = RoundedCornerShape(10.dp))
+            .border(1.dp, borderColor, shape = RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -294,14 +385,15 @@ fun SlotCell(slot: Slot?, label: String, modifier: Modifier = Modifier) {
                 text = label,
                 color = textColor,
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
             )
             Box(
                 modifier = Modifier
                     .size(8.dp)
                     .background(
-                        color = if (isOcupado) Color(0xFFEF4444) else Color(0xFF10B981),
-                        shape = RoundedCornerShape(50)
+                        color = if (isOcupado) MaterialTheme.colorScheme.error else availableColor,
+                        shape = CircleShape
                     )
             )
         }

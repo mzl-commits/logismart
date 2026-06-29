@@ -24,7 +24,7 @@ fun LoadingIndicator(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(strokeWidth = 3.dp)
 
         Text(
             text = message,

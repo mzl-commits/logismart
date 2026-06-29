@@ -30,7 +30,7 @@ class NotificationHelper(private val context: Context) {
         }
     }
 
-    fun showLogisticsAlert() {
+    fun showLogisticsAlert(pendingBoxes: Int = 0) {
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(
@@ -50,13 +50,18 @@ class NotificationHelper(private val context: Context) {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
+        val detail = if (pendingBoxes > 0) {
+            if (pendingBoxes == 1) "Tienes 1 caja pendiente por procesar" else "Tienes $pendingBoxes cajas pendientes por procesar"
+        } else {
+            "La operación está al día y no registra cajas pendientes"
+        }
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_logismart)
-            .setContentTitle("Alerta LogiSmart")
-            .setContentText("Evento logístico detectado en el sistema")
+            .setContentTitle("Resumen operativo LogiSmart")
+            .setContentText(detail)
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("Evento logístico detectado en el sistema")
+                    .bigText(detail)
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)

@@ -4,6 +4,8 @@ data class DashboardSummary(
     val pendingBoxes: Int = 0,
     val completedDispatches: Int = 0,
     val planillasCount: Int = 0,
+    val completedPlanillas: Int = 0,
+    val isAdmin: Boolean = false,
     val quickActions: List<String> = emptyList(),
 )
 

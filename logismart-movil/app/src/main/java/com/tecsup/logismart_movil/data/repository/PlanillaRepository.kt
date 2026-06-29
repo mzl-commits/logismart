@@ -36,6 +36,15 @@ class PlanillaRepository(private val api: LogiSmartApi) {
             },
         )
 
+    suspend fun completarPlanilla(id: Int): ApiResult<Unit> =
+        runCatching { api.completarPlanilla(id) }.fold(
+            onSuccess = { response ->
+                if (response.isSuccessful) ApiResult.Success(Unit)
+                else ApiResult.Error(errorMessage(response.errorBody()?.string(), "No fue posible completar la planilla."))
+            },
+            onFailure = { ApiResult.Error("No se pudo conectar con el servidor LogiSmart.") },
+        )
+
     suspend fun downloadPdfLote(cajas: String, userId: Int, token: String): ApiResult<okhttp3.ResponseBody> =
         runCatching { api.descargarPdfLote(cajas, userId, token) }.fold(
             onSuccess = { response ->

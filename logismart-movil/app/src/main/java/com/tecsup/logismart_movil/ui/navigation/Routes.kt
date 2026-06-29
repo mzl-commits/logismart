@@ -11,6 +11,9 @@ sealed class Routes(val route: String) {
     object Boxes : Routes("boxes")
     object Shelves : Routes("shelves")
     object Settings : Routes("settings")
+    object Notifications : Routes("notifications")
+    object Profile : Routes("profile")
+    object BoxDetail : Routes("box/{boxId}") { fun createRoute(boxId: String) = "box/$boxId" }
     object PdfViewer : Routes("pdf_viewer/{cajas}/{userId}") {
         fun createRoute(cajas: String, userId: Int) = "pdf_viewer/$cajas/$userId"
     }

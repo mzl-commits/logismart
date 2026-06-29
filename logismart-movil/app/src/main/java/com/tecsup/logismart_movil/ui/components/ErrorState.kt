@@ -5,6 +5,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +34,14 @@ fun ErrorState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.errorContainer) {
+            Icon(
+                Icons.Default.ErrorOutline,
+                contentDescription = null,
+                modifier = Modifier.padding(16.dp).size(30.dp),
+                tint = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
         Text(
             text = "Ocurrió un problema",
             style = MaterialTheme.typography.titleMedium,
@@ -42,6 +57,8 @@ fun ErrorState(
 
         if (onRetry != null) {
             Button(onClick = onRetry) {
+                Icon(Icons.Default.Refresh, contentDescription = null)
+                androidx.compose.foundation.layout.Spacer(Modifier.size(8.dp))
                 Text(text = "Reintentar")
             }
         }

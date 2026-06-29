@@ -18,6 +18,7 @@ data class PlanillasUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
+    val completingId: Int? = null,
 )
 
 @HiltViewModel
@@ -60,6 +61,17 @@ class PlanillasViewModel @Inject constructor(
                 ApiResult.Unauthorized -> {
                     // Handled globally
                 }
+            }
+        }
+    }
+
+    fun completarPlanilla(id: Int) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(completingId = id, errorMessage = null) }
+            when (val result = repository.completarPlanilla(id)) {
+                is ApiResult.Success -> loadPlanillas()
+                is ApiResult.Error -> _uiState.update { it.copy(completingId = null, errorMessage = result.message) }
+                ApiResult.Unauthorized -> _uiState.update { it.copy(completingId = null, errorMessage = "Sesión expirada.") }
             }
         }
     }

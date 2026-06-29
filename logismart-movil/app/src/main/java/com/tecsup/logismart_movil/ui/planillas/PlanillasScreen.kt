@@ -2,6 +2,7 @@ package com.tecsup.logismart_movil.ui.planillas
 
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -26,6 +27,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tecsup.logismart_movil.data.remote.BoxDto
 import com.tecsup.logismart_movil.data.remote.PlanillaDto
+import com.tecsup.logismart_movil.ui.components.LoadingSkeleton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +36,7 @@ fun PlanillasScreen(
     onRefresh: () -> Unit,
     onBack: () -> Unit,
     onViewPdf: (cajas: String, userId: Int) -> Unit = { _, _ -> },
+    onComplete: (Int) -> Unit = {},
 ) {
 
     Scaffold(
@@ -45,7 +48,7 @@ fun PlanillasScreen(
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Atrás",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
@@ -54,13 +57,14 @@ fun PlanillasScreen(
                         Icon(
                             Icons.Default.Refresh,
                             contentDescription = "Actualizar",
-                            tint = Color.White
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         }
@@ -73,7 +77,10 @@ fun PlanillasScreen(
         ) {
             when {
                 state.isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    LoadingSkeleton(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        rows = 3
+                    )
                 }
                 state.errorMessage != null -> {
                     Column(
@@ -127,6 +134,8 @@ fun PlanillasScreen(
                         items(state.planillas, key = { it.idPlanilla }) { planilla ->
                             PlanillaItem(
                                 planilla = planilla,
+                                completing = state.completingId == planilla.idPlanilla,
+                                onComplete = { onComplete(planilla.idPlanilla) },
                                 onViewPdf = { cajas, userId ->
                                     onViewPdf(cajas, userId)
                                 }
@@ -142,6 +151,8 @@ fun PlanillasScreen(
 @Composable
 fun PlanillaItem(
     planilla: PlanillaDto,
+    completing: Boolean,
+    onComplete: () -> Unit,
     onViewPdf: (cajas: String, userId: Int) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -149,10 +160,12 @@ fun PlanillaItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .animateContentSize()
             .clickable { expanded = !expanded },
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        shape = RoundedCornerShape(18.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = CardDefaults.outlinedCardBorder()
     ) {
         Column(
             modifier = Modifier
@@ -173,6 +186,11 @@ fun PlanillaItem(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "Fecha: ${planilla.fechaCreacion}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Operador: ${planilla.operadorNombre}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -197,6 +215,19 @@ fun PlanillaItem(
                 }
             }
 
+            Spacer(Modifier.height(10.dp))
+            Surface(
+                color = if (planilla.completada) Color(0xFF10B981).copy(alpha = .13f) else Color(0xFFF59E0B).copy(alpha = .13f),
+                contentColor = if (planilla.completada) Color(0xFF059669) else Color(0xFFD97706),
+                shape = RoundedCornerShape(9.dp)
+            ) {
+                Text(
+                    if (planilla.completada) "Completada${planilla.fechaCompletada?.let { " · $it" } ?: ""}" else "Pendiente de completar",
+                    Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
+
             AnimatedVisibility(visible = expanded) {
                 Column(
                     modifier = Modifier
@@ -218,6 +249,20 @@ fun PlanillaItem(
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    if (planilla.puedeCompletar) {
+                        Button(
+                            onClick = onComplete,
+                            enabled = !completing,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            if (completing) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = Color.White)
+                            else Text("Marcar como completada", fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                        Spacer(Modifier.height(10.dp))
+                    }
 
                     Button(
                         onClick = {

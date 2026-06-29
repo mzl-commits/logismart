@@ -15,12 +15,15 @@ data class LoginResponse(
     val token: String,
     val username: String,
     @SerializedName("full_name") val fullName: String,
+    val role: String,
 )
 
 data class DashboardResponse(
     @SerializedName("pending_boxes") val pendingBoxes: Int,
     @SerializedName("completed_dispatches") val completedDispatches: Int,
     @SerializedName("planillas_count") val planillasCount: Int,
+    @SerializedName("completed_planillas") val completedPlanillas: Int,
+    @SerializedName("is_admin") val isAdmin: Boolean,
     @SerializedName("quick_actions") val quickActions: List<String>,
 )
 
@@ -38,6 +41,10 @@ data class PlanillaDto(
     @SerializedName("fecha_creacion") val fechaCreacion: String,
     @SerializedName("total_cajas") val totalCajas: Int,
     @SerializedName("operador_id") val operadorId: Int,
+    @SerializedName("operador_nombre") val operadorNombre: String,
+    val completada: Boolean,
+    @SerializedName("fecha_completada") val fechaCompletada: String?,
+    @SerializedName("puede_completar") val puedeCompletar: Boolean,
     @SerializedName("pdf_url") val pdfUrl: String,
     val cajas: List<BoxDto>,
 )
@@ -53,6 +60,9 @@ interface LogiSmartApi {
 
     @GET("api/mobile/planillas/")
     suspend fun getPlanillas(): Response<List<PlanillaDto>>
+
+    @POST("api/mobile/planillas/{id}/completar/")
+    suspend fun completarPlanilla(@retrofit2.http.Path("id") id: Int): Response<okhttp3.ResponseBody>
 
     @retrofit2.http.Streaming
     @GET("api/cajas/descargar_pdf_lote/")

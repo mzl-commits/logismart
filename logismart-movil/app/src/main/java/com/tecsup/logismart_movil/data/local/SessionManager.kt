@@ -15,6 +15,7 @@ data class UserSession(
     val token: String,
     val username: String,
     val fullName: String,
+    val role: String,
 )
 
 class SessionManager(private val context: Context) {
@@ -22,6 +23,7 @@ class SessionManager(private val context: Context) {
         val token = stringPreferencesKey("auth_token")
         val username = stringPreferencesKey("username")
         val fullName = stringPreferencesKey("full_name")
+        val role = stringPreferencesKey("role")
     }
 
     val session: Flow<UserSession?> = context.sessionDataStore.data.map { preferences ->
@@ -33,15 +35,17 @@ class SessionManager(private val context: Context) {
                 token = token,
                 username = preferences[Keys.username].orEmpty(),
                 fullName = preferences[Keys.fullName].orEmpty(),
+                role = preferences[Keys.role] ?: "operator",
             )
         }
     }
 
-    suspend fun save(token: String, username: String, fullName: String) {
+    suspend fun save(token: String, username: String, fullName: String, role: String) {
         context.sessionDataStore.edit { preferences ->
             preferences[Keys.token] = token
             preferences[Keys.username] = username
             preferences[Keys.fullName] = fullName
+            preferences[Keys.role] = role
         }
     }
 

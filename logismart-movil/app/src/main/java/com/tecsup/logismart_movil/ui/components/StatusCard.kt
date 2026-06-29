@@ -27,7 +27,9 @@ fun StatusCard(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        border = CardDefaults.outlinedCardBorder()
     ) {
         Row(
             modifier = Modifier

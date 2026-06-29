@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,7 +60,15 @@ fun LoginScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = .55f),
+                        MaterialTheme.colorScheme.background,
+                        MaterialTheme.colorScheme.background,
+                    )
+                )
+            )
             .padding(20.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -79,7 +88,7 @@ fun LoginScreen(
                     Icon(
                         Icons.Default.Inventory2,
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(30.dp),
                     )
                 }
@@ -101,8 +110,10 @@ fun LoginScreen(
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 5.dp),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                border = CardDefaults.outlinedCardBorder(),
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 28.dp),
@@ -176,7 +187,7 @@ fun LoginScreen(
                             CircularProgressIndicator(
                                 modifier = Modifier.size(22.dp),
                                 strokeWidth = 2.dp,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                             )
                         } else {
                             Text("Iniciar sesión", fontWeight = FontWeight.SemiBold)
