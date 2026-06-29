@@ -116,6 +116,7 @@ fun AppNavGraph(
             PdfViewerScreen(
                 cajas = cajas,
                 userId = userId,
+                sessionManager = sessionManager,
                 onBack = { navController.popBackStack() }
             )
         }
