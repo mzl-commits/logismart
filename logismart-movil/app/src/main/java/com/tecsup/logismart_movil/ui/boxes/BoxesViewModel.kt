@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tecsup.logismart_movil.data.model.LogisticBox
 import com.tecsup.logismart_movil.data.repository.LogisticsRepository
-import com.tecsup.logismart_movil.data.remote.UsuarioDto
 import com.tecsup.logismart_movil.data.remote.VehiculoDto
 import com.tecsup.logismart_movil.data.remote.DestinoDto
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,10 +20,8 @@ data class BoxesUiState(
     val selectedCategory: String = "Todas cat.",
     val errorMessage: String? = null,
     
-    val usuarios: List<UsuarioDto> = emptyList(),
     val vehiculos: List<VehiculoDto> = emptyList(),
     val destinos: List<DestinoDto> = emptyList(),
-    val selectedUsuario: UsuarioDto? = null,
     val actionInProgress: Boolean = false
 )
 
@@ -55,22 +52,14 @@ class BoxesViewModel @Inject constructor(
 
     private fun loadDashboardMetadata() {
         viewModelScope.launch {
-            val users = repository.getUsuarios()
             val vehicles = repository.getVehiculos()
             val dests = repository.getDestinos()
-            val defaultUser = users.firstOrNull { it.rol == "operador" } ?: users.firstOrNull()
             
             _uiState.value = _uiState.value.copy(
-                usuarios = users,
                 vehiculos = vehicles,
-                destinos = dests,
-                selectedUsuario = defaultUser
+                destinos = dests
             )
         }
-    }
-
-    fun selectUsuario(usuario: UsuarioDto) {
-        _uiState.value = _uiState.value.copy(selectedUsuario = usuario)
     }
 
     fun selectStatus(status: String) {
@@ -84,14 +73,9 @@ class BoxesViewModel @Inject constructor(
     }
 
     fun procesarBox(boxId: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
-        val user = _uiState.value.selectedUsuario
-        if (user == null) {
-            onError("Debe seleccionar un operador en la parte superior.")
-            return
-        }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(actionInProgress = true)
-            val success = repository.procesarCaja(boxId, user.idUsuario)
+            val success = repository.procesarCaja(boxId, null)
             _uiState.value = _uiState.value.copy(actionInProgress = false)
             if (success) {
                 onSuccess()
@@ -103,14 +87,9 @@ class BoxesViewModel @Inject constructor(
     }
 
     fun confirmarAlmacenada(boxId: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
-        val user = _uiState.value.selectedUsuario
-        if (user == null) {
-            onError("Debe seleccionar un operador en la parte superior.")
-            return
-        }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(actionInProgress = true)
-            val success = repository.confirmarAlmacenada(boxId, user.idUsuario)
+            val success = repository.confirmarAlmacenada(boxId, null)
             _uiState.value = _uiState.value.copy(actionInProgress = false)
             if (success) {
                 onSuccess()
@@ -122,18 +101,13 @@ class BoxesViewModel @Inject constructor(
     }
 
     fun confirmarDespacho(boxId: String, placa: String, destino: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
-        val user = _uiState.value.selectedUsuario
-        if (user == null) {
-            onError("Debe seleccionar un operador en la parte superior.")
-            return
-        }
         if (placa.isBlank() || destino.isBlank()) {
             onError("Placa y destino son requeridos.")
             return
         }
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(actionInProgress = true)
-            val success = repository.confirmarDespacho(boxId, user.idUsuario, placa, destino)
+            val success = repository.confirmarDespacho(boxId, null, placa, destino)
             _uiState.value = _uiState.value.copy(actionInProgress = false)
             if (success) {
                 onSuccess()

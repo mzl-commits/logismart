@@ -48,7 +48,10 @@ data class CajaDto(
     val horaLlegada: String? = null,
 
     @SerializedName("id_ubicacion")
-    val idUbicacion: Int? = null
+    val idUbicacion: Int? = null,
+
+    @SerializedName("ubicacion_nombre")
+    val ubicacionNombre: String? = null
 )
 
 data class Trip(

@@ -62,7 +62,7 @@ class LogisticsRepository(
             pesoKg = pesoKg ?: "0.00",
             categoria = categoria ?: "Sin categoría",
             estado = estado ?: "Pendiente",
-            ubicacion = idUbicacion?.let { "Ubicación $it" } ?: "Sin ubicación",
+            ubicacion = if (!ubicacionNombre.isNullOrBlank()) ubicacionNombre else (idUbicacion?.let { "Ubicación $it" } ?: "Sin ubicación"),
             carroAsignado = if (estado == "en_transito") "AGV principal" else "Sin asignar",
             esFragil = esFragil ?: false
         )
@@ -171,21 +171,21 @@ class LogisticsRepository(
         }.getOrElse { emptyList() }
     }
 
-    suspend fun procesarCaja(id: String, userId: Int): Boolean {
+    suspend fun procesarCaja(id: String, userId: Int? = null): Boolean {
         return runCatching {
             val response = logiSmartApi.procesarCaja(id, com.tecsup.logismart_movil.data.remote.UserActionRequest(userId))
             response.isSuccessful
         }.getOrElse { false }
     }
 
-    suspend fun confirmarAlmacenada(id: String, userId: Int): Boolean {
+    suspend fun confirmarAlmacenada(id: String, userId: Int? = null): Boolean {
         return runCatching {
             val response = logiSmartApi.confirmarAlmacenada(id, com.tecsup.logismart_movil.data.remote.UserActionRequest(userId))
             response.isSuccessful
         }.getOrElse { false }
     }
 
-    suspend fun confirmarDespacho(id: String, userId: Int, placa: String, destino: String): Boolean {
+    suspend fun confirmarDespacho(id: String, userId: Int? = null, placa: String, destino: String): Boolean {
         return runCatching {
             val response = logiSmartApi.confirmarDespacho(id, com.tecsup.logismart_movil.data.remote.DespachoRequest(userId, placa, destino))
             response.isSuccessful
