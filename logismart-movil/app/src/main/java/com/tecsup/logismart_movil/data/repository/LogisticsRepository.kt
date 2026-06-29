@@ -143,4 +143,52 @@ class LogisticsRepository(
             )
         )
     }
+
+    suspend fun getUsuarios(): List<com.tecsup.logismart_movil.data.remote.UsuarioDto> {
+        return runCatching {
+            val response = logiSmartApi.getUsuarios()
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else emptyList()
+        }.getOrElse { emptyList() }
+    }
+
+    suspend fun getVehiculos(): List<com.tecsup.logismart_movil.data.remote.VehiculoDto> {
+        return runCatching {
+            val response = logiSmartApi.getVehiculos()
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else emptyList()
+        }.getOrElse { emptyList() }
+    }
+
+    suspend fun getDestinos(): List<com.tecsup.logismart_movil.data.remote.DestinoDto> {
+        return runCatching {
+            val response = logiSmartApi.getDestinos()
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!
+            } else emptyList()
+        }.getOrElse { emptyList() }
+    }
+
+    suspend fun procesarCaja(id: String, userId: Int): Boolean {
+        return runCatching {
+            val response = logiSmartApi.procesarCaja(id, com.tecsup.logismart_movil.data.remote.UserActionRequest(userId))
+            response.isSuccessful
+        }.getOrElse { false }
+    }
+
+    suspend fun confirmarAlmacenada(id: String, userId: Int): Boolean {
+        return runCatching {
+            val response = logiSmartApi.confirmarAlmacenada(id, com.tecsup.logismart_movil.data.remote.UserActionRequest(userId))
+            response.isSuccessful
+        }.getOrElse { false }
+    }
+
+    suspend fun confirmarDespacho(id: String, userId: Int, placa: String, destino: String): Boolean {
+        return runCatching {
+            val response = logiSmartApi.confirmarDespacho(id, com.tecsup.logismart_movil.data.remote.DespachoRequest(userId, placa, destino))
+            response.isSuccessful
+        }.getOrElse { false }
+    }
 }

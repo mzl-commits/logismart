@@ -64,4 +64,58 @@ interface LogiSmartApi {
 
     @GET("api/cajas/")
     suspend fun getCajas(): Response<List<com.tecsup.logismart_movil.data.model.CajaDto>>
+
+    @GET("api/usuarios/")
+    suspend fun getUsuarios(): Response<List<com.tecsup.logismart_movil.data.remote.UsuarioDto>>
+
+    @GET("api/vehiculos/")
+    suspend fun getVehiculos(): Response<List<com.tecsup.logismart_movil.data.remote.VehiculoDto>>
+
+    @GET("api/destinos/")
+    suspend fun getDestinos(): Response<List<com.tecsup.logismart_movil.data.remote.DestinoDto>>
+
+    @POST("api/cajas/{id}/procesar/")
+    suspend fun procesarCaja(
+        @retrofit2.http.Path("id") id: String,
+        @Body request: com.tecsup.logismart_movil.data.remote.UserActionRequest
+    ): Response<Unit>
+
+    @POST("api/cajas/{id}/confirmar_almacenada/")
+    suspend fun confirmarAlmacenada(
+        @retrofit2.http.Path("id") id: String,
+        @Body request: com.tecsup.logismart_movil.data.remote.UserActionRequest
+    ): Response<Unit>
+
+    @POST("api/cajas/{id}/confirmar_despacho/")
+    suspend fun confirmarDespacho(
+        @retrofit2.http.Path("id") id: String,
+        @Body request: com.tecsup.logismart_movil.data.remote.DespachoRequest
+    ): Response<Unit>
 }
+
+data class UsuarioDto(
+    @SerializedName("id_usuario") val idUsuario: Int,
+    val nombre: String,
+    val rol: String
+)
+
+data class VehiculoDto(
+    val placa: String,
+    val marca: String
+)
+
+data class DestinoDto(
+    val id: Int,
+    val nombre: String,
+    val direccion: String
+)
+
+data class UserActionRequest(
+    @SerializedName("id_usuario") val idUsuario: Int
+)
+
+data class DespachoRequest(
+    @SerializedName("id_usuario") val idUsuario: Int,
+    @SerializedName("transporte_placa") val transportePlaca: String,
+    val destino: String
+)
