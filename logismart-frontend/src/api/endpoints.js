@@ -63,3 +63,7 @@ export const avanzarCarro    = ()       => api.post('carro/avanzar/');
 export const resetCarro      = ()       => api.post('carro/reset/');
 export const confirmarParada = (data)   => api.post('carro/confirmar_parada/', data);
 export const getCurrentUser  = ()       => api.get('me/');
+
+// ── Planillas ───────────────────────────────────────────
+export const getPlanillas     = ()       => api.get('planillas/');
+export const completarPlanilla = (id)   => api.post(`planillas/${id}/completar/`);

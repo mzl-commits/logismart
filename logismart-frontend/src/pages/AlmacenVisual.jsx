@@ -11,6 +11,17 @@ const CAT_COLOR = {
   quimico:     'from-purple-900/80 to-purple-800/60 border-purple-500/50',
   otro:        'from-slate-800/80 to-slate-700/60 border-slate-500/50',
 };
+const TYPE_META = {
+  general:      { icon: '📦', label: 'General',       description: 'Uso flexible para mercancía convencional.' },
+  pesado:       { icon: '🏋️', label: 'Carga pesada',  description: 'Estructura reforzada; los niveles bajos soportan mayor peso.' },
+  fragil:       { icon: '🛡️', label: 'Protección frágil', description: 'Zona protegida para electrónica y artículos delicados.' },
+  quimico:      { icon: '⚗️', label: 'Zona química',  description: 'Espacio aislado y reservado para sustancias químicas.' },
+  refrigerado:  { icon: '❄️', label: 'Refrigerado',    description: 'Zona prioritaria para alimentos y productos sensibles.' },
+};
+const CATEGORY_LABEL = {
+  sin_preferencia: 'Sin preferencia', electronica: 'Electrónica', textil: 'Textil',
+  alimento: 'Alimento', herramienta: 'Herramienta', quimico: 'Químico', otro: 'Otro',
+};
 
 function StatCard({ icon, label, value, sub }) {
   return (
@@ -56,7 +67,7 @@ function CeldaUbi({ u, esCar, enRuta, parada, onClick }) {
       className={base} 
       style={{ width: '100%', minWidth: '40px', minHeight: '48px', ...style }} 
       onClick={onClick} 
-      title={`${u.pasillo}${u.estante}-N${u.nivel}-${ladoChar}${u.casillero} (Caja ${cajaNum})`}
+      title={`${u.pasillo}${u.estante}-N${u.nivel}-${ladoChar}${u.casillero} · ${TYPE_META[u.tipo_estante]?.label || u.tipo_estante} · ${u.capacidad_peso_kg} kg`}
     >
       {/* badge parada */}
       {parada && (
@@ -476,6 +487,12 @@ export default function AlmacenVisual() {
                   const u = ubiSel;
                   const c = cajas.find(cx => cx.id_ubicacion === u.id_ubicacion);
                   const cat = c?.categoria || 'otro';
+                  const typeMeta = TYPE_META[u.tipo_estante] || TYPE_META.general;
+                  const compatibility = c ? [
+                    { ok: Number(c.peso_kg) <= Number(u.capacidad_peso_kg), label: `Peso ${c.peso_kg}/${u.capacidad_peso_kg} kg` },
+                    { ok: !c.es_fragil || u.permite_fragil, label: c.es_fragil ? 'Protección frágil' : 'Manipulación general' },
+                    { ok: c.categoria !== 'quimico' || u.permite_quimico, label: c.categoria === 'quimico' ? 'Aislamiento químico' : 'Categoría compatible' },
+                  ] : [];
                   return (
                     <div className="space-y-4">
                       {/* cabecera ubicación */}
@@ -496,16 +513,34 @@ export default function AlmacenVisual() {
                               Frágil ✓
                             </span>
                           )}
+                          {u.permite_quimico && (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                              Químicos ✓
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4">
+                        <div className="flex items-start gap-3">
+                          <span className="text-2xl" aria-hidden="true">{typeMeta.icon}</span>
+                          <div>
+                            <div className="font-bold text-light">{typeMeta.label}</div>
+                            <p className="text-xs text-muted mt-1 leading-relaxed">{typeMeta.description}</p>
+                          </div>
                         </div>
                       </div>
 
                       {/* propiedades */}
                       <div className="bg-surface2/40 border border-surface2 rounded-xl divide-y divide-surface2 text-sm">
                         {[
+                          { label: 'Tipo de estante', value: typeMeta.label },
                           { label: 'Capacidad',      value: `${u.capacidad_peso_kg} kg` },
+                          { label: 'Admite frágil',   value: u.permite_fragil ? 'Sí' : 'No' },
+                          { label: 'Admite químico',  value: u.permite_quimico ? 'Sí' : 'No' },
                           { label: 'Lado',           value: u.lado === 'posterior' ? 'Posterior' : 'Adelante' },
                           { label: 'Casillero',      value: `Caja ${u.lado === 'posterior' ? (u.casillero === 1 ? 3 : 4) : (u.casillero === 1 ? 1 : 2)} (${u.lado === 'posterior' ? 'P' : 'A'}${u.casillero})` },
-                          { label: 'Prioridad cat.', value: u.prioridad_categoria },
+                          { label: 'Categoría ideal', value: CATEGORY_LABEL[u.prioridad_categoria] || u.prioridad_categoria },
                           { label: 'Coordenadas',    value: `X:${u.coord_x} Y:${u.coord_y}`, mono: true },
                         ].map(({ label, value, mono }) => (
                           <div key={label} className="flex justify-between px-4 py-2.5">
@@ -514,6 +549,20 @@ export default function AlmacenVisual() {
                           </div>
                         ))}
                       </div>
+
+                      {c && (
+                        <div className="rounded-xl border border-surface2 bg-surface2/30 p-4">
+                          <div className="text-[11px] font-bold text-muted uppercase tracking-wider mb-3">Validación de compatibilidad</div>
+                          <div className="space-y-2">
+                            {compatibility.map(item => (
+                              <div key={item.label} className="flex items-center gap-2 text-xs">
+                                <i className={`bi ${item.ok ? 'bi-check-circle-fill text-emerald-500' : 'bi-x-circle-fill text-red-500'}`} />
+                                <span className={item.ok ? 'text-light' : 'text-red-500'}>{item.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                       {/* caja almacenada */}
                       {c ? (

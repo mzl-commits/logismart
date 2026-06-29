@@ -129,7 +129,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6 fade-in fade-d1">
         <div className="lg:col-span-2 bg-surface rounded-2xl border border-slate-800/60 p-6">
           <div className="flex justify-between items-center mb-4">
-            <span className="text-base font-semibold flex items-center gap-2"><i className="bi bi-building text-sky-400"></i> Ocupación del almacén</span>
+            <span className="text-base font-semibold flex items-center gap-2"><i className="bi bi-building text-sky-400"></i> Ocupación física</span>
             <span className="text-sm">
               <span className={`${pctOcupacion >= 90 ? 'text-red-500' : pctOcupacion >= 70 ? 'text-amber-500' : 'text-emerald-400'} font-bold`}>{ocupadas}</span>
               <span className="text-slate-600"> / {totalUbic}</span> · <strong className="text-white">{pctOcupacion}%</strong>
@@ -139,7 +139,7 @@ export default function Dashboard() {
             <div className={`h-full rounded-full transition-all duration-700 ${pctOcupacion >= 90 ? 'bg-gradient-to-r from-red-600 to-red-500' : pctOcupacion >= 70 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-emerald-600 to-emerald-500'}`} style={{ width: `${pctOcupacion}%` }}></div>
           </div>
           <div className="flex justify-between mt-3 text-xs text-slate-500">
-            <span>{libres} libres</span>
+            <span>{libres} libres · incluye reservas en tránsito</span>
             <span>{pctOcupacion >= 90 ? '⚠️ Crítico' : pctOcupacion >= 70 ? 'Capacidad alta' : 'Normal'}</span>
           </div>
         </div>

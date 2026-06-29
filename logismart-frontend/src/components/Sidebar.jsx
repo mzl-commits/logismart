@@ -12,6 +12,7 @@ const navItems = [
   { section: 'Operaciones' },
   { to: '/cajas',        icon: Package,         label: 'Nueva Caja' },
   { to: '/despachos',    icon: Truck,           label: 'Despachos' },
+  { to: '/planillas',     icon: Package,         label: 'Planillas' },
 
   { section: 'Sistema' },
   { to: '/administracion', icon: Users,         label: 'Administración' },

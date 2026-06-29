@@ -1,6 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getCajas, getProveedores, getMedidas, getUsuarios, getCategorias, crearCaja, sugerirId, procesarLote, previsualizarLote, getUbicaciones } from '../api/endpoints';
 
+const SHELF_TYPE_LABEL = {
+  general: 'General', pesado: 'Carga pesada', fragil: 'Protección frágil',
+  quimico: 'Zona química', refrigerado: 'Refrigerado',
+};
+
 export default function NuevaCaja() {
   const [cajas, setCajas] = useState([]);
   const [proveedores, setProveedores] = useState([]);
@@ -518,7 +523,7 @@ export default function NuevaCaja() {
                                               key={u.id_ubicacion}
                                               className={cellClass}
                                               onClick={clickHandler}
-                                              title={isOccupied ? 'Ocupado' : isSelectedByOther ? 'Reservado por otra caja' : isRecommendedForCurrent ? 'Recomendada ⭐' : 'Disponible'}
+                                              title={`${isOccupied ? 'Ocupado' : isSelectedByOther ? 'Reservado por otra caja' : isRecommendedForCurrent ? 'Recomendada ⭐' : 'Disponible'} · ${SHELF_TYPE_LABEL[u.tipo_estante] || u.tipo_estante} · ${u.capacidad_peso_kg} kg${u.permite_fragil ? ' · admite frágil' : ''}${u.permite_quimico ? ' · admite químico' : ''}`}
                                             >
                                               <span className="flex items-center gap-0.5">
                                                 {isRecommendedForCurrent && <span className="text-[8px]">⭐</span>}
