@@ -10,7 +10,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Caja, Despacho, EstadoCarro, Ubicacion
+from .models import Caja, Despacho, EstadoCarro, Ubicacion, Planilla
 
 
 from .authentication import (
@@ -54,6 +54,7 @@ class MobileLoginView(APIView):
             'token': create_mobile_token(user.get_username()),
             'username': user.get_username(),
             'full_name': user.get_full_name() or user.get_username(),
+            'role': 'admin' if (user.is_staff or user.is_superuser) else 'operator',
         })
 
 
@@ -62,14 +63,16 @@ class MobileDashboardView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        from .models import Planilla
-        planillas_count = Planilla.objects.filter(operador=request.user).count()
+        is_admin = request.user.is_staff or request.user.is_superuser
+        planillas_qs = Planilla.objects.all() if is_admin else Planilla.objects.filter(operador=request.user)
 
         return Response({
             'pending_boxes': Caja.objects.filter(estado='pendiente').count(),
             'completed_dispatches': Despacho.objects.count(),
-            'planillas_count': planillas_count,
-            'quick_actions': ['Ver planillas', 'Cerrar sesión'],
+            'planillas_count': planillas_qs.count(),
+            'completed_planillas': planillas_qs.filter(completada=True).count(),
+            'is_admin': is_admin,
+            'quick_actions': ['Ver estado', 'Alertas', 'Cerrar sesión'],
         })
 
 
@@ -78,8 +81,11 @@ class MobilePlanillasView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        from .models import Planilla
-        planillas = Planilla.objects.filter(operador=request.user).order_by('-fecha_creacion')
+        is_admin = request.user.is_staff or request.user.is_superuser
+        planillas = Planilla.objects.select_related('operador', 'completada_por')
+        if not is_admin:
+            planillas = planillas.filter(operador=request.user)
+        planillas = planillas.order_by('-fecha_creacion')
         
         data = []
         for p in planillas:
@@ -101,11 +107,37 @@ class MobilePlanillasView(APIView):
                 'fecha_creacion': p.fecha_creacion.strftime('%d/%m/%Y %H:%M'),
                 'total_cajas': len(p.cajas_ids),
                 'operador_id': p.operador.id,
+                'operador_nombre': p.operador.get_full_name() or p.operador.username,
+                'completada': p.completada,
+                'fecha_completada': p.fecha_completada.strftime('%d/%m/%Y %H:%M') if p.fecha_completada else None,
+                'puede_completar': not p.completada and (is_admin or p.operador_id == request.user.id),
                 'pdf_url': pdf_url,
                 'cajas': cajas_detalles
             })
             
         return Response(data)
+
+
+class MobileCompletarPlanillaView(APIView):
+    authentication_classes = [MobileTokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        from django.utils import timezone
+        try:
+            planilla = Planilla.objects.get(pk=pk)
+        except Planilla.DoesNotExist:
+            return Response({'detail': 'Planilla no encontrada.'}, status=status.HTTP_404_NOT_FOUND)
+        is_admin = request.user.is_staff or request.user.is_superuser
+        if not (is_admin or planilla.operador_id == request.user.id):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+        if planilla.completada:
+            return Response({'detail': 'La planilla ya está completada.'}, status=status.HTTP_400_BAD_REQUEST)
+        planilla.completada = True
+        planilla.fecha_completada = timezone.now()
+        planilla.completada_por = request.user
+        planilla.save(update_fields=['completada', 'fecha_completada', 'completada_por'])
+        return Response({'detail': 'Planilla completada.', 'id_planilla': planilla.pk})
 
 
 class MobileEstantesView(APIView):

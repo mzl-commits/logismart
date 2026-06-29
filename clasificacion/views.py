@@ -9,6 +9,7 @@ from django.http import HttpResponse
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Flowable
@@ -18,13 +19,13 @@ from reportlab.lib import colors
 from .models import (
     Caja, Ubicacion, Medida, Proveedor, Usuario,
     HistorialMovimientos, Despacho, EstadoCarro, Categoria, ConfigCarro,
-    Vehiculo, Destino, SolicitudDespacho
+    Vehiculo, Destino, SolicitudDespacho, Planilla
 )
 from .serializers import (
     CajaSerializer, UbicacionSerializer, MedidaSerializer,
     ProveedorSerializer, UsuarioSerializer, HistorialSerializer,
     DespachoSerializer, EstadoCarroSerializer, CategoriaSerializer, ConfigCarroSerializer,
-    VehiculoSerializer, DestinoSerializer, SolicitudDespachoSerializer
+    VehiculoSerializer, DestinoSerializer, SolicitudDespachoSerializer, PlanillaSerializer
 )
 
 class VehiculoViewSet(viewsets.ModelViewSet):
@@ -1185,6 +1186,32 @@ class SolicitudDespachoViewSet(viewsets.ModelViewSet):
         solicitud.estado = 'rechazada'
         solicitud.save()
         return Response({'mensaje': 'Solicitud rechazada.'})
+
+
+class PlanillaViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = PlanillaSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Planilla.objects.select_related('operador', 'completada_por').all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if user.is_authenticated and not (user.is_staff or user.is_superuser):
+            queryset = queryset.filter(operador=user)
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def completar(self, request, pk=None):
+        planilla = self.get_object()
+        if planilla.completada:
+            return Response({'detail': 'La planilla ya está completada.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not (request.user.is_staff or request.user.is_superuser or planilla.operador_id == request.user.id):
+            return Response({'detail': 'No autorizado.'}, status=status.HTTP_403_FORBIDDEN)
+        planilla.completada = True
+        planilla.fecha_completada = timezone.now()
+        planilla.completada_por = request.user
+        planilla.save(update_fields=['completada', 'fecha_completada', 'completada_por'])
+        return Response(self.get_serializer(planilla).data)
 
 
 from rest_framework.decorators import api_view, permission_classes

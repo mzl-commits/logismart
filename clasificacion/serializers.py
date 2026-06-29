@@ -4,7 +4,7 @@ from rest_framework import serializers
 from .models import (
     Caja, Ubicacion, Medida, Proveedor,
     Usuario, HistorialMovimientos, Despacho, EstadoCarro, Categoria, ConfigCarro,
-    Vehiculo, Destino, SolicitudDespacho
+    Vehiculo, Destino, SolicitudDespacho, Planilla
 )
 
 class VehiculoSerializer(serializers.ModelSerializer):
@@ -100,3 +100,23 @@ class SolicitudDespachoSerializer(serializers.ModelSerializer):
         model = SolicitudDespacho
         fields = '__all__'
         read_only_fields = ['usuario_solicita']
+
+
+class PlanillaSerializer(serializers.ModelSerializer):
+    operador_nombre = serializers.CharField(source='operador.get_full_name', read_only=True)
+    operador_usuario = serializers.CharField(source='operador.username', read_only=True)
+    completada_por_nombre = serializers.CharField(source='completada_por.get_full_name', read_only=True)
+    total_cajas = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Planilla
+        fields = [
+            'id_planilla', 'cajas_ids', 'total_cajas', 'operador',
+            'operador_nombre', 'operador_usuario', 'fecha_creacion',
+            'completada', 'fecha_completada', 'completada_por',
+            'completada_por_nombre',
+        ]
+        read_only_fields = ['completada', 'fecha_completada', 'completada_por']
+
+    def get_total_cajas(self, obj):
+        return len(obj.cajas_ids or [])

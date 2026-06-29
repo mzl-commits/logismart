@@ -35,7 +35,9 @@ class OptimizadorUbicaciones:
         if categoria_caja == 'quimico':
             qs = qs.filter(permite_quimico=True)
 
-        ubicaciones_candidatas = list(qs)
+        ubicaciones_candidatas = list(
+            qs.order_by('pasillo', 'estante', 'nivel', 'lado', 'casillero')
+        )
 
         if not ubicaciones_candidatas:
             logger.warning(
@@ -95,6 +97,11 @@ class OptimizadorUbicaciones:
         if categoria_caja == 'quimico' and ubicacion.tipo_estante not in ('quimico', 'general'):
             return False, [f"Tipo de estante no apto para químicos ({ubicacion.tipo_estante})"]
 
+        # No consumir una zona química con productos comunes: evita contaminación
+        # cruzada y preserva el recurso especializado para mercancía compatible.
+        if categoria_caja != 'quimico' and ubicacion.tipo_estante == 'quimico':
+            return False, ["Zona química reservada exclusivamente para químicos"]
+
         razones.append("Compatibilidad base OK")
         return True, razones
 
@@ -127,8 +134,30 @@ class OptimizadorUbicaciones:
                 score -= 40
                 motivos.append("Frágil demasiado alto (-40)")
             if ubicacion.tipo_estante == 'fragil':
-                score += 30
-                motivos.append("Estante especializado en frágil (+30)")
+                score += 45
+                motivos.append("Estante especializado en frágil (+45)")
+
+        # Preservar zonas especializadas y premiar su uso correcto.
+        if ubicacion.tipo_estante == 'pesado':
+            if peso_caja is not None and Decimal(str(peso_caja)) >= Decimal('50'):
+                score += 40
+                motivos.append("Carga pesada en zona reforzada (+40)")
+            else:
+                score -= 30
+                motivos.append("Reserva zona reforzada para cargas pesadas (-30)")
+        elif ubicacion.tipo_estante == 'fragil' and not es_fragil:
+            score -= 20
+            motivos.append("Reserva zona protegida para productos frágiles (-20)")
+        elif ubicacion.tipo_estante == 'refrigerado':
+            if categoria_caja == 'alimento':
+                score += 40
+                motivos.append("Alimento en zona refrigerada (+40)")
+            else:
+                score -= 25
+                motivos.append("Reserva refrigeración para alimentos (-25)")
+        elif ubicacion.tipo_estante == 'quimico' and categoria_caja == 'quimico':
+            score += 50
+            motivos.append("Químico en zona aislada (+50)")
 
         # Regla urgencia (pasillo cercano a salida=A)
         if prioridad_caja == 'urgente' or 'urgente' in tags:
@@ -143,8 +172,8 @@ class OptimizadorUbicaciones:
 
         # Regla categoría preferida del estante
         if categoria_caja and ubicacion.prioridad_categoria == categoria_caja:
-            score += 25
-            motivos.append("Categoría coincide con prioridad del estante (+25)")
+            score += 35
+            motivos.append("Categoría coincide con prioridad del estante (+35)")
         elif ubicacion.prioridad_categoria == 'sin_preferencia':
             score += 5
             motivos.append("Estante sin preferencia de categoría (+5)")
@@ -155,9 +184,18 @@ class OptimizadorUbicaciones:
             peso = Decimal(str(peso_caja))
             if capacidad > 0:
                 uso = peso / capacidad
-                if Decimal('0.40') <= uso <= Decimal('0.90'):
+                if Decimal('0.55') <= uso <= Decimal('0.90'):
+                    score += 22
+                    motivos.append("Aprovechamiento óptimo de capacidad (+22)")
+                elif Decimal('0.35') <= uso < Decimal('0.55'):
                     score += 10
-                    motivos.append("Uso eficiente de capacidad (+10)")
+                    motivos.append("Buen aprovechamiento de capacidad (+10)")
+                elif uso < Decimal('0.20'):
+                    score -= 12
+                    motivos.append("Capacidad sobredimensionada para esta caja (-12)")
+                elif uso > Decimal('0.90'):
+                    score += 5
+                    motivos.append("Capacidad casi completa, dentro del límite (+5)")
 
         return max(0, int(score)), motivos
 

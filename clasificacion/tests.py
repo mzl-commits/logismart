@@ -144,6 +144,52 @@ class OptimizadorTests(TestCase):
         ubi.refresh_from_db()
         self.assertTrue(ubi.estado_ocupacion)
 
+    def test_carga_pesada_prefiere_zona_reforzada(self):
+        crear_ubicacion(pasillo='A', estante=1, tipo_estante='general', capacidad_peso_kg=100)
+        reforzada = crear_ubicacion(
+            pasillo='A', estante=2, tipo_estante='pesado',
+            capacidad_peso_kg=150, prioridad_categoria='herramienta',
+        )
+        caja = crear_caja(peso_kg=Decimal('60'), categoria='herramienta')
+        result = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
+            ClasificadorCajas.clasificar(caja), caja=caja
+        )
+        self.assertEqual(result, reforzada)
+
+    def test_carga_ligera_preserva_zona_reforzada(self):
+        reforzada = crear_ubicacion(pasillo='A', estante=1, tipo_estante='pesado', capacidad_peso_kg=80)
+        general = crear_ubicacion(pasillo='B', estante=1, tipo_estante='general', capacidad_peso_kg=40)
+        caja = crear_caja(peso_kg=Decimal('5'))
+        result = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
+            ClasificadorCajas.clasificar(caja), caja=caja
+        )
+        self.assertEqual(result, general)
+        self.assertNotEqual(result, reforzada)
+
+    def test_fragil_prefiere_zona_protegida(self):
+        crear_ubicacion(pasillo='B', estante=1, tipo_estante='general', permite_fragil=True)
+        protegida = crear_ubicacion(
+            pasillo='A', estante=1, nivel=2, tipo_estante='fragil',
+            permite_fragil=True, prioridad_categoria='electronica',
+        )
+        caja = crear_caja(es_fragil=True, categoria='electronica')
+        result = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
+            ClasificadorCajas.clasificar(caja), caja=caja
+        )
+        self.assertEqual(result, protegida)
+
+    def test_zona_quimica_no_se_asigna_a_producto_comun(self):
+        crear_ubicacion(
+            pasillo='A', estante=1, tipo_estante='quimico',
+            permite_quimico=True, prioridad_categoria='quimico',
+        )
+        general = crear_ubicacion(pasillo='B', estante=1, tipo_estante='general')
+        caja = crear_caja(categoria='textil')
+        result = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
+            ClasificadorCajas.clasificar(caja), caja=caja
+        )
+        self.assertEqual(result, general)
+
 
 # ─── Tests del RutaService ────────────────────────────────────────────────────
 

@@ -11,11 +11,11 @@ class Medida(models.Model):
 
     class Meta:
         db_table = 'medidas'
-    
+
     def save(self, *args, **kwargs):
         self.volumen = self.largo * self.ancho * self.alto
         super().save(*args, **kwargs)
-    
+
     def __str__(self):
         return f"{self.nombre} ({self.largo}x{self.ancho}x{self.alto})"
 
@@ -27,7 +27,7 @@ class Proveedor(models.Model):
 
     class Meta:
         db_table = 'proveedores'
-    
+
     def __str__(self):
         return self.nombre_empresa
 
@@ -91,7 +91,7 @@ class Ubicacion(models.Model):
     class Meta:
         db_table = 'ubicaciones'
         unique_together = ('pasillo', 'estante', 'nivel', 'lado', 'casillero')
-    
+
     @property
     def coord_x(self):
         # Convierte pasillo (A,B,C...) a número.
@@ -100,11 +100,11 @@ class Ubicacion(models.Model):
         if self.lado == 'posterior':
             return x + 1
         return x
-    
+
     @property
     def coord_y(self):
         return self.estante
-    
+
     def __str__(self):
         lado_char = self.lado[0].upper() if self.lado else 'A'
         caja_num = 3 if self.lado == 'posterior' and self.casillero == 1 else \
@@ -125,7 +125,7 @@ class Usuario(models.Model):
 
     class Meta:
         db_table = 'usuarios'
-    
+
     def __str__(self):
         return f"{self.nombre} ({self.rol})"
 
@@ -153,12 +153,12 @@ class Caja(models.Model):
         ('quimico', 'Químico'),
         ('otro', 'Otro'),
     ]
-    
+
     id = models.CharField(primary_key=True, max_length=20)
     producto = models.CharField(max_length=150)
     cantidad = models.IntegerField(default=1)
     id_medida = models.ForeignKey(Medida, on_delete=models.PROTECT, db_column='id_medida')
-    id_ubicacion = models.ForeignKey(Ubicacion, on_delete=models.SET_NULL, 
+    id_ubicacion = models.ForeignKey(Ubicacion, on_delete=models.SET_NULL,
                                       null=True, blank=True, db_column='id_ubicacion')
     id_proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT, db_column='id_proveedor')
     peso_kg = models.DecimalField(max_digits=8, decimal_places=2)
@@ -170,7 +170,7 @@ class Caja(models.Model):
 
     class Meta:
         db_table = 'caja'
-    
+
     def __str__(self):
         return f"Caja {self.id} - {self.producto}"
 
@@ -241,7 +241,7 @@ class Despacho(models.Model):
 
     class Meta:
         db_table = 'despacho'
-    
+
     def __str__(self):
         return f"Despacho {self.id_despacho} → {self.destino}"
 
@@ -256,7 +256,7 @@ class HistorialMovimientos(models.Model):
 
     class Meta:
         db_table = 'historial_movimientos'
-    
+
     def __str__(self):
         return f"Log {self.id_log}: {self.estado_anterior} → {self.estado_nuevo}"
 
@@ -331,10 +331,16 @@ class Planilla(models.Model):
     cajas_ids = models.JSONField(default=list)  # Lista de IDs de cajas
     operador = models.ForeignKey('auth.User', on_delete=models.CASCADE, db_column='id_operador')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    completada = models.BooleanField(default=False)
+    fecha_completada = models.DateTimeField(null=True, blank=True)
+    completada_por = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='planillas_completadas', db_column='id_completada_por'
+    )
 
     class Meta:
         db_table = 'planilla'
         ordering = ['-fecha_creacion']
 
     def __str__(self):
-        return f"Planilla {self.id_planilla} - {self.operador.username}"
+        return f"Planilla {self.id_planilla} - {self.operador.username}"

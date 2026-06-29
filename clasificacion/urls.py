@@ -7,9 +7,9 @@ from .views import (
     ProveedorViewSet, UsuarioViewSet, HistorialViewSet,
     DespachoViewSet, EstadoCarroViewSet, CategoriaViewSet, ConfigCarroViewSet,
     VehiculoViewSet, DestinoViewSet, SolicitudDespachoViewSet,
-    current_user
+    current_user, PlanillaViewSet
 )
-from .views_mobile import MobileDashboardView, MobileLoginView, MobilePlanillasView, MobileEstantesView
+from .views_mobile import MobileDashboardView, MobileLoginView, MobilePlanillasView, MobileEstantesView, MobileCompletarPlanillaView
 
 router = DefaultRouter()
 router.register(r'cajas', CajaViewSet, basename='caja')
@@ -26,12 +26,14 @@ router.register(r'config-carro', ConfigCarroViewSet, basename='config-carro')
 router.register(r'vehiculos', VehiculoViewSet)
 router.register(r'destinos', DestinoViewSet)
 router.register(r'solicitudes-despacho', SolicitudDespachoViewSet, basename='solicitudes-despacho')
+router.register(r'planillas', PlanillaViewSet, basename='planilla')
 
 urlpatterns = [
     path('me/', current_user),
     path('mobile/login/', MobileLoginView.as_view(), name='mobile-login'),
     path('mobile/dashboard/', MobileDashboardView.as_view(), name='mobile-dashboard'),
     path('mobile/planillas/', MobilePlanillasView.as_view(), name='mobile-planillas'),
+    path('mobile/planillas/<int:pk>/completar/', MobileCompletarPlanillaView.as_view(), name='mobile-planilla-completar'),
     path('mobile/estantes/', MobileEstantesView.as_view(), name='mobile-estantes'),
     path('', include(router.urls)),
 ]
