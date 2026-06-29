@@ -271,7 +271,21 @@ class WarehouseMap(Flowable):
             canvas.drawCentredString(cx, cy - 3, str(idx + 1))
 
 
-# ── CajaViewSet ───────────────────────────────────────────────────────────────
+def _resolve_usuario_id(request):
+    val = request.data.get('id_usuario')
+    if val:
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            pass
+    if request.user and request.user.is_authenticated:
+        u = Usuario.objects.filter(nombre__iexact=request.user.username).first() or \
+            Usuario.objects.filter(nombre__iexact=request.user.first_name).first() or \
+            Usuario.objects.first()
+        if u:
+            return u.id_usuario
+    return None
+
 
 class CajaViewSet(viewsets.ModelViewSet):
     serializer_class = CajaSerializer
@@ -735,7 +749,7 @@ class CajaViewSet(viewsets.ModelViewSet):
         """Procesa una sola caja (flujo legacy individual)."""
         caja = self.get_object()
         estado_anterior = caja.estado
-        usuario_id = request.data.get('id_usuario')
+        usuario_id = _resolve_usuario_id(request)
         clasificacion = ClasificadorCajas.clasificar(caja)
         mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
             clasificacion, caja=caja, incluir_detalle=True
@@ -790,7 +804,7 @@ class CajaViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             caja.estado = 'almacenada'
             caja.save()
-            _registrar_historial(caja, estado_anterior, request.data.get('id_usuario'))
+            _registrar_historial(caja, estado_anterior, _resolve_usuario_id(request))
         carro = EstadoCarro.objects.filter(id=1).first()
         if carro and carro.caja_id == caja.id:
             carro.estado = 'llego'
@@ -806,7 +820,7 @@ class CajaViewSet(viewsets.ModelViewSet):
                              'detalle': f"Estado actual: '{caja.estado}'"}, status=status.HTTP_400_BAD_REQUEST)
         estado_anterior = caja.estado
         ubicacion_anterior = caja.id_ubicacion
-        usuario_id = request.data.get('id_usuario')
+        usuario_id = _resolve_usuario_id(request)
         destino = request.data.get('destino', 'No especificado')
         placa = request.data.get('transporte_placa', 'N/A')
 

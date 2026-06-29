@@ -67,9 +67,14 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
 
 class CajaSerializer(serializers.ModelSerializer):
+    ubicacion_nombre = serializers.SerializerMethodField()
+
     class Meta:
         model = Caja
         fields = '__all__'
+
+    def get_ubicacion_nombre(self, obj):
+        return str(obj.id_ubicacion) if obj.id_ubicacion else ""
 
 
 class HistorialSerializer(serializers.ModelSerializer):
