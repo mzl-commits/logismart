@@ -130,11 +130,14 @@ class MobileEstantesView(APIView):
         for idx, ((pasillo, estante_num), slots) in enumerate(sorted(grupos.items()), start=1):
             total_slots = len(slots)
             slots_ocupados = sum(1 for s in slots if s.estado_ocupacion)
+            
             # Cajas activas asignadas a alguna de estas ubicaciones
-            cajas_asignadas = Caja.objects.filter(
+            cajas_in_slots = Caja.objects.filter(
                 id_ubicacion__in=[s.pk for s in slots],
                 estado__in=['en_almacen', 'procesada']
-            ).count()
+            )
+            cajas_map = {c.id_ubicacion_id: c.producto for c in cajas_in_slots}
+            cajas_asignadas = cajas_in_slots.count()
 
             # Porcentaje de ocupación de slots físicos
             ocupacion_pct = round((slots_ocupados / total_slots) * 100) if total_slots > 0 else 0
@@ -149,6 +152,18 @@ class MobileEstantesView(APIView):
             else:
                 estado = 'Disponible'
 
+            # Slots detallados
+            slots_data = []
+            for s in slots:
+                slots_data.append({
+                    'id_ubicacion': s.id_ubicacion,
+                    'nivel': s.nivel,
+                    'lado': s.lado,
+                    'casillero': s.casillero,
+                    'estado_ocupacion': s.estado_ocupacion,
+                    'producto': cajas_map.get(s.pk, None)
+                })
+
             data.append({
                 'id': idx,
                 'name': f'Pasillo {pasillo} - Estante {estante_num:02d}',
@@ -158,6 +173,7 @@ class MobileEstantesView(APIView):
                 'occupation_pct': ocupacion_pct,
                 'status': estado,
                 'tipo_estante': slots[0].get_tipo_estante_display() if slots else 'General',
+                'slots': slots_data
             })
 
         return Response(data)
