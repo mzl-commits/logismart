@@ -88,6 +88,15 @@
         const loadingEl = document.getElementById('loading');
         const container = document.getElementById('pdf-container');
 
+        // Ocultar cabecera si está embebido (ej. en la app móvil)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('embed') === 'true' || urlParams.get('mobile') === 'true') {
+            const headerEl = document.querySelector('.header');
+            if (headerEl) {
+                headerEl.style.display = 'none';
+            }
+        }
+
         pdfjsLib.getDocument(url).promise.then(pdf => {
             loadingEl.style.display = 'none';
             for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
