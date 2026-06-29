@@ -35,4 +35,25 @@ class PlanillaRepository(private val api: LogiSmartApi) {
                 ApiResult.Error("No se pudo conectar con el servidor LogiSmart.")
             },
         )
+
+    suspend fun downloadPdfLote(cajas: String, userId: Int, token: String): ApiResult<okhttp3.ResponseBody> =
+        runCatching { api.descargarPdfLote(cajas, userId, token) }.fold(
+            onSuccess = { response ->
+                when {
+                    response.isSuccessful && response.body() != null -> {
+                        ApiResult.Success(response.body()!!)
+                    }
+                    response.code() == 401 -> ApiResult.Unauthorized
+                    else -> ApiResult.Error(
+                        errorMessage(
+                            response.errorBody()?.string(),
+                            "No fue posible descargar el PDF de la planilla.",
+                        )
+                    )
+                }
+            },
+            onFailure = {
+                ApiResult.Error("No se pudo conectar con el servidor LogiSmart para descargar el PDF.")
+            }
+        )
 }

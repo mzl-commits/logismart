@@ -53,4 +53,12 @@ interface LogiSmartApi {
 
     @GET("api/mobile/planillas/")
     suspend fun getPlanillas(): Response<List<PlanillaDto>>
+
+    @retrofit2.http.Streaming
+    @GET("api/cajas/descargar_pdf_lote/")
+    suspend fun descargarPdfLote(
+        @retrofit2.http.Query("cajas") cajas: String,
+        @retrofit2.http.Query("usuario_id") usuarioId: Int,
+        @retrofit2.http.Query("token") token: String
+    ): Response<okhttp3.ResponseBody>
 }
