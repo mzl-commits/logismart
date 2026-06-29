@@ -6,7 +6,10 @@ import com.tecsup.logismart_movil.data.model.LogisticBox
 import com.tecsup.logismart_movil.data.model.Trip
 import com.tecsup.logismart_movil.data.remote.LogisticsApiService
 
-class LogisticsRepository(private val api: LogisticsApiService) {
+class LogisticsRepository(
+    private val api: LogisticsApiService,
+    private val logiSmartApi: com.tecsup.logismart_movil.data.remote.LogiSmartApi
+) {
 
     suspend fun getTrips(): List<Trip> {
         return runCatching {
@@ -26,8 +29,11 @@ class LogisticsRepository(private val api: LogisticsApiService) {
 
     suspend fun getBoxes(): List<LogisticBox> {
         return runCatching {
-            api.getCajas().map { caja ->
-                caja.toLogisticBox()
+            val response = logiSmartApi.getCajas()
+            if (response.isSuccessful && response.body() != null) {
+                response.body()!!.map { it.toLogisticBox() }
+            } else {
+                throw Exception("Error al cargar cajas de producción")
             }
         }.getOrElse {
             sampleBoxes()

@@ -61,4 +61,7 @@ interface LogiSmartApi {
         @retrofit2.http.Query("usuario_id") usuarioId: Int,
         @retrofit2.http.Query("token") token: String
     ): Response<okhttp3.ResponseBody>
+
+    @GET("api/cajas/")
+    suspend fun getCajas(): Response<List<com.tecsup.logismart_movil.data.model.CajaDto>>
 }

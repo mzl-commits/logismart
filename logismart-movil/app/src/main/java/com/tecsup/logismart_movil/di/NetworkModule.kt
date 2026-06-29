@@ -135,8 +135,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideLogisticsRepository(api: LogisticsApiService): LogisticsRepository {
-        return LogisticsRepository(api)
+    fun provideLogisticsRepository(
+        api: LogisticsApiService,
+        logiSmartApi: LogiSmartApi
+    ): LogisticsRepository {
+        return LogisticsRepository(api, logiSmartApi)
     }
 
     @Provides
