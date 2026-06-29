@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tecsup.logismart_movil.ui.components.LogiSmartTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,7 +28,7 @@ fun NotificationCenterScreen(
     onPlanillas: () -> Unit,
     onHistory: () -> Unit,
 ) {
-    Scaffold(topBar = { TopAppBar(title = { Text("Notificaciones", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás") } }) }) { padding ->
+    Scaffold(topBar = { LogiSmartTopAppBar(title = "Notificaciones", onBack = onBack) }) { padding ->
         LazyColumn(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(padding), contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             item { Text("Actividad operativa", style = MaterialTheme.typography.headlineSmall); Text("Eventos calculados con el estado actual del almacén.", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             item { NotificationCard(Icons.Default.WarningAmber, "Cajas pendientes", "${state.summary.pendingBoxes} cajas requieren procesamiento", Color(0xFFF59E0B), onBoxes) }

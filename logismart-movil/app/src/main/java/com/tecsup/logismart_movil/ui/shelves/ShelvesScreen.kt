@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,12 +29,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.tecsup.logismart_movil.domain.model.Shelf
 import com.tecsup.logismart_movil.domain.model.Slot
 import com.tecsup.logismart_movil.ui.components.LoadingSkeleton
+import com.tecsup.logismart_movil.ui.components.IllustratedEmptyState
+import com.tecsup.logismart_movil.ui.components.LogiSmartTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,24 +51,14 @@ fun ShelvesScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Estantería de Almacén", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    if (showBack) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                        }
-                    }
-                },
+            LogiSmartTopAppBar(
+                title = "Estantería del almacén",
+                onBack = onBack.takeIf { showBack },
                 actions = {
                     IconButton(onClick = { viewModel.loadShelves() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
-                )
+                }
             )
         }
     ) { paddingValues ->
@@ -132,15 +128,12 @@ fun ShelvesScreen(
 
                         if (uiState.shelves.isEmpty() && uiState.errorMessage == null) {
                             item {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth().padding(32.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        "No hay estantes registrados.",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
+                                IllustratedEmptyState(
+                                    title = "No hay estantes registrados",
+                                    description = "La distribución del almacén aparecerá cuando existan ubicaciones configuradas.",
+                                    icon = Icons.Default.GridView,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
                             }
                         }
 
@@ -160,6 +153,8 @@ fun ShelfCard(
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
+    var selectedSlot by remember(shelf.id) { mutableStateOf<Slot?>(null) }
+    val haptics = LocalHapticFeedback.current
     val progress = (shelf.occupationPercentage / 100f).coerceIn(0f, 1f)
     val progressColor = getOccupationColor(shelf.status)
     val chevronRotation by animateFloatAsState(
@@ -259,15 +254,33 @@ fun ShelfCard(
             )
 
             AnimatedVisibility(visible = isExpanded) {
-                Spacer(modifier = Modifier.height(6.dp))
-                ShelfGrid(slots = shelf.slots)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    ShelfGrid(
+                        slots = shelf.slots,
+                        selectedSlotId = selectedSlot?.idUbicacion,
+                        onSlotSelected = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            selectedSlot = it
+                        }
+                    )
+                    AnimatedVisibility(visible = selectedSlot != null) {
+                        selectedSlot?.let { slot ->
+                            SlotDetailCard(slot = slot, onClose = { selectedSlot = null })
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun ShelfGrid(slots: List<Slot>) {
+fun ShelfGrid(
+    slots: List<Slot>,
+    selectedSlotId: Int? = null,
+    onSlotSelected: (Slot) -> Unit = {}
+) {
     val slotsByLevel = slots.groupBy { it.nivel }
 
     Column(
@@ -326,16 +339,16 @@ fun ShelfGrid(slots: List<Slot>) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    SlotCell(slot = c1, label = "Caja 1 (Adelante)", modifier = Modifier.weight(1f))
-                    SlotCell(slot = c2, label = "Caja 2 (Adelante)", modifier = Modifier.weight(1f))
+                    SlotCell(slot = c1, label = "Caja 1 (Adelante)", selected = c1?.idUbicacion == selectedSlotId, onClick = onSlotSelected, modifier = Modifier.weight(1f))
+                    SlotCell(slot = c2, label = "Caja 2 (Adelante)", selected = c2?.idUbicacion == selectedSlotId, onClick = onSlotSelected, modifier = Modifier.weight(1f))
                 }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    SlotCell(slot = c3, label = "Caja 3 (Atrás)", modifier = Modifier.weight(1f))
-                    SlotCell(slot = c4, label = "Caja 4 (Atrás)", modifier = Modifier.weight(1f))
+                    SlotCell(slot = c3, label = "Caja 3 (Atrás)", selected = c3?.idUbicacion == selectedSlotId, onClick = onSlotSelected, modifier = Modifier.weight(1f))
+                    SlotCell(slot = c4, label = "Caja 4 (Atrás)", selected = c4?.idUbicacion == selectedSlotId, onClick = onSlotSelected, modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -352,7 +365,13 @@ private fun GridLegend(color: Color, label: String) {
 }
 
 @Composable
-fun SlotCell(slot: Slot?, label: String, modifier: Modifier = Modifier) {
+fun SlotCell(
+    slot: Slot?,
+    label: String,
+    selected: Boolean = false,
+    onClick: (Slot) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     if (slot == null) {
         Box(
             modifier = modifier
@@ -372,7 +391,12 @@ fun SlotCell(slot: Slot?, label: String, modifier: Modifier = Modifier) {
         modifier = modifier
             .height(44.dp)
             .background(bgColor, shape = RoundedCornerShape(10.dp))
-            .border(1.dp, borderColor, shape = RoundedCornerShape(10.dp))
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) MaterialTheme.colorScheme.primary else borderColor,
+                shape = RoundedCornerShape(10.dp)
+            )
+            .clickable { onClick(slot) }
             .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -396,6 +420,81 @@ fun SlotCell(slot: Slot?, label: String, modifier: Modifier = Modifier) {
                         shape = CircleShape
                     )
             )
+        }
+    }
+}
+
+@Composable
+private fun SlotDetailCard(slot: Slot, onClose: () -> Unit) {
+    val availableColor = Color(0xFF059669)
+    val statusColor = if (slot.estadoOcupacion) MaterialTheme.colorScheme.error else availableColor
+    val sideLabel = if (slot.lado.equals("posterior", ignoreCase = true)) "Posterior" else "Adelante"
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .45f),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = CircleShape) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.padding(8.dp).size(18.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Detalle del espacio", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text("Ubicación #${slot.idUbicacion}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                IconButton(onClick = onClose) {
+                    Icon(Icons.Default.Close, contentDescription = "Cerrar detalle")
+                }
+            }
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SlotDetailValue("Nivel", slot.nivel.toString(), Modifier.weight(1f))
+                SlotDetailValue("Lado", sideLabel, Modifier.weight(1f))
+                SlotDetailValue("Casillero", slot.casillero.toString(), Modifier.weight(1f))
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(9.dp).background(statusColor, CircleShape))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    if (slot.estadoOcupacion) "Espacio ocupado" else "Espacio disponible",
+                    color = statusColor,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Text(
+                text = if (slot.estadoOcupacion) {
+                    "Producto: ${slot.producto?.takeIf { it.isNotBlank() } ?: "Sin detalle registrado"}"
+                } else {
+                    "Este espacio no tiene una caja asignada."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun SlotDetailValue(label: String, value: String, modifier: Modifier = Modifier) {
+    Surface(modifier = modifier, color = MaterialTheme.colorScheme.surface, shape = RoundedCornerShape(10.dp)) {
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(value, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
         }
     }
 }

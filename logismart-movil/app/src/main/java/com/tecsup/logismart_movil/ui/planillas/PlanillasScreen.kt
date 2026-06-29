@@ -22,12 +22,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tecsup.logismart_movil.data.remote.BoxDto
 import com.tecsup.logismart_movil.data.remote.PlanillaDto
 import com.tecsup.logismart_movil.ui.components.LoadingSkeleton
+import com.tecsup.logismart_movil.ui.components.IllustratedEmptyState
+import com.tecsup.logismart_movil.ui.components.LogiSmartTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,17 +45,9 @@ fun PlanillasScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Mis Planillas de Trabajo", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
+            LogiSmartTopAppBar(
+                title = "Mis planillas de trabajo",
+                onBack = onBack,
                 actions = {
                     IconButton(onClick = onRefresh, enabled = !state.isRefreshing) {
                         Icon(
@@ -60,12 +56,7 @@ fun PlanillasScreen(
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    actionIconContentColor = MaterialTheme.colorScheme.onSurface
-                )
+                }
             )
         }
     ) { paddingValues ->
@@ -103,27 +94,14 @@ fun PlanillasScreen(
                     }
                 }
                 state.planillas.isEmpty() -> {
-                    Column(
+                    IllustratedEmptyState(
+                        title = "No tienes planillas asignadas",
+                        description = "Las nuevas tareas de trabajo aparecerán aquí cuando sean asignadas.",
+                        icon = Icons.AutoMirrored.Filled.Assignment,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp)
                             .align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Assignment,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
-                            modifier = Modifier.size(72.dp)
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text(
-                            text = "No tienes planillas asignadas por el momento.",
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    )
                 }
                 else -> {
                     LazyColumn(
@@ -156,6 +134,7 @@ fun PlanillaItem(
     onViewPdf: (cajas: String, userId: Int) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
 
     Card(
         modifier = Modifier
@@ -252,7 +231,10 @@ fun PlanillaItem(
 
                     if (planilla.puedeCompletar) {
                         Button(
-                            onClick = onComplete,
+                            onClick = {
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                onComplete()
+                            },
                             enabled = !completing,
                             modifier = Modifier.fillMaxWidth(),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669)),

@@ -18,14 +18,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tecsup.logismart_movil.data.model.LogisticBox
 import com.tecsup.logismart_movil.ui.components.LoadingSkeleton
+import com.tecsup.logismart_movil.ui.components.IllustratedEmptyState
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -37,6 +41,7 @@ fun BoxesScreen(
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val haptics = LocalHapticFeedback.current
     
     var dispatchBoxId by remember { mutableStateOf<String?>(null) }
     var showFilters by remember { mutableStateOf(false) }
@@ -64,10 +69,41 @@ fun BoxesScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            FilledTonalButton(onClick = { showFilters = true }, shape = RoundedCornerShape(12.dp)) {
+            FilledTonalButton(onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                showFilters = true
+            }, shape = RoundedCornerShape(12.dp)) {
                 Icon(Icons.Default.FilterAlt, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(7.dp))
                 Text("Filtrar")
+            }
+        }
+
+        AnimatedVisibility(
+            visible = state.selectedStatus != "Todas" || state.selectedCategory != "Todas cat."
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                if (state.selectedStatus != "Todas") {
+                    InputChip(
+                        selected = true,
+                        onClick = { viewModel.selectStatus("Todas") },
+                        label = { Text(state.selectedStatus) },
+                        leadingIcon = { Icon(Icons.Default.Check, null, Modifier.size(16.dp)) },
+                        trailingIcon = { Icon(Icons.Default.Close, "Quitar filtro", Modifier.size(16.dp)) },
+                    )
+                }
+                if (state.selectedCategory != "Todas cat.") {
+                    InputChip(
+                        selected = true,
+                        onClick = { viewModel.selectCategory("Todas cat.") },
+                        label = { Text(state.selectedCategory) },
+                        leadingIcon = { Icon(Icons.Default.Category, null, Modifier.size(16.dp)) },
+                        trailingIcon = { Icon(Icons.Default.Close, "Quitar filtro", Modifier.size(16.dp)) },
+                    )
+                }
             }
         }
 
@@ -75,13 +111,12 @@ fun BoxesScreen(
             LoadingSkeleton(modifier = Modifier.fillMaxWidth(), rows = 3)
         } else {
             if (state.filteredBoxes.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = "No se encontraron cajas con estos filtros.",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                IllustratedEmptyState(
+                    title = if (state.selectedStatus == "Todas" && state.selectedCategory == "Todas cat.") "No hay cajas activas" else "Sin coincidencias",
+                    description = if (state.selectedStatus == "Todas" && state.selectedCategory == "Todas cat.") "Las cajas registradas aparecerán aquí." else "Quita algún filtro o prueba con otra combinación.",
+                    icon = Icons.Default.Inventory2,
+                    modifier = Modifier.fillMaxSize(),
+                )
             } else {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -299,6 +334,7 @@ private fun BoxCard(
     onDespachar: () -> Unit
 ) {
     val isDark = MaterialTheme.colorScheme.background.luminance() < .5f
+    val haptics = LocalHapticFeedback.current
     
     val (statusBg, statusFg) = when (box.estado.lowercase().replace(" ", "_")) {
         "pendiente" -> Pair(
@@ -442,7 +478,10 @@ private fun BoxCard(
             when (box.estado.lowercase().replace(" ", "_")) {
                 "pendiente" -> {
                     Button(
-                        onClick = onProcesar,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onProcesar()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF59E0B)),
                         shape = RoundedCornerShape(14.dp)
@@ -458,7 +497,10 @@ private fun BoxCard(
                 }
                 "en_transito", "en_tránsito" -> {
                     Button(
-                        onClick = onAlmacenar,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onAlmacenar()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF10B981)),
                         shape = RoundedCornerShape(14.dp)
@@ -474,7 +516,10 @@ private fun BoxCard(
                 }
                 "almacenada" -> {
                     Button(
-                        onClick = onDespachar,
+                        onClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onDespachar()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(14.dp)

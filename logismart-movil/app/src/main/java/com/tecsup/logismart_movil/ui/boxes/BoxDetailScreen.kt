@@ -15,10 +15,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tecsup.logismart_movil.data.model.LogisticBox
+import com.tecsup.logismart_movil.ui.components.LogiSmartTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun BoxDetailScreen(box: LogisticBox?, onBack: () -> Unit) {
-    Scaffold(topBar={ TopAppBar(title={Text(box?.id ?: "Detalle de caja", fontWeight=FontWeight.Bold)}, navigationIcon={IconButton(onClick=onBack){Icon(Icons.AutoMirrored.Filled.ArrowBack,"Atrás")}}) }) { padding ->
+    Scaffold(topBar={ LogiSmartTopAppBar(title = box?.id ?: "Detalle de caja", onBack = onBack) }) { padding ->
         if (box == null) { Box(Modifier.fillMaxSize().padding(padding), contentAlignment=androidx.compose.ui.Alignment.Center){ CircularProgressIndicator() } }
         else Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(padding).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement=Arrangement.spacedBy(14.dp)) {
             Card(Modifier.fillMaxWidth(), shape=RoundedCornerShape(20.dp), border=CardDefaults.outlinedCardBorder(), colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.surface)) {

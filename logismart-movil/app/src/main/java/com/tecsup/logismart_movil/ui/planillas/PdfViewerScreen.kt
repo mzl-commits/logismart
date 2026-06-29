@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.tecsup.logismart_movil.ui.components.LogiSmartTopAppBar
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.tecsup.logismart_movil.data.local.SessionManager
 import kotlinx.coroutines.flow.first
@@ -77,22 +78,7 @@ fun PdfViewerScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Guía de Almacenamiento", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
+            LogiSmartTopAppBar(title = "Guía de almacenamiento", onBack = onBack)
         }
     ) { paddingValues ->
         Box(

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.tecsup.logismart_movil.ui.components.LogiSmartTopAppBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +30,7 @@ fun ProfileScreen(
     onNotifications: () -> Unit,
     onLogout: () -> Unit,
 ) {
-    Scaffold(topBar = { TopAppBar(title = { Text("Perfil", fontWeight = FontWeight.Bold) }) }) { padding ->
+    Scaffold(topBar = { LogiSmartTopAppBar(title = "Perfil") }) { padding ->
         Column(
             Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(padding).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)

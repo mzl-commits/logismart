@@ -297,10 +297,18 @@ fun AppNavGraph(
     }
 
     LaunchedEffect(targetRoute) {
-        if (navController.currentDestination?.route != targetRoute) {
-            navController.navigate(targetRoute) {
-                popUpTo(navController.graph.startDestinationId) { inclusive = true }
-                launchSingleTop = true
+        val currentDest = navController.currentDestination
+        if (currentDest != null && currentDest.route != targetRoute) {
+            try {
+                val startDestId = navController.graph.startDestinationId
+                navController.navigate(targetRoute) {
+                    popUpTo(startDestId) { inclusive = true }
+                    launchSingleTop = true
+                }
+            } catch (e: IllegalStateException) {
+                navController.navigate(targetRoute) {
+                    launchSingleTop = true
+                }
             }
         }
     }
