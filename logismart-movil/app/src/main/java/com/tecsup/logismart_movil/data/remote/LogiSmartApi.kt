@@ -63,16 +63,16 @@ interface LogiSmartApi {
     ): Response<okhttp3.ResponseBody>
 
     @GET("api/cajas/")
-    suspend fun getCajas(): Response<List<com.tecsup.logismart_movil.data.model.CajaDto>>
+    suspend fun getCajas(): Response<com.tecsup.logismart_movil.data.remote.PaginatedResponse<com.tecsup.logismart_movil.data.model.CajaDto>>
 
     @GET("api/usuarios/")
-    suspend fun getUsuarios(): Response<List<com.tecsup.logismart_movil.data.remote.UsuarioDto>>
+    suspend fun getUsuarios(): Response<com.tecsup.logismart_movil.data.remote.PaginatedResponse<com.tecsup.logismart_movil.data.remote.UsuarioDto>>
 
     @GET("api/vehiculos/")
-    suspend fun getVehiculos(): Response<List<com.tecsup.logismart_movil.data.remote.VehiculoDto>>
+    suspend fun getVehiculos(): Response<com.tecsup.logismart_movil.data.remote.PaginatedResponse<com.tecsup.logismart_movil.data.remote.VehiculoDto>>
 
     @GET("api/destinos/")
-    suspend fun getDestinos(): Response<List<com.tecsup.logismart_movil.data.remote.DestinoDto>>
+    suspend fun getDestinos(): Response<com.tecsup.logismart_movil.data.remote.PaginatedResponse<com.tecsup.logismart_movil.data.remote.DestinoDto>>
 
     @POST("api/cajas/{id}/procesar/")
     suspend fun procesarCaja(
@@ -118,4 +118,11 @@ data class DespachoRequest(
     @SerializedName("id_usuario") val idUsuario: Int?,
     @SerializedName("transporte_placa") val transportePlaca: String,
     val destino: String
+)
+
+data class PaginatedResponse<T>(
+    @SerializedName("count") val count: Int,
+    @SerializedName("next") val next: String?,
+    @SerializedName("previous") val previous: String?,
+    @SerializedName("results") val results: List<T>
 )

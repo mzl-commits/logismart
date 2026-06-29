@@ -31,7 +31,7 @@ class LogisticsRepository(
         return runCatching {
             val response = logiSmartApi.getCajas()
             if (response.isSuccessful && response.body() != null) {
-                response.body()!!.map { it.toLogisticBox() }
+                response.body()!!.results.map { it.toLogisticBox() }
             } else {
                 throw Exception("Error al cargar cajas de producción")
             }
@@ -148,7 +148,7 @@ class LogisticsRepository(
         return runCatching {
             val response = logiSmartApi.getUsuarios()
             if (response.isSuccessful && response.body() != null) {
-                response.body()!!
+                response.body()!!.results
             } else emptyList()
         }.getOrElse { emptyList() }
     }
@@ -157,7 +157,7 @@ class LogisticsRepository(
         return runCatching {
             val response = logiSmartApi.getVehiculos()
             if (response.isSuccessful && response.body() != null) {
-                response.body()!!
+                response.body()!!.results
             } else emptyList()
         }.getOrElse { emptyList() }
     }
@@ -166,7 +166,7 @@ class LogisticsRepository(
         return runCatching {
             val response = logiSmartApi.getDestinos()
             if (response.isSuccessful && response.body() != null) {
-                response.body()!!
+                response.body()!!.results
             } else emptyList()
         }.getOrElse { emptyList() }
     }
