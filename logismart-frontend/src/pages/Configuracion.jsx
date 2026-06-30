@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getConfigCarro, getMedidas, updateConfigCarro, getEstadoCarro } from '../api/endpoints';
+import LocalAiSettings from '../components/LocalAiSettings';
 
 export default function Configuracion() {
   const [config, setConfig] = useState({
@@ -571,6 +572,9 @@ export default function Configuracion() {
             </div>
           </div>
         </div>
+      </div>
+      <div className="mt-6 fade-in">
+        <LocalAiSettings />
       </div>
     </>
   );

@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { getCajas, getProveedores, getMedidas, getUsuarios, getCategorias, crearCaja, sugerirId, procesarLote, previsualizarLote, getUbicaciones } from '../api/endpoints';
+import { openAiEnhancedPdf } from '../services/localAi';
 
 const SHELF_TYPE_LABEL = {
   general: 'General', pesado: 'Carga pesada', fragil: 'Protección frágil',
@@ -61,7 +62,10 @@ export default function NuevaCaja() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(load, 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -150,20 +154,38 @@ export default function NuevaCaja() {
       return;
     }
 
+    const pdfWindow = window.open('', '_blank');
+    if (pdfWindow) {
+      pdfWindow.document.title = 'Preparando guía LogiSmart';
+      pdfWindow.document.body.innerHTML = '<div style="font-family:system-ui;padding:40px;color:#334155">Preparando guía PDF e informe local…</div>';
+    }
     setLoadingConfirmar(true);
     try {
       const res = await procesarLote({
         id_usuario: parseInt(usuarioEnvio),
         asignaciones: asignaciones
       });
-      // Abrimos el PDF primero para evitar el bloqueo del popup del navegador
       if (res.data.pdf_url) {
-        window.open(window.location.origin + res.data.pdf_url, '_blank');
+        const operationalData = {
+          total_cajas: previewData?.paradas?.length ?? previewData?.total_cajas,
+          peso_total_kg: previewData?.peso_total,
+          paradas: previewData?.paradas,
+          asignaciones,
+        };
+        const result = await openAiEnhancedPdf(
+          window.location.origin + res.data.pdf_url,
+          operationalData,
+          pdfWindow,
+        );
+        if (result.error) console.warn('Se usó el PDF tradicional porque la IA local no estuvo disponible.', result.error);
+      } else if (pdfWindow) {
+        pdfWindow.close();
       }
       alert(res.data.mensaje || 'Cola procesada con éxito. Descargando guía de ruta...');
       setShowPreview(false);
       load();
     } catch (error) {
+      if (pdfWindow) pdfWindow.close();
       alert(error.response?.data?.error || 'Error al procesar la cola');
       console.error(error);
     } finally {
