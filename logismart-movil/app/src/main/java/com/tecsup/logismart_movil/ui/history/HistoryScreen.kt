@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,10 +28,12 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SyncProblem
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -54,6 +58,7 @@ import com.tecsup.logismart_movil.ui.theme.EmeraldGreen
 import com.tecsup.logismart_movil.ui.theme.InfoBlue
 import com.tecsup.logismart_movil.ui.theme.RoseDanger
 import com.tecsup.logismart_movil.ui.components.LoadingSkeleton
+import com.tecsup.logismart_movil.ui.components.IllustratedEmptyState
 
 @Composable
 fun HistoryScreen(
@@ -67,14 +72,16 @@ fun HistoryScreen(
             trip.estado.contains(state.filter, ignoreCase = true)
     }
 
-    LazyColumn(
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 330.dp),
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "Historial de rutas",
@@ -88,7 +95,7 @@ fun HistoryScreen(
             }
         }
 
-        item {
+        item(span = { GridItemSpan(maxLineSpan) }) {
             OutlinedTextField(
                 value = state.filter,
                 onValueChange = viewModel::updateFilter,
@@ -113,13 +120,27 @@ fun HistoryScreen(
         }
 
         if (state.loading) {
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 LoadingSkeleton(modifier = Modifier.fillMaxWidth(), rows = 3)
             }
+        } else if (state.errorMessage != null) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    IllustratedEmptyState(
+                        title = "Historial no disponible",
+                        description = state.errorMessage.orEmpty(),
+                        icon = Icons.Default.SyncProblem,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    FilledTonalButton(onClick = viewModel::loadTrips) {
+                        Text("Reintentar sincronización")
+                    }
+                }
+            }
         } else if (filteredTrips.isEmpty()) {
-            item { EmptyHistoryState(hasFilter = state.filter.isNotBlank()) }
+            item(span = { GridItemSpan(maxLineSpan) }) { EmptyHistoryState(hasFilter = state.filter.isNotBlank()) }
         } else {
-            item {
+            item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

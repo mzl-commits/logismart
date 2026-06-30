@@ -8,8 +8,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -75,12 +77,14 @@ fun ShelvesScreen(
                     )
                 }
                 else -> {
-                    LazyColumn(
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = 360.dp),
                         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
                         contentPadding = PaddingValues(vertical = 16.dp)
                     ) {
-                        item {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
                             Column {
                                 Text(
                                     text = "Vista de estantes",
@@ -104,7 +108,7 @@ fun ShelvesScreen(
                             }
                         }
 
-                        item {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
                             val totalCapacity = uiState.shelves.sumOf { it.capacity }
                             val occupied = uiState.shelves.sumOf { it.currentOccupation }
                             Surface(
@@ -127,7 +131,7 @@ fun ShelvesScreen(
                         }
 
                         if (uiState.shelves.isEmpty() && uiState.errorMessage == null) {
-                            item {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
                                 IllustratedEmptyState(
                                     title = "No hay estantes registrados",
                                     description = "La distribución del almacén aparecerá cuando existan ubicaciones configuradas.",

@@ -13,7 +13,8 @@ import javax.inject.Inject
 data class HistoryUiState(
     val loading: Boolean = true,
     val trips: List<Trip> = emptyList(),
-    val filter: String = ""
+    val filter: String = "",
+    val errorMessage: String? = null,
 )
 
 @HiltViewModel
@@ -32,12 +33,21 @@ class HistoryViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(loading = true)
 
-            val trips = repository.getTrips()
-
-            _uiState.value = _uiState.value.copy(
-                loading = false,
-                trips = trips
-            )
+            runCatching { repository.getTrips() }
+                .onSuccess { trips ->
+                    _uiState.value = _uiState.value.copy(
+                        loading = false,
+                        trips = trips,
+                        errorMessage = null,
+                    )
+                }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(
+                        loading = false,
+                        trips = emptyList(),
+                        errorMessage = "No se pudo sincronizar el historial. Verifica tu conexión e inténtalo nuevamente.",
+                    )
+                }
         }
     }
 

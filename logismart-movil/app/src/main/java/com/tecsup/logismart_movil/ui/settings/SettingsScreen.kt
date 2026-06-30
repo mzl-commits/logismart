@@ -1,5 +1,7 @@
 package com.tecsup.logismart_movil.ui.settings
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,6 +22,8 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,37 +34,21 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.tecsup.logismart_movil.data.local.UserPreferences
-import kotlinx.coroutines.launch
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
-fun SettingsScreen() {
-    val context = LocalContext.current
-    val preferences = remember { UserPreferences(context.applicationContext) }
-    val savedUserName by preferences.userName.collectAsState(initial = "Gisela Morales")
-    val savedServerUrl by preferences.serverUrl.collectAsState(initial = "https://logistica.promube.com/")
-    val notificationsEnabled by preferences.notificationsEnabled.collectAsState(initial = true)
-    val darkModeEnabled by preferences.darkModeEnabled.collectAsState(initial = false)
-    val showPriorityWidget by preferences.showPriorityWidget.collectAsState(initial = true)
-    var userName by remember { mutableStateOf(savedUserName) }
-    var serverUrl by remember { mutableStateOf(savedServerUrl) }
-    val scope = rememberCoroutineScope()
-
-    LaunchedEffect(savedUserName) { userName = savedUserName }
-    LaunchedEffect(savedServerUrl) { serverUrl = savedServerUrl }
+fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+    val state by viewModel.uiState.collectAsState()
+    val modelPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let(viewModel::importLocalAiModel)
+    }
 
     Column(
         modifier = Modifier
@@ -91,8 +79,8 @@ fun SettingsScreen() {
                     }
                 }
                 OutlinedTextField(
-                    value = userName,
-                    onValueChange = { userName = it },
+                    value = state.userName,
+                    onValueChange = viewModel::onUserNameChange,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Nombre del usuario") },
                     leadingIcon = { Icon(Icons.Default.Person, null) },
@@ -100,8 +88,8 @@ fun SettingsScreen() {
                     singleLine = true,
                 )
                 OutlinedTextField(
-                    value = serverUrl,
-                    onValueChange = { serverUrl = it },
+                    value = state.serverUrl,
+                    onValueChange = viewModel::onServerUrlChange,
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("URL del servidor") },
                     leadingIcon = { Icon(Icons.Default.Storage, null) },
@@ -109,12 +97,7 @@ fun SettingsScreen() {
                     singleLine = true,
                 )
                 Button(
-                    onClick = {
-                        scope.launch {
-                            preferences.saveUserName(userName)
-                            preferences.saveServerUrl(serverUrl)
-                        }
-                    },
+                    onClick = viewModel::saveAccount,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     contentPadding = PaddingValues(vertical = 15.dp),
@@ -131,24 +114,70 @@ fun SettingsScreen() {
             title = "Notificaciones",
             description = "Recibir alertas importantes del sistema",
             icon = Icons.Default.Notifications,
-            checked = notificationsEnabled,
-            onCheckedChange = { value -> scope.launch { preferences.saveNotificationsEnabled(value) } },
+            checked = state.notificationsEnabled,
+            onCheckedChange = viewModel::setNotificationsEnabled,
         )
         SettingSwitchCard(
             title = "Tema oscuro",
             description = "Preferencia visual de la aplicación",
             icon = Icons.Default.DarkMode,
-            checked = darkModeEnabled,
-            onCheckedChange = { value -> scope.launch { preferences.saveDarkModeEnabled(value) } },
+            checked = state.darkModeEnabled,
+            onCheckedChange = viewModel::setDarkModeEnabled,
         )
         Text("WIDGETS DEL INICIO", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         SettingSwitchCard(
             title = "Prioridad operativa",
             description = "Mostrar el recordatorio de cajas pendientes",
             icon = Icons.Default.Storage,
-            checked = showPriorityWidget,
-            onCheckedChange = { value -> scope.launch { preferences.saveShowPriorityWidget(value) } },
+            checked = state.showPriorityWidget,
+            onCheckedChange = viewModel::setShowPriorityWidget,
         )
+
+        Text("IA LOCAL", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = CardDefaults.outlinedCardBorder(),
+        ) {
+            Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(color = MaterialTheme.colorScheme.tertiaryContainer, shape = RoundedCornerShape(12.dp)) {
+                        Icon(Icons.Default.SmartToy, null, Modifier.padding(10.dp).size(22.dp), tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Gemma 3 1B", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text(
+                            if (state.localAiModelPath.isBlank()) "Modelo no instalado" else "Modelo disponible en el dispositivo",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = state.localAiEnabled && state.localAiModelPath.isNotBlank(),
+                        enabled = state.localAiModelPath.isNotBlank(),
+                        onCheckedChange = viewModel::setLocalAiEnabled,
+                    )
+                }
+                Text(
+                    "Selecciona el archivo Gemma 3 1B en formato .litertlm. El modelo se copia al almacenamiento privado y funciona sin internet.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(
+                    onClick = { modelPicker.launch(arrayOf("application/octet-stream", "*/*")) },
+                    enabled = !state.importingModel,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                ) {
+                    Icon(Icons.Default.FolderOpen, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(if (state.importingModel) "Importando modelo…" else if (state.localAiModelPath.isBlank()) "Seleccionar modelo" else "Cambiar modelo")
+                }
+                state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary) }
+            }
+        }
     }
 }
 

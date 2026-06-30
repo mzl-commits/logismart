@@ -2,7 +2,11 @@ package com.tecsup.logismart_movil.ui.navigation
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -18,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -82,10 +87,15 @@ fun AppNavGraph(
         Triple(Routes.History.route, "Historial", Icons.Default.History),
         Triple(Routes.Profile.route, "Perfil", Icons.Default.Person),
     )
+    val isTablet = LocalConfiguration.current.screenWidthDp >= 600
+    val showPrimaryNavigation = session != null && bottomDestinations.any { it.first == currentRoute }
 
+    Box(Modifier.fillMaxSize()) {
     Scaffold(
+        modifier = Modifier.padding(start = if (isTablet && showPrimaryNavigation) 80.dp else 0.dp),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            if (session != null && bottomDestinations.any { it.first == currentRoute }) {
+            if (!isTablet && showPrimaryNavigation) {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 5.dp) {
                     bottomDestinations.forEach { (route, label, icon) ->
                         NavigationBarItem(
@@ -189,7 +199,6 @@ fun AppNavGraph(
             PdfViewerScreen(
                 cajas = cajas,
                 userId = userId,
-                sessionManager = sessionManager,
                 onBack = { navController.popBackStack() }
             )
         }
@@ -294,6 +303,31 @@ fun AppNavGraph(
         }
             }
         }
+    }
+
+    if (isTablet && showPrimaryNavigation) {
+        NavigationRail(
+            modifier = Modifier.align(Alignment.CenterStart).fillMaxHeight(),
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            Spacer(Modifier.height(12.dp))
+            bottomDestinations.forEach { (route, label, icon) ->
+                NavigationRailItem(
+                    selected = currentRoute == route,
+                    onClick = {
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    icon = { Icon(icon, contentDescription = label) },
+                    label = { Text(label) },
+                    alwaysShowLabel = true,
+                )
+            }
+        }
+    }
     }
 
     LaunchedEffect(targetRoute) {

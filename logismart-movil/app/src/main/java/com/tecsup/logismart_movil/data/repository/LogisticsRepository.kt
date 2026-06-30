@@ -12,12 +12,8 @@ class LogisticsRepository(
 ) {
 
     suspend fun getTrips(): List<Trip> {
-        return runCatching {
-            api.getDespachos().map { despacho ->
-                despacho.toTrip()
-            }
-        }.getOrElse {
-            sampleTrips()
+        return api.getDespachos().results.map { despacho ->
+            despacho.toTrip()
         }
     }
 
@@ -65,44 +61,6 @@ class LogisticsRepository(
             ubicacion = if (!ubicacionNombre.isNullOrBlank()) ubicacionNombre else (idUbicacion?.let { "Ubicación $it" } ?: "Sin ubicación"),
             carroAsignado = if (estado == "en_transito") "AGV principal" else "Sin asignar",
             esFragil = esFragil ?: false
-        )
-    }
-
-    private fun sampleTrips(): List<Trip> {
-        return listOf(
-            Trip(
-                id = 1,
-                fecha = "2026-06-26",
-                origen = "Almacén principal",
-                destino = "Zona de despacho A",
-                estado = "Completado",
-                ruta = "Base AGV → Estante A1 → Despacho A",
-                tiempo = "12 min",
-                cargaTransportada = "Caja CX-001",
-                transporte = "AGV-01"
-            ),
-            Trip(
-                id = 2,
-                fecha = "2026-06-25",
-                origen = "Almacén principal",
-                destino = "Zona de despacho B",
-                estado = "En tránsito",
-                ruta = "Base AGV → Estante B2 → Despacho B",
-                tiempo = "18 min",
-                cargaTransportada = "Caja CX-002",
-                transporte = "AGV-01"
-            ),
-            Trip(
-                id = 3,
-                fecha = "2026-06-24",
-                origen = "Almacén secundario",
-                destino = "Zona de carga",
-                estado = "Finalizado",
-                ruta = "Base AGV → Estante C3 → Zona de carga",
-                tiempo = "10 min",
-                cargaTransportada = "Caja CX-003",
-                transporte = "AGV-02"
-            )
         )
     }
 

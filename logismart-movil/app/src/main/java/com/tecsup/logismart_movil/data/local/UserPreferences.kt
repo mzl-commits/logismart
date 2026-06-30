@@ -22,6 +22,8 @@ class UserPreferences(
         val SHOW_PRIORITY_WIDGET = booleanPreferencesKey("show_priority_widget")
         val COMPACT_DASHBOARD = booleanPreferencesKey("compact_dashboard")
         val PRIORITY_WIDGET_FIRST = booleanPreferencesKey("priority_widget_first")
+        val LOCAL_AI_ENABLED = booleanPreferencesKey("local_ai_enabled")
+        val LOCAL_AI_MODEL_PATH = stringPreferencesKey("local_ai_model_path")
     }
 
     val userName: Flow<String> = context.settingsDataStore.data.map { preferences ->
@@ -43,6 +45,8 @@ class UserPreferences(
     val showPriorityWidget: Flow<Boolean> = context.settingsDataStore.data.map { it[Keys.SHOW_PRIORITY_WIDGET] ?: true }
     val compactDashboard: Flow<Boolean> = context.settingsDataStore.data.map { it[Keys.COMPACT_DASHBOARD] ?: false }
     val priorityWidgetFirst: Flow<Boolean> = context.settingsDataStore.data.map { it[Keys.PRIORITY_WIDGET_FIRST] ?: false }
+    val localAiEnabled: Flow<Boolean> = context.settingsDataStore.data.map { it[Keys.LOCAL_AI_ENABLED] ?: false }
+    val localAiModelPath: Flow<String> = context.settingsDataStore.data.map { it[Keys.LOCAL_AI_MODEL_PATH] ?: "" }
 
     suspend fun saveUserName(value: String) {
         context.settingsDataStore.edit { preferences ->
@@ -71,4 +75,6 @@ class UserPreferences(
     suspend fun saveShowPriorityWidget(value: Boolean) { context.settingsDataStore.edit { it[Keys.SHOW_PRIORITY_WIDGET] = value } }
     suspend fun saveCompactDashboard(value: Boolean) { context.settingsDataStore.edit { it[Keys.COMPACT_DASHBOARD] = value } }
     suspend fun savePriorityWidgetFirst(value: Boolean) { context.settingsDataStore.edit { it[Keys.PRIORITY_WIDGET_FIRST] = value } }
+    suspend fun saveLocalAiEnabled(value: Boolean) { context.settingsDataStore.edit { it[Keys.LOCAL_AI_ENABLED] = value } }
+    suspend fun saveLocalAiModelPath(value: String) { context.settingsDataStore.edit { it[Keys.LOCAL_AI_MODEL_PATH] = value } }
 }

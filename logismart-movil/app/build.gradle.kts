@@ -6,6 +6,12 @@ plugins {
     alias(libs.plugins.kotlin.kapt)
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+    }
+}
+
 android {
     namespace = "com.devpulse.logistica"
     compileSdk = 35
@@ -26,9 +32,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -56,4 +59,5 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.litertlm.android)
 }

@@ -2,6 +2,7 @@ package com.tecsup.logismart_movil.data.remote
 
 import com.tecsup.logismart_movil.data.model.CajaDto
 import com.tecsup.logismart_movil.data.model.DespachoDto
+import com.tecsup.logismart_movil.data.remote.PaginatedResponse
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
@@ -9,7 +10,7 @@ import retrofit2.http.GET
 interface LogisticsApiService {
 
     @GET("api/despachos/")
-    suspend fun getDespachos(): List<DespachoDto>
+    suspend fun getDespachos(): PaginatedResponse<DespachoDto>
 
     @GET("api/cajas/")
     suspend fun getCajas(): List<CajaDto>

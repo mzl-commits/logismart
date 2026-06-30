@@ -7,6 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -118,12 +121,14 @@ fun BoxesScreen(
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
-                LazyColumn(
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 320.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(state.filteredBoxes, key = { it.id }) { box ->
+                    gridItems(state.filteredBoxes, key = { it.id }) { box ->
                         BoxCard(
                             box = box,
                             onOpen = { onBoxClick(box.id) },
