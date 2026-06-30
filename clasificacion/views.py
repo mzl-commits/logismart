@@ -921,7 +921,7 @@ class HistorialViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DespachoViewSet(viewsets.ModelViewSet):
-    queryset = Despacho.objects.all()
+    queryset = Despacho.objects.all().order_by('-fecha_salida', '-id_despacho')
     serializer_class = DespachoSerializer
 
 
