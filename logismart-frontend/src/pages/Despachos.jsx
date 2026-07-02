@@ -1,221 +1,44 @@
-import { useEffect, useState, useCallback } from 'react';
-import { getDespachos, getCajas, getUsuarios, getVehiculos, getDestinos, confirmarDespacho } from '../api/endpoints';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Box, CheckSquare, MapPin, Truck } from 'lucide-react';
+import { confirmarDespacho, getCajas, getDespachos, getDestinos, getUsuarios, getVehiculos } from '../api/endpoints';
+import { EmptyState, MetricStrip, PageHeader, Panel, SkeletonRows, StatusBadge } from '../components/ui';
 
 export default function Despachos() {
-  const [despachos, setDespachos] = useState([]);
-  const [cajas, setCajas] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
-  const [vehiculos, setVehiculos] = useState([]);
-  const [destinos, setDestinos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [data,setData]=useState({despachos:[],cajas:[],usuarios:[],vehiculos:[],destinos:[]});
+  const [selected,setSelected]=useState([]); const [form,setForm]=useState({usuario:'',placa:'',destino:''});
+  const [loading,setLoading]=useState(true); const [processing,setProcessing]=useState(false);
+  const load=useCallback(async()=>{setLoading(true);try{const [d,c,u,v,t]=await Promise.all([getDespachos(),getCajas(),getUsuarios(),getVehiculos(),getDestinos()]);const rows=(r)=>r.data?.results??r.data??[];setData({despachos:rows(d),cajas:rows(c).filter(x=>x.estado==='almacenada'),usuarios:rows(u),vehiculos:rows(v),destinos:rows(t)});}finally{setLoading(false);}},[]);
+  useEffect(()=>{const timer=setTimeout(()=>{void load();},0);return()=>clearTimeout(timer);},[load]);
+  const weight=useMemo(()=>selected.reduce((sum,id)=>sum+Number(data.cajas.find(x=>x.id===id)?.peso_kg||0),0),[selected,data.cajas]);
+  const toggle=(id)=>setSelected(current=>current.includes(id)?current.filter(x=>x!==id):[...current,id]);
+  const dispatch=async()=>{if(!form.usuario||!form.placa||!form.destino||!selected.length)return;setProcessing(true);let errors=0;for(const id of selected){try{await confirmarDespacho(id,{id_usuario:Number(form.usuario),transporte_placa:form.placa,destino:form.destino});}catch{errors++;}}setProcessing(false);if(!errors){setSelected([]);setForm({usuario:'',placa:'',destino:''});}await load();if(errors)alert(`No se pudieron procesar ${errors} cajas.`);};
+  const ready=data.cajas.length;
 
-  const [seleccionadas, setSeleccionadas] = useState([]);
-  const [form, setForm] = useState({ usuario: '', placa: '', destino: '' });
-  const [procesando, setProcesando] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [rd, rc, ru, rv, rdt] = await Promise.all([
-        getDespachos(), getCajas(), getUsuarios(), getVehiculos(), getDestinos()
-      ]);
-      const getData = res => res.data?.results ?? res.data ?? [];
-      setDespachos(getData(rd));
-      setCajas(getData(rc).filter(c => c.estado === 'almacenada'));
-      setUsuarios(getData(ru));
-      setVehiculos(getData(rv));
-      setDestinos(getData(rdt));
-    } catch(e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const handleToggle = (id) => {
-    setSeleccionadas(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
-  const handleToggleAll = (e) => {
-    setSeleccionadas(e.target.checked ? cajas.map(c => c.id) : []);
-  };
-
-  const pesoTotal = seleccionadas.reduce((acc, id) => acc + parseFloat(cajas.find(c => c.id === id)?.peso_kg || 0), 0);
-
-  const handleDespachar = async () => {
-    if (!form.usuario) return alert('Selecciona un usuario responsable.');
-    if (!form.placa) return alert('Ingresa la placa del transporte.');
-    if (!form.destino) return alert('Ingresa el destino final.');
-    if (seleccionadas.length === 0) return alert('Selecciona al menos una caja.');
-
-    setProcesando(true);
-    let errores = 0;
-    for (const cajaId of seleccionadas) {
-      try {
-        await confirmarDespacho(cajaId, {
-          id_usuario: parseInt(form.usuario),
-          transporte_placa: form.placa,
-          destino: form.destino
-        });
-      } catch {
-        errores++;
-      }
-    }
-    setProcesando(false);
-    if (errores === 0) {
-      alert('Despacho registrado correctamente.');
-      setSeleccionadas([]);
-      setForm({ usuario: '', placa: '', destino: '' });
-      load();
-    } else {
-      alert(`Se completó con ${errores} errores.`);
-      load();
-    }
-  };
-
-  if (loading && !cajas.length && !despachos.length) {
+  if (loading && !data.cajas.length && !data.despachos.length) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] text-light">
-        <div className="spinner mb-3"></div>
-        Cargando despachos...
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px', color: 'var(--color-muted)' }}>
+        <div className="spinner" style={{ width: 40, height: 40, borderWidth: 4 }} />
+        <p style={{ fontSize: '14px', fontWeight: 500 }}>Cargando datos...</p>
       </div>
     );
   }
 
-  return (
-    <>
-      <div className="flex items-center justify-between mb-6 fade-in">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <i className="bi bi-truck text-sky-400"></i> Gestión de Despachos
-          </h2>
-          <p className="text-slate-500 text-sm mt-1">Registra la salida de cajas almacenadas hacia su destino final</p>
-        </div>
+  return <div className="page-stack">
+    <PageHeader title="Despachos" description="Selecciona la carga, asigna transporte y registra la salida del almacén." />
+    <MetricStrip items={[{label:'Listas para salida',value:ready,tone:ready?'info':'neutral'},{label:'Seleccionadas',value:selected.length,tone:selected.length?'warning':'neutral'},{label:'Peso seleccionado',value:`${weight.toFixed(1)} kg`},{label:'Salidas registradas',value:data.despachos.length,tone:'success'}]} />
+    <div className="dispatch-layout">
+      <Panel title="Carga disponible" description="Cajas almacenadas que pueden incluirse en el siguiente despacho." actions={data.cajas.length?<label className="select-all"><input type="checkbox" checked={selected.length===data.cajas.length} onChange={e=>setSelected(e.target.checked?data.cajas.map(x=>x.id):[])}/>Seleccionar todas</label>:null}>
+        {loading?<SkeletonRows count={5}/>:data.cajas.length?<div className="dispatch-list">{data.cajas.map(item=><label className={`dispatch-row ${selected.includes(item.id)?'is-selected':''}`} key={item.id}><input type="checkbox" checked={selected.includes(item.id)} onChange={()=>toggle(item.id)}/><span className="dispatch-row__icon"><Box size={17}/></span><span className="dispatch-row__main"><strong>{item.producto||'Producto sin nombre'}</strong><small>{item.id} / {item.categoria||'Sin categoría'}</small></span><span className="dispatch-row__weight">{item.peso_kg} kg</span><StatusBadge tone="success">{item.id_ubicacion||'Almacén'}</StatusBadge></label>)}</div>:<EmptyState title="No hay carga disponible" description="Las cajas aparecerán aquí cuando estén almacenadas."/>}
+      </Panel>
+      <div className="dispatch-side">
+        <Panel title="Registrar salida" description="Completa los datos del transporte."><div className="form-stack">
+          <label><span>Responsable</span><select value={form.usuario} onChange={e=>setForm({...form,usuario:e.target.value})}><option value="">Seleccionar operador</option>{data.usuarios.map(x=><option key={x.id_usuario} value={x.id_usuario}>{x.nombre} ({x.rol})</option>)}</select></label>
+          <label><span>Vehículo</span><select value={form.placa} onChange={e=>setForm({...form,placa:e.target.value})}><option value="">Seleccionar vehículo</option>{data.vehiculos.map(x=><option key={x.placa} value={x.placa}>{x.placa} / {x.marca} / {x.capacidad_kg} kg</option>)}</select></label>
+          <label><span>Destino</span><select value={form.destino} onChange={e=>setForm({...form,destino:e.target.value})}><option value="">Seleccionar destino</option>{data.destinos.map(x=><option key={x.nombre} value={x.nombre}>{x.nombre} / {x.direccion}</option>)}</select></label>
+          <button className="button button--primary dispatch-submit" disabled={processing||!selected.length||!form.usuario||!form.placa||!form.destino} onClick={dispatch}><Truck size={17}/>{processing?'Registrando':'Confirmar despacho'}</button>
+        </div></Panel>
+        <Panel title="Últimas salidas"><div className="recent-dispatches">{data.despachos.slice(0,6).map(item=><article key={item.id_despacho}><span><CheckSquare size={16}/></span><div><strong>{item.id_caja_id}</strong><small><Truck size={12}/>{item.transporte_placa}<MapPin size={12}/>{item.destino}</small></div><time>{new Date(item.fecha_salida).toLocaleDateString('es-PE')}</time></article>)}{!data.despachos.length&&<EmptyState title="Sin despachos registrados"/>}</div></Panel>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Panel Izquierdo: Cajas Almacenadas */}
-        <div className="lg:col-span-7 fade-in">
-          <div className="bg-surface rounded-2xl border border-surface2/60 overflow-hidden shadow-xl shadow-black/20 h-full flex flex-col">
-            <div className="px-6 py-4 border-b border-surface2/60 bg-surface2/40">
-              <span className="font-semibold text-white flex items-center gap-2"><i className="bi bi-box-seam text-sky-400"></i> Cajas Listas para Despacho</span>
-            </div>
-            
-            <div className="overflow-x-auto flex-grow max-h-[500px]">
-              <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-surface/95 backdrop-blur z-10">
-                  <tr className="border-b border-surface2/60">
-                    <th className="px-6 py-4 w-12 text-center">
-                      <input className="form-check-input mt-0 cursor-pointer w-4 h-4 rounded border-slate-600 bg-slate-800 focus:ring-sky-500 focus:ring-offset-slate-900" type="checkbox" onChange={handleToggleAll} checked={seleccionadas.length === cajas.length && cajas.length > 0} />
-                    </th>
-                    <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Caja</th>
-                    <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Peso</th>
-                    <th className="text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500 px-4 py-4">Ubicación</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-surface2/30">
-                  {cajas.map(caja => (
-                    <tr key={caja.id} className="hover:bg-surface2/20 transition-colors">
-                      <td className="px-6 py-3 text-center">
-                        <input className="form-check-input cursor-pointer w-4 h-4 rounded border-slate-600 bg-slate-800 focus:ring-sky-500 focus:ring-offset-slate-900" type="checkbox" checked={seleccionadas.includes(caja.id)} onChange={() => handleToggle(caja.id)} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-slate-200 text-base">{caja.producto}</div>
-                        <div className="text-xs text-slate-500 mt-0.5">{caja.id} <span className="mx-1">·</span> {caja.categoria}</div>
-                      </td>
-                      <td className="px-4 py-3 text-slate-300">{caja.peso_kg} kg</td>
-                      <td className="px-4 py-3">
-                        <span className="px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-500/20">
-                          {caja.id_ubicacion}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {!cajas.length && (
-                    <tr>
-                      <td colSpan="4" className="text-center text-slate-500 py-12">
-                        <i className="bi bi-inbox text-5xl block mb-3 opacity-30"></i>
-                        <p className="text-base font-medium">No hay cajas en el almacén.</p>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="px-6 py-4 border-t border-surface2/60 bg-surface2/30 flex justify-between items-center text-sm">
-              <span className="text-slate-400">Seleccionadas: <strong className="text-white text-base ml-1">{seleccionadas.length}</strong> <span className="mx-1 text-slate-600">|</span> <span className="text-white">{pesoTotal.toFixed(2)}</span> kg</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Panel Derecho: Formulario de Despacho */}
-        <div className="lg:col-span-5 fade-in fade-d1">
-          <div className="bg-surface rounded-2xl border border-surface2/60 overflow-hidden shadow-xl shadow-black/20 mb-6">
-            <div className="px-6 py-4 border-b border-surface2/60 bg-surface2/40">
-              <span className="font-semibold text-white flex items-center gap-2"><i className="bi bi-send-check text-sky-400"></i> Registrar Salida</span>
-            </div>
-            <div className="p-6">
-              <div className="mb-5">
-                <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Usuario Responsable</label>
-                <select className="w-full bg-surface2/40 border border-surface2 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" value={form.usuario} onChange={e => setForm({...form, usuario: e.target.value})}>
-                  <option value="">-- Seleccionar Operador --</option>
-                  {usuarios.map(u => <option key={u.id_usuario} value={u.id_usuario}>{u.nombre} ({u.rol})</option>)}
-                </select>
-              </div>
-              <div className="mb-5">
-                <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Placa del Transporte</label>
-                <select className="w-full bg-surface2/40 border border-surface2 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" value={form.placa} onChange={e => setForm({...form, placa: e.target.value})}>
-                  <option value="">-- Seleccionar Vehículo --</option>
-                  {vehiculos.map(v => <option key={v.placa} value={v.placa}>{v.placa} - {v.marca} (Capacidad: {v.capacidad_kg}kg)</option>)}
-                </select>
-              </div>
-              <div className="mb-6">
-                <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Destino Final</label>
-                <select className="w-full bg-surface2/40 border border-surface2 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" value={form.destino} onChange={e => setForm({...form, destino: e.target.value})}>
-                  <option value="">-- Seleccionar Destino --</option>
-                  {destinos.map(d => <option key={d.nombre} value={d.nombre}>{d.nombre} ({d.direccion})</option>)}
-                </select>
-              </div>
-              <button className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:hover:bg-emerald-600 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all" disabled={!seleccionadas.length || procesando} onClick={handleDespachar}>
-                <i className="bi bi-truck text-lg"></i> {procesando ? 'Procesando...' : 'Confirmar Despacho'}
-              </button>
-            </div>
-          </div>
-
-          {/* Historial Reciente de Despachos */}
-          <div className="bg-surface rounded-2xl border border-surface2/60 overflow-hidden shadow-xl shadow-black/20 fade-in fade-d2 flex flex-col">
-            <div className="px-6 py-4 border-b border-surface2/60 bg-surface2/40 shrink-0">
-              <span className="font-semibold text-white flex items-center gap-2"><i className="bi bi-clock-history text-sky-400"></i> Últimas Salidas</span>
-            </div>
-            <div className="flex-grow max-h-[250px] overflow-y-auto p-4">
-              <div className="space-y-3">
-                {despachos.slice(0,10).map(des => (
-                  <div key={des.id_despacho} className="bg-surface2/30 border border-surface2/50 rounded-xl p-4 hover:bg-surface2/50 transition-colors">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-semibold text-emerald-400 flex items-center gap-2"><i className="bi bi-box"></i> {des.id_caja_id}</div>
-                        <div className="text-xs text-slate-400 mt-1 flex items-center gap-1.5"><i className="bi bi-truck"></i> {des.transporte_placa} <i className="bi bi-arrow-right text-[9px]"></i> {des.destino}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xs text-slate-500">{new Date(des.fecha_salida).toLocaleString('es-PE')}</div>
-                        <div className="text-xs text-slate-400 mt-1 flex items-center justify-end gap-1"><i className="bi bi-person"></i> Operador</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {!despachos.length && (
-                  <div className="text-center text-slate-500 py-6">
-                    <i className="bi bi-clock-history text-3xl block mb-2 opacity-30"></i>
-                    Aún no hay despachos registrados.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
+    </div>
+  </div>;
 }

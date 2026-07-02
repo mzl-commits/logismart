@@ -8,7 +8,6 @@ const titles = {
   '/despachos':     'Despachos',
   '/administracion':'Administración',
   '/configuracion': 'Configuración del Carro',
-  '/carro':         'Carro IoT — Estado en Tiempo Real',
 };
 
 export default function Topbar({ onRefresh }) {

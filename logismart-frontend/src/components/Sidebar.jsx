@@ -1,7 +1,7 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Package, Truck, Settings,
-  Users, Warehouse, Radio, ChevronRight
+  Users, Warehouse
 } from 'lucide-react';
 
 const navItems = [
@@ -17,7 +17,6 @@ const navItems = [
   { section: 'Sistema' },
   { to: '/administracion', icon: Users,         label: 'Administración' },
   { to: '/configuracion',  icon: Settings,      label: 'Configuración' },
-  { to: '/carro',          icon: Radio,         label: 'Carro IoT' },
 ];
 
 export default function Sidebar() {

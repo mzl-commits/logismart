@@ -193,7 +193,7 @@ export default function NuevaCaja() {
     }
   };
 
-  const catIcon = { electronica: '💻', textil: '👕', alimento: '🍎', herramienta: '🔧', quimico: '⚗️', otro: '📦' };
+  const catIcon = { electronica: 'bi-cpu', textil: 'bi-tag', alimento: 'bi-egg-fried', herramienta: 'bi-tools', quimico: 'bi-funnel', otro: 'bi-box-seam' };
   const prioColors = { 
     urgente: 'bg-red-500/20 text-red-400 border border-red-500/30', 
     alta: 'bg-amber-500/20 text-amber-400 border border-amber-500/30', 
@@ -242,7 +242,7 @@ export default function NuevaCaja() {
                     {(categorias.length ? categorias : Object.keys(catIcon).map(k => ({slug:k, nombre:k, icono: catIcon[k]}))).map(cat => (
                       <div key={cat.slug} className={`border-2 rounded-xl p-3 text-center cursor-pointer transition-all select-none ${form.categoria === cat.slug ? 'border-indigo-500 bg-indigo-500/15 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.15)]' : 'border-slate-700 bg-surface text-slate-400 hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:text-slate-200'}`}
                            onClick={() => setForm({...form, categoria: cat.slug})}>
-                        <span className="block text-3xl mb-1 drop-shadow-md">{cat.icono || catIcon[cat.slug]}</span>
+                        <span className="block text-3xl mb-1 drop-shadow-md"><i className={`bi ${catIcon[cat.slug] || 'bi-box-seam'}`} /></span>
                         <span className="text-xs font-bold capitalize">{cat.nombre}</span>
                       </div>
                     ))}
@@ -347,7 +347,7 @@ export default function NuevaCaja() {
                   </div>
                 ) : cajas.map(c => (
                   <div key={c.id} className="p-4 rounded-xl border border-slate-700 bg-slate-800/40 flex items-center gap-4 animate-[fadeInUp_0.3s_ease]">
-                    <div className="text-3xl drop-shadow-md">{catIcon[c.categoria] || '📦'}</div>
+                    <div className="text-3xl drop-shadow-md"><i className={`bi ${catIcon[c.categoria] || 'bi-box-seam'}`} /></div>
                     <div className="flex-1">
                       <div className="font-bold text-white text-base">{c.producto}</div>
                       <div className="text-sm text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
@@ -355,7 +355,7 @@ export default function NuevaCaja() {
                         <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${prioColors[c.prioridad] || prioColors.media}`}>{c.prioridad}</span>
                       </div>
                     </div>
-                    {c.es_fragil && <span title="Frágil" className="text-2xl drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">🔷</span>}
+                    {c.es_fragil && <span title="Frágil" className="text-2xl drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]"><i className="bi bi-shield-fill-exclamation text-sky-400" /></span>}
                   </div>
                 ))}
               </div>
@@ -475,7 +475,7 @@ export default function NuevaCaja() {
                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded border border-slate-850 bg-slate-950"></span> Ocupado</span>
                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded border border-emerald-500 bg-emerald-950"></span> Seleccionado</span>
                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded border border-amber-600/30 bg-amber-950/40"></span> Reservado otro</span>
-                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded border border-indigo-500/50 bg-indigo-950/40"></span> Sugerido ⭐</span>
+                        <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded border border-indigo-500/50 bg-indigo-950/40"></span> Sugerido <i className="bi bi-star-fill text-indigo-400" /></span>
                         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded border border-slate-800 bg-slate-900/30"></span> Libre</span>
                       </div>
 
@@ -545,10 +545,10 @@ export default function NuevaCaja() {
                                               key={u.id_ubicacion}
                                               className={cellClass}
                                               onClick={clickHandler}
-                                              title={`${isOccupied ? 'Ocupado' : isSelectedByOther ? 'Reservado por otra caja' : isRecommendedForCurrent ? 'Recomendada ⭐' : 'Disponible'} · ${SHELF_TYPE_LABEL[u.tipo_estante] || u.tipo_estante} · ${u.capacidad_peso_kg} kg${u.permite_fragil ? ' · admite frágil' : ''}${u.permite_quimico ? ' · admite químico' : ''}`}
+                                              title={`${isOccupied ? 'Ocupado' : isSelectedByOther ? 'Reservado por otra caja' : isRecommendedForCurrent ? 'Recomendada' : 'Disponible'} · ${SHELF_TYPE_LABEL[u.tipo_estante] || u.tipo_estante} · ${u.capacidad_peso_kg} kg${u.permite_fragil ? ' · admite frágil' : ''}${u.permite_quimico ? ' · admite químico' : ''}`}
                                             >
                                               <span className="flex items-center gap-0.5">
-                                                {isRecommendedForCurrent && <span className="text-[8px]">⭐</span>}
+                                                {isRecommendedForCurrent && <span className="text-[10px]"><i className="bi bi-star-fill text-indigo-400" /></span>}
                                                 {label}
                                               </span>
                                               {isSelectedByCurrent && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>}

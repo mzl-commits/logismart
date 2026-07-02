@@ -32,14 +32,14 @@ const CATEGORY_LABEL = {
 
 function StatCard({ icon, label, value, sub }) {
   return (
-    <div className="bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-surface2 text-accent">
+    <div className="bg-surface/80 border border-surface2/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+      <div className="text-2xl flex items-center justify-center w-14 h-14 rounded-2xl bg-surface2/60 text-accent">
         {icon}
       </div>
       <div>
-        <div className="text-2xl font-black leading-none text-light">{value}</div>
-        <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">{label}</div>
-        {sub && <div className="text-[10px] text-slate-500 mt-1">{sub}</div>}
+        <div className="text-3xl font-bold tracking-tight text-light">{value}</div>
+        <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-1">{label}</div>
+        {sub && <div className="text-xs text-slate-500 mt-1.5">{sub}</div>}
       </div>
     </div>
   );

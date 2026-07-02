@@ -112,40 +112,40 @@ export default function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="fade-in bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-surface2 text-accent">
+        <div className="fade-in bg-surface/80 border border-surface2/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+          <div className="text-2xl flex items-center justify-center w-14 h-14 rounded-2xl bg-surface2/60 text-accent">
             <i className="bi bi-box-seam" />
           </div>
           <div>
-            <div className="text-3xl font-black leading-none text-light">{activas.length}</div>
-            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">Total cajas</div>
+            <div className="text-3xl font-bold tracking-tight text-light">{activas.length}</div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-1">Total cajas</div>
           </div>
         </div>
-        <div className="fade-in fade-d1 bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500">
+        <div className="fade-in fade-d1 bg-surface/80 border border-surface2/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+          <div className="text-2xl flex items-center justify-center w-14 h-14 rounded-2xl bg-amber-500/10 text-amber-500">
             <i className="bi bi-hourglass-split" />
           </div>
           <div>
-            <div className="text-3xl font-black leading-none text-amber-500/90">{pendientes}</div>
-            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">Pendientes</div>
+            <div className="text-3xl font-bold tracking-tight text-amber-500/90">{pendientes}</div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-1">Pendientes</div>
           </div>
         </div>
-        <div className="fade-in fade-d2 bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-sky-500/10 text-sky-400">
+        <div className="fade-in fade-d2 bg-surface/80 border border-surface2/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+          <div className="text-2xl flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-500/10 text-sky-400">
             <i className="bi bi-truck" />
           </div>
           <div>
-            <div className="text-3xl font-black leading-none text-sky-400/90">{enTransito}</div>
-            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">En tránsito</div>
+            <div className="text-3xl font-bold tracking-tight text-sky-400/90">{enTransito}</div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-1">En tránsito</div>
           </div>
         </div>
-        <div className="fade-in fade-d3 bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
-          <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500">
+        <div className="fade-in fade-d3 bg-surface/80 border border-surface2/50 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-all">
+          <div className="text-2xl flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-500">
             <i className="bi bi-check-circle" />
           </div>
           <div>
-            <div className="text-3xl font-black leading-none text-emerald-500">{almacenadas}</div>
-            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">Almacenadas</div>
+            <div className="text-3xl font-bold tracking-tight text-emerald-500">{almacenadas}</div>
+            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-1">Almacenadas</div>
           </div>
         </div>
       </div>
@@ -165,7 +165,7 @@ export default function Dashboard() {
           </div>
           <div className="flex justify-between mt-3 text-xs text-slate-500">
             <span>{libres} libres · incluye reservas en tránsito</span>
-            <span>{pctOcupacion >= 90 ? '⚠️ Crítico' : pctOcupacion >= 70 ? 'Capacidad alta' : 'Normal'}</span>
+            <span>{pctOcupacion >= 90 ? <><i className="bi bi-exclamation-triangle-fill text-red-500" /> Crítico</> : pctOcupacion >= 70 ? 'Capacidad alta' : 'Normal'}</span>
           </div>
         </div>
         <div className="bg-surface rounded-2xl border border-slate-800/60 p-6 flex items-center justify-center gap-6">
