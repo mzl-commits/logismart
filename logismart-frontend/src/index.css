@@ -36,8 +36,9 @@
     -webkit-font-smoothing: antialiased;
   }
   :focus-visible {
-    outline: 3px solid #38bdf8;
+    outline: 2px solid var(--color-accent);
     outline-offset: 3px;
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 25%, transparent) !important;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -67,7 +68,7 @@
 
 @layer utilities {
   .fade-in {
-    animation: fadeInUp 0.4s ease both;
+    animation: fadeInUp 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
   }
   .fade-d1 { animation-delay: 0.06s; }
   .fade-d2 { animation-delay: 0.12s; }
@@ -102,7 +103,7 @@
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -182,12 +183,15 @@
   font-weight: 600;
   font-size: 14px;
   padding: 8px 18px;
-  transition: all .2s;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 100ms ease-out;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   cursor: pointer;
+}
+.btn:active {
+  transform: scale(0.96);
 }
 .btn-primary { 
   background: var(--color-surface2); 
@@ -426,4 +430,3 @@ html:not(.dark) .bg-slate-900\/30 {
     color: var(--color-muted) !important;
     border-color: var(--color-border) !important;
 }
-
