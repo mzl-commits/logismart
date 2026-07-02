@@ -24,13 +24,7 @@ STRIPE_WEBHOOK_SECRET = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
 
 def suscripcion_view(request):
     """Página principal de suscripción."""
-    success = request.GET.get('success')
-    canceled = request.GET.get('canceled')
-    return render(request, 'clasificacion/suscripcion.html', {
-        'stripe_key': STRIPE_PUBLISHABLE_KEY,
-        'success': success,
-        'canceled': canceled,
-    })
+    return render(request, 'clasificacion/spa.html')
 
 
 @login_required

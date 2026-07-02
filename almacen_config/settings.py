@@ -174,6 +174,7 @@ USE_TZ = True
 
 # ─── Archivos estáticos ───────────────────────────────────────────────────────
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
@@ -234,3 +235,5 @@ STRIPE_SECRET_KEY      = _get_env('STRIPE_SECRET_KEY',      default='sk_test_REE
 STRIPE_PUBLISHABLE_KEY = _get_env('STRIPE_PUBLISHABLE_KEY', default='pk_test_REEMPLAZA_CON_TU_CLAVE')
 STRIPE_PRICE_ID        = _get_env('STRIPE_PRICE_ID',        default='')   # ID del precio mensual en Stripe Dashboard
 STRIPE_WEBHOOK_SECRET  = _get_env('STRIPE_WEBHOOK_SECRET',  default='')   # whsec_... del webhook configurado
+
+X_FRAME_OPTIONS = 'SAMEORIGIN'

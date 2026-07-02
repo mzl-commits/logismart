@@ -6,6 +6,12 @@ from .services import ClasificadorCajas, OptimizadorUbicaciones
 
 
 @login_required
+def spa_app(request):
+    """Shell React para las pantallas operativas autenticadas."""
+    return render(request, 'clasificacion/spa.html')
+
+
+@login_required
 def dashboard(request):
     # Solo cajas activas (excluye despachadas)
     cajas_activas = Caja.objects.exclude(estado='despachada').select_related(
@@ -199,9 +205,9 @@ def login_view(request):
                 next_url = '/'
             return redirect(next_url)
         else:
-            error = "Usuario o contraseña incorrectos."
+            return redirect('/login/?error=1')
             
-    return render(request, 'clasificacion/login.html', {'error': error})
+    return render(request, 'clasificacion/spa.html', {'error': error})
 
 
 def logout_view(request):
@@ -273,7 +279,4 @@ def ver_pdf_lote(request):
     if token:
         download_url += f"&token={token}"
     
-    return render(request, 'clasificacion/ver_pdf.html', {
-        'pdf_url': download_url,
-        'download_url': download_url
-    })
+    return render(request, 'clasificacion/spa.html')
