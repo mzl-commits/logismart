@@ -8,6 +8,15 @@ import {
   getCajas, getUbicaciones, getHistorial, getDespachos, getCategorias, procesarCaja, confirmarAlmacenada
 } from '../api/endpoints';
 
+const CAT_ICON_CLASS = {
+  electronica: 'bi-cpu',
+  textil:      'bi-tag',
+  alimento:    'bi-egg-fried',
+  herramienta: 'bi-tools',
+  quimico:     'bi-funnel',
+  otro:        'bi-box-seam',
+};
+
 export default function Dashboard() {
   const [cajas, setCajas] = useState([]);
   const [ubicaciones, setUbicaciones] = useState([]);
@@ -44,7 +53,7 @@ export default function Dashboard() {
       });
 
       const countPor = (arr, campo) =>
-        dias.map(f => arr.filter(x => (x[campo] ?? '').slice(0, 10) === f).length);
+         dias.map(f => arr.filter(x => (x[campo] ?? '').slice(0, 10) === f).length);
 
       setChartData(dias.map((f, i) => ({
         fecha: f.slice(5),
@@ -102,26 +111,42 @@ export default function Dashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-        <div className="fade-in relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-accent shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-light drop-shadow-md">{activas.length}</div>
-          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">Total cajas</div>
-          <i className="bi bi-box-seam absolute -right-2 -bottom-4 text-7xl text-slate-700/20 group-hover:text-slate-700/30 transition-colors transform group-hover:scale-110"></i>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="fade-in bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-surface2 text-accent">
+            <i className="bi bi-box-seam" />
+          </div>
+          <div>
+            <div className="text-3xl font-black leading-none text-light">{activas.length}</div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">Total cajas</div>
+          </div>
         </div>
-        <div className="fade-in fade-d1 relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-amber-600/80 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-amber-500/90 drop-shadow-md">{pendientes}</div>
-          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">Pendientes</div>
-          <i className="bi bi-hourglass-split absolute -right-2 -bottom-4 text-7xl text-amber-600/10 group-hover:text-amber-600/20 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in fade-d1 bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-amber-500/10 text-amber-500">
+            <i className="bi bi-hourglass-split" />
+          </div>
+          <div>
+            <div className="text-3xl font-black leading-none text-amber-500/90">{pendientes}</div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">Pendientes</div>
+          </div>
         </div>
-        <div className="fade-in fade-d2 relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-sky-600/80 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-sky-400/90 drop-shadow-md">{enTransito}</div>
-          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">En tránsito</div>
-          <i className="bi bi-truck absolute -right-2 -bottom-4 text-7xl text-sky-600/10 group-hover:text-sky-600/20 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in fade-d2 bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-sky-500/10 text-sky-400">
+            <i className="bi bi-truck" />
+          </div>
+          <div>
+            <div className="text-3xl font-black leading-none text-sky-400/90">{enTransito}</div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">En tránsito</div>
+          </div>
         </div>
-        <div className="fade-in fade-d3 relative overflow-hidden rounded-2xl p-6 bg-surface border border-surface2 border-l-4 border-l-emerald-600/80 shadow-[0_4px_20px_rgba(0,0,0,0.15)] group hover:shadow-[0_4px_25px_rgba(0,0,0,0.25)] hover:-translate-y-1 transition-all">
-          <div className="text-5xl font-black text-[#52A27F] drop-shadow-md">{almacenadas}</div>
-          <div className="text-sm font-semibold text-slate-400 mt-2 uppercase tracking-wider">Almacenadas</div>
-          <i className="bi bi-check-circle absolute -right-2 -bottom-4 text-7xl text-emerald-600/10 group-hover:text-emerald-600/20 transition-colors transform group-hover:scale-110"></i>
+        <div className="fade-in fade-d3 bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+          <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500">
+            <i className="bi bi-check-circle" />
+          </div>
+          <div>
+            <div className="text-3xl font-black leading-none text-emerald-500">{almacenadas}</div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">Almacenadas</div>
+          </div>
         </div>
       </div>
 
@@ -182,8 +207,8 @@ export default function Dashboard() {
             <div className="flex gap-2 flex-wrap items-center">
               <span className={`px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border transition-all ${categoriaFiltro === 'all' ? 'border-indigo-500/30 text-indigo-400 bg-indigo-500/15' : 'border-surface2 text-slate-400 hover:text-slate-200 hover:border-slate-500'}`} onClick={() => setCategoriaFiltro('all')}>Todas cat.</span>
               {categorias.map(cat => (
-                <span key={cat.slug} className={`px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border transition-all ${categoriaFiltro === cat.slug ? 'border-indigo-500/30 text-indigo-400 bg-indigo-500/15' : 'border-surface2 text-slate-400 hover:text-slate-200 hover:border-slate-500'}`} onClick={() => setCategoriaFiltro(cat.slug)}>
-                  {cat.icono} {cat.nombre}
+                <span key={cat.slug} className={`px-4 py-1.5 rounded-full text-xs font-semibold cursor-pointer border transition-all flex items-center gap-1.5 ${categoriaFiltro === cat.slug ? 'border-indigo-500/30 text-indigo-400 bg-indigo-500/15' : 'border-surface2 text-slate-400 hover:text-slate-200 hover:border-slate-500'}`} onClick={() => setCategoriaFiltro(cat.slug)}>
+                  <i className={`bi ${CAT_ICON_CLASS[cat.slug] || 'bi-box-seam'}`} /> {cat.nombre}
                 </span>
               ))}
             </div>
@@ -206,7 +231,10 @@ export default function Dashboard() {
               {filtradas.slice(0, 30).map((caja, i) => (
                 <tr key={caja.id || i} className="hover:bg-surface2/20 transition-colors">
                   <td className="px-6 py-3">
-                    <div className="font-medium text-slate-200 text-base">{caja.producto || '—'} {caja.es_fragil && <span title="Frágil">🔷</span>}</div>
+                    <div className="font-medium text-slate-200 text-base flex items-center gap-1.5">
+                      {caja.producto || '—'} 
+                      {caja.es_fragil && <i className="bi bi-shield-fill-exclamation text-sky-400 text-xs" title="Frágil" />}
+                    </div>
                     <div className="text-xs text-slate-500">{caja.id}</div>
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-400">{caja.categoria}</td>
@@ -266,7 +294,7 @@ export default function Dashboard() {
           </div>
           <div className="p-6 space-y-2 overflow-y-auto flex-1 max-h-[500px]">
             {historial.map((log, i) => (
-              <div key={log.id_historial || log.id || i} className="relative pl-6 py-3 border-l-2 border-slate-800/50 hover:bg-slate-800/20 rounded-r-lg transition-colors group">
+              <div key={log.id_historial || log.id || i} className="relative px-4 py-3 border border-slate-800/50 hover:bg-slate-800/20 rounded-lg transition-colors group">
                 <div className={`absolute left-[-7px] top-4 w-3 h-3 rounded-full ring-4 ring-surface shadow-[0_0_8px_currentColor]
                   ${log.tipo_movimiento === 'almacenamiento' ? 'bg-emerald-500 text-emerald-500' :
                     log.tipo_movimiento === 'despacho' ? 'bg-violet-500 text-violet-500' : 'bg-sky-500 text-sky-500'}`}>

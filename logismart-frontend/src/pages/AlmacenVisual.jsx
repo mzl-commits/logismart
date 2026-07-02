@@ -2,21 +2,28 @@ import { useEffect, useState, useCallback } from 'react';
 import { getUbicaciones, getCajas, getEstadoCarro, avanzarCarro, resetCarro, confirmarParada } from '../api/endpoints';
 
 /* ── helpers ─────────────────────────────────────── */
-const CAT_ICON  = { electronica:'💻', textil:'👕', alimento:'🍎', herramienta:'🔧', quimico:'⚗️', otro:'📦' };
+const CAT_ICON_CLASS = {
+  electronica: 'bi-cpu',
+  textil:      'bi-tag',
+  alimento:    'bi-egg-fried',
+  herramienta: 'bi-tools',
+  quimico:     'bi-funnel',
+  otro:        'bi-box-seam',
+};
 const CAT_COLOR = {
   electronica: 'from-blue-900/80 to-blue-800/60 border-blue-500/50',
   textil:      'from-pink-900/80 to-pink-800/60 border-pink-500/50',
   alimento:    'from-green-900/80 to-green-800/60 border-green-500/50',
   herramienta: 'from-orange-900/80 to-orange-800/60 border-orange-500/50',
-  quimico:     'from-purple-900/80 to-purple-800/60 border-purple-500/50',
+  quimico:     'bg-surface2 border-surface2',
   otro:        'from-slate-800/80 to-slate-700/60 border-slate-500/50',
 };
 const TYPE_META = {
-  general:      { icon: '📦', label: 'General',       description: 'Uso flexible para mercancía convencional.' },
-  pesado:       { icon: '🏋️', label: 'Carga pesada',  description: 'Estructura reforzada; los niveles bajos soportan mayor peso.' },
-  fragil:       { icon: '🛡️', label: 'Protección frágil', description: 'Zona protegida para electrónica y artículos delicados.' },
-  quimico:      { icon: '⚗️', label: 'Zona química',  description: 'Espacio aislado y reservado para sustancias químicas.' },
-  refrigerado:  { icon: '❄️', label: 'Refrigerado',    description: 'Zona prioritaria para alimentos y productos sensibles.' },
+  general:      { iconClass: 'bi-box-seam', label: 'General',       description: 'Uso flexible para mercancía convencional.' },
+  pesado:       { iconClass: 'bi-boxes', label: 'Carga pesada',  description: 'Estructura reforzada; los niveles bajos soportan mayor peso.' },
+  fragil:       { iconClass: 'bi-shield-exclamation', label: 'Protección frágil', description: 'Zona protegida para electrónica y artículos delicados.' },
+  quimico:      { iconClass: 'bi-funnel', label: 'Zona química',  description: 'Espacio aislado y reservado para sustancias químicas.' },
+  refrigerado:  { iconClass: 'bi-snow', label: 'Refrigerado',    description: 'Zona prioritaria para alimentos y productos sensibles.' },
 };
 const CATEGORY_LABEL = {
   sin_preferencia: 'Sin preferencia', electronica: 'Electrónica', textil: 'Textil',
@@ -25,12 +32,14 @@ const CATEGORY_LABEL = {
 
 function StatCard({ icon, label, value, sub }) {
   return (
-    <div className="bg-surface border border-surface2 rounded-xl p-3 flex items-center gap-3">
-      <div className="text-2xl">{icon}</div>
+    <div className="bg-surface border border-surface2 rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="text-2xl flex items-center justify-center w-12 h-12 rounded-xl bg-surface2 text-accent">
+        {icon}
+      </div>
       <div>
-        <div className="text-xl font-black leading-none text-light">{value}</div>
-        <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-0.5">{label}</div>
-        {sub && <div className="text-[10px] text-slate-500">{sub}</div>}
+        <div className="text-2xl font-black leading-none text-light">{value}</div>
+        <div className="text-[10px] font-semibold text-muted uppercase tracking-wider mt-1.5">{label}</div>
+        {sub && <div className="text-[10px] text-slate-500 mt-1">{sub}</div>}
       </div>
     </div>
   );
@@ -171,7 +180,7 @@ export default function AlmacenVisual() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 fade-in">
         <div>
           <h2 className="text-2xl font-black text-white flex items-center gap-3">
-            <span className="text-3xl">🏭</span>
+            <i className="bi bi-grid-3x3-gap-fill text-accent" />
             Mapa del Almacén
             <span className={`ml-2 w-2 h-2 rounded-full inline-block ${flash ? 'bg-emerald-400' : 'bg-emerald-600'} transition-colors`} title="Actualización en tiempo real" />
           </h2>
@@ -200,11 +209,11 @@ export default function AlmacenVisual() {
       </div>
 
       {/* ── STATS BAR ─────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 fade-in fade-d1">
-        <StatCard icon="📦" label="Total celdas"  value={totalUbi} />
-        <StatCard icon="✅" label="Libres"        value={libres} />
-        <StatCard icon="🔴" label="Ocupadas"      value={ocupadas}  sub={`${pct}% ocupación`} />
-        <StatCard icon="📋" label="Estado de Ruta"  value={estadoCarro} />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 fade-in fade-d1">
+        <StatCard icon={<i className="bi bi-box-seam" />} label="Total celdas"  value={totalUbi} />
+        <StatCard icon={<i className="bi bi-check-lg text-emerald-500" />} label="Libres"        value={libres} />
+        <StatCard icon={<i className="bi bi-circle-fill text-red-500 text-xs" />} label="Ocupadas"      value={ocupadas}  sub={`${pct}% ocupación`} />
+        <StatCard icon={<i className="bi bi-compass" />} label="Estado de Ruta"  value={estadoCarro} />
       </div>
 
       {/* ── LAYOUT PRINCIPAL ─────────────────── */}
@@ -218,7 +227,7 @@ export default function AlmacenVisual() {
             {[
               { color: 'bg-[#121214] border border-[#2A2A30]', label: 'Libre' },
               { color: 'bg-[#1E1E22] border border-[#2A2A30]', label: 'Ocupada' },
-              { color: 'bg-[#22242B] border border-[#8E95A5] shadow-[0_0_6px_rgba(142,149,165,0.4)]', label: 'Operador 👤' },
+              { color: 'bg-[#22242B] border border-[#8E95A5] shadow-[0_0_6px_rgba(142,149,165,0.4)]', label: 'Operador (A/P)' },
               { color: 'bg-[#1E1912] border border-amber-500/60', label: 'Parada' },
               { color: 'border-2 border-dashed border-amber-500/40 bg-transparent', label: 'En ruta' },
               { color: 'bg-[#121E19] border border-[#52A27F]', label: 'Parada actual' },
@@ -252,7 +261,7 @@ export default function AlmacenVisual() {
           {/* Grid de pasillos */}
           {!ubicaciones.length ? (
             <div className="bg-amber-500/10 border border-amber-500/30 text-amber-400 p-6 rounded-xl text-sm text-center">
-              <div className="text-3xl mb-2">⚠️</div>
+              <div className="text-2xl mb-2"><i className="bi bi-exclamation-triangle-fill" /></div>
               Sin ubicaciones registradas
             </div>
           ) : (
@@ -308,8 +317,8 @@ export default function AlmacenVisual() {
                           >
                             <div className="text-[9px] text-slate-500 font-bold text-center uppercase tracking-widest mb-1 flex items-center justify-between px-1">
                               <span>Est {est}</span>
-                              {isCarFront && <span className="text-[9px] text-sky-400 font-black animate-pulse" title="Operador al Frente">👤A</span>}
-                              {isCarBack && <span className="text-[9px] text-sky-400 font-black animate-pulse" title="Operador Atrás">👤P</span>}
+                              {isCarFront && <span className="text-[9px] text-sky-400 font-black animate-pulse flex items-center gap-1" title="Operador al Frente"><i className="bi bi-person-fill" /> A</span>}
+                              {isCarBack && <span className="text-[9px] text-sky-400 font-black animate-pulse flex items-center gap-1" title="Operador Atrás"><i className="bi bi-person-fill" /> P</span>}
                             </div>
                             <div className="flex flex-col gap-2">
                               {[3, 2, 1].map(lvlNum => {
@@ -385,7 +394,9 @@ export default function AlmacenVisual() {
                     {/* estado badge */}
                     <div className={`flex items-center justify-between p-4 rounded-xl border ${carroClase}`}>
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">📋</span>
+                        <div className="w-10 h-10 rounded-lg bg-surface2/30 flex items-center justify-center text-xl">
+                          <i className="bi bi-activity" />
+                        </div>
                         <div>
                           <div className="font-bold text-sm text-white">Ruta Activa</div>
                           <div className="text-[11px] opacity-70">Guía Manual de Almacén</div>
@@ -399,7 +410,7 @@ export default function AlmacenVisual() {
                     {/* alerta llegó */}
                     {carro.estado === 'llego' && carro.paradas?.length > 0 && (
                       <div className="bg-[#121E19] border border-[#52A27F]/40 rounded-xl p-4 text-center">
-                        <div className="text-3xl mb-2">🎯</div>
+                        <div className="text-2xl mb-2 text-emerald-400"><i className="bi bi-geo-alt-fill" /></div>
                         <h5 className="text-[#52A27F] font-black mb-1">¡Ubicación alcanzada!</h5>
                         <p className="text-white font-bold text-sm mb-3">
                           {carro.paradas[carro.parada_actual]?.ubicacion_nombre}
@@ -416,7 +427,7 @@ export default function AlmacenVisual() {
                     {/* regresando */}
                     {carro.estado === 'regresando' && (
                       <div className="bg-surface2/50 border border-accent/20 rounded-xl p-4 text-center">
-                        <div className="text-3xl mb-2">🏠</div>
+                        <div className="text-2xl mb-2 text-accent"><i className="bi bi-house-door-fill" /></div>
                         <h5 className="text-light font-bold">Retornando al origen</h5>
                       </div>
                     )}
@@ -477,8 +488,8 @@ export default function AlmacenVisual() {
               !ubiSel
                 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center gap-3">
-                    <div className="w-16 h-16 rounded-2xl bg-surface2 border border-surface2 flex items-center justify-center text-3xl">
-                      👆
+                    <div className="w-16 h-16 rounded-2xl bg-surface2 border border-surface2 flex items-center justify-center text-2xl text-slate-400">
+                      <i className="bi bi-hand-index-thumb" />
                     </div>
                     <p className="text-sm text-slate-400 font-medium">Haz clic en una celda<br />para ver sus detalles</p>
                   </div>
@@ -505,8 +516,8 @@ export default function AlmacenVisual() {
                             {u.tipo_estante}
                           </span>
                           {u.estado_ocupacion
-                            ? <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-950/50 text-red-300 border border-red-500/20">Ocupada</span>
-                            : <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-950/50 text-emerald-300 border border-[#52A27F]/20">Libre</span>
+                             ? <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-red-950/50 text-red-300 border border-red-500/20">Ocupada</span>
+                             : <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-950/50 text-emerald-300 border border-[#52A27F]/20">Libre</span>
                           }
                           {u.permite_fragil && (
                             <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-surface/50 text-[#8E95A5] border border-surface2">
@@ -523,7 +534,9 @@ export default function AlmacenVisual() {
 
                       <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-4">
                         <div className="flex items-start gap-3">
-                          <span className="text-2xl" aria-hidden="true">{typeMeta.icon}</span>
+                          <span className="text-2xl text-sky-400" aria-hidden="true">
+                            <i className={`bi ${typeMeta.iconClass}`} />
+                          </span>
                           <div>
                             <div className="font-bold text-light">{typeMeta.label}</div>
                             <p className="text-xs text-muted mt-1 leading-relaxed">{typeMeta.description}</p>
@@ -567,9 +580,13 @@ export default function AlmacenVisual() {
                       {/* caja almacenada */}
                       {c ? (
                         <div className={`bg-gradient-to-br ${CAT_COLOR[cat]} border rounded-xl p-4 relative overflow-hidden`}>
-                          <div className="absolute -right-3 -top-3 text-6xl opacity-10 select-none">{CAT_ICON[cat] || '📦'}</div>
+                          <div className="absolute -right-3 -top-3 text-6xl opacity-10 select-none">
+                            <i className={`bi ${CAT_ICON_CLASS[cat] || 'bi-box-seam'}`} />
+                          </div>
                           <div className="flex items-start gap-2 mb-3">
-                            <span className="text-xl">{CAT_ICON[cat] || '📦'}</span>
+                            <span className="text-xl text-white">
+                              <i className={`bi ${CAT_ICON_CLASS[cat] || 'bi-box-seam'}`} />
+                            </span>
                             <div>
                               <div className="font-black text-white leading-tight">{c.producto}</div>
                               <div className="text-[11px] font-mono text-sky-400 mt-0.5">{c.id}</div>
@@ -578,7 +595,7 @@ export default function AlmacenVisual() {
                           <div className="flex flex-wrap gap-1.5 text-[10px]">
                             <span className="px-2 py-0.5 rounded-md bg-white/10 text-white font-semibold">{c.peso_kg} kg</span>
                             <span className="px-2 py-0.5 rounded-md bg-white/10 text-white font-semibold capitalize">{c.categoria}</span>
-                            {c.es_fragil && <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-semibold">🔷 Frágil</span>}
+                            {c.es_fragil && <span className="px-2 py-0.5 rounded-md bg-sky-500/20 text-sky-300 font-semibold flex items-center gap-1"><i className="bi bi-shield-fill-exclamation" /> Frágil</span>}
                             <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-semibold capitalize">
                               {c.estado?.replace(/_/g, ' ')}
                             </span>

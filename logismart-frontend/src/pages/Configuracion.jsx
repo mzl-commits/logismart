@@ -545,7 +545,7 @@ export default function Configuracion() {
                 <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex items-center justify-between relative overflow-hidden group">
                   <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <div className="z-10">
-                    <span className="text-sm font-bold text-slate-300">📦 Pequeñas</span>
+                    <span className="text-sm font-bold text-slate-300 flex items-center"><i className="bi bi-box-seam text-emerald-400 me-2" /> Pequeñas</span>
                     <div className="text-[10px] text-slate-500">≤ 8,000 cm³</div>
                   </div>
                   <div className="text-3xl font-black text-emerald-400 drop-shadow-[0_0_12px_rgba(16,185,129,0.3)] z-10">{maxPorTipo.pequena}</div>
@@ -554,7 +554,7 @@ export default function Configuracion() {
                 <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex items-center justify-between relative overflow-hidden group">
                   <div className="absolute inset-0 bg-sky-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <div className="z-10">
-                    <span className="text-sm font-bold text-slate-300">🗃️ Medianas</span>
+                    <span className="text-sm font-bold text-slate-300 flex items-center"><i className="bi bi-boxes text-sky-400 me-2" /> Medianas</span>
                     <div className="text-[10px] text-slate-500">8,001 – 64,000 cm³</div>
                   </div>
                   <div className="text-3xl font-black text-sky-400 drop-shadow-[0_0_12px_rgba(56,189,248,0.3)] z-10">{maxPorTipo.mediana}</div>
@@ -563,7 +563,7 @@ export default function Configuracion() {
                 <div className="bg-slate-900/30 border border-slate-800 rounded-xl p-4 flex items-center justify-between relative overflow-hidden group">
                   <div className="absolute inset-0 bg-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   <div className="z-10">
-                    <span className="text-sm font-bold text-slate-300">📫 Grandes</span>
+                    <span className="text-sm font-bold text-slate-300 flex items-center"><i className="bi bi-truck text-indigo-400 me-2" /> Grandes</span>
                     <div className="text-[10px] text-slate-500">&gt; 64,000 cm³</div>
                   </div>
                   <div className="text-3xl font-black text-indigo-400 drop-shadow-[0_0_12px_rgba(99,102,241,0.3)] z-10">{maxPorTipo.grande}</div>
