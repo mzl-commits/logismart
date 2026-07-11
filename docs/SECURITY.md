@@ -37,4 +37,4 @@ curl -k -I https://logistica.promube.com/api/cajas/
 curl -k -I https://logistica.promube.com/api/v1/cajas
 ```
 
-Ambos endpoints deben responder `403` sin autenticacion.
+Ambos endpoints deben responder `401` o `403` sin autenticacion.

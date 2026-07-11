@@ -56,5 +56,5 @@ curl -k -I https://logistica.promube.com/static/admin/css/base.css
 - HTTP `80` redirige a HTTPS.
 - Sitio principal responde `302` a login cuando no hay sesion.
 - Estaticos responden `200`.
-- API sin credenciales responde `403`.
+- API sin credenciales responde `401` o `403`, según el autenticador aplicado.
 - Servicios `logismart.service` y `logismart-mqtt.service` quedan `active (running)`.

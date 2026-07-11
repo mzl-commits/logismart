@@ -21,7 +21,9 @@ frontend web para operar un almacen inteligente con telemetria en tiempo real.
 - `almacen_config/`: configuracion Django/ASGI.
 - `deploy/`: unidades `systemd` y configuracion Nginx de referencia.
 - `logismart-frontend/`: frontend complementario del proyecto.
+- `logismart-movil/`: aplicación Android para la operación móvil.
 - `esp32_agv/`: firmware/documentacion del AGV.
+- `docs/`: arquitectura, seguridad, despliegue y documentación funcional.
 
 ## Arquitectura rapida
 
@@ -93,9 +95,10 @@ Las variables completas estan en `.env.example`. Las mas relevantes son:
 
 ## Operacion y despliegue
 
-- [docs/DEPLOYMENT.md](/C:/Users/Asus%20TUF%20F15/proyecto_logistica/docs/DEPLOYMENT.md)
-- [docs/SECURITY.md](/C:/Users/Asus%20TUF%20F15/proyecto_logistica/docs/SECURITY.md)
-- [docs/OPERATIONS.md](/C:/Users/Asus%20TUF%20F15/proyecto_logistica/docs/OPERATIONS.md)
+- [Organización y arquitectura](docs/ARCHITECTURE.md)
+- [Despliegue](docs/DEPLOYMENT.md)
+- [Seguridad](docs/SECURITY.md)
+- [Operaciones](docs/OPERATIONS.md)
 
 ## Pruebas
 
@@ -103,13 +106,9 @@ Las variables completas estan en `.env.example`. Las mas relevantes son:
 python manage.py test -v 1
 ```
 
-Estado verificado durante esta actualizacion:
-
-- Local: `28/28` tests OK.
-- Servidor con PostgreSQL y `DEBUG=False`: `28/28` tests OK.
-- `http://` redirige a `https://`.
-- `/api/cajas/` y `/api/v1/cajas` responden `403` sin credenciales.
-- `/api/v1/cajas` responde `200` con `X-API-Key` valida.
+La validación completa incluye también `npm run lint`, `npm run build` y
+`.\gradlew.bat testDebugUnitTest`. Consulta [la guía de arquitectura](docs/ARCHITECTURE.md)
+para el flujo de verificación actualizado.
 
 ## Pendientes recomendados
 

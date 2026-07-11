@@ -220,7 +220,7 @@ def main():
             "HTTP redirige correctamente a HTTPS.",
             "La raiz publica responde 302 hacia login cuando no hay sesion.",
             "La API /api/cajas/ responde 403 sin autenticacion.",
-            "La API /api/v1/cajas responde 403 sin clave y 200 con X-API-Key valida.",
+            "La API /api/v1/cajas responde 401 sin clave y 200 con X-API-Key valida.",
             "Los servicios logismart.service y logismart-mqtt.service quedaron activos.",
         ],
     )
