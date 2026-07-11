@@ -50,6 +50,24 @@ export const deleteDestino   = (id)     => api.delete(`destinos/${id}/`);
 // ── Historial ─────────────────────────────────────────
 export const getHistorial    = ()       => api.get('historial/');
 
+// ── Stock ──────────────────────────────────────────────
+export const getStock = (params) => api.get('stock/', { params });
+export const exportarStock = (params) => api.get('stock/exportar/', {
+  params,
+  responseType: 'blob',
+});
+export const getInventario = (params) => api.get('inventario/', { params });
+export const getKardex = (params) => api.get('inventario/kardex/', { params });
+export const exportarKardex = (params) => api.get('inventario/exportar_kardex/', { params, responseType: 'blob' });
+export const getAlertasStock = () => api.get('inventario/alertas/');
+export const reservarStock = (data) => api.post('inventario/reservar/', data);
+export const liberarReserva = (data) => api.post('inventario/liberar/', data);
+export const despacharInventario = (data) => api.post('inventario/despachar/', data);
+export const ajustarInventario = (data) => api.post('inventario/ajustar/', data);
+export const getReservasStock = () => api.get('reservas-stock/');
+export const getPoliticasStock = () => api.get('politicas-stock/');
+export const createPoliticaStock = (data) => api.post('politicas-stock/', data);
+
 // ── Config Carro ──────────────────────────────────────
 export const getConfigCarro  = ()       => api.get('config-carro/');
 export const updateConfigCarro = (data) => api.patch('config-carro/actualizar/', data);

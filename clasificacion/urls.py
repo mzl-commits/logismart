@@ -7,9 +7,10 @@ from .views import (
     ProveedorViewSet, UsuarioViewSet, HistorialViewSet,
     DespachoViewSet, EstadoCarroViewSet, CategoriaViewSet, ConfigCarroViewSet,
     VehiculoViewSet, DestinoViewSet, SolicitudDespachoViewSet,
-    current_user, PlanillaViewSet
+    current_user, PlanillaViewSet, StockViewSet
 )
 from .views_mobile import MobileDashboardView, MobileLoginView, MobilePlanillasView, MobileEstantesView, MobileCompletarPlanillaView
+from .views_inventory import InventoryViewSet, ProductViewSet, ReservationViewSet, StockPolicyViewSet
 
 router = DefaultRouter()
 router.register(r'cajas', CajaViewSet, basename='caja')
@@ -27,6 +28,11 @@ router.register(r'vehiculos', VehiculoViewSet)
 router.register(r'destinos', DestinoViewSet)
 router.register(r'solicitudes-despacho', SolicitudDespachoViewSet, basename='solicitudes-despacho')
 router.register(r'planillas', PlanillaViewSet, basename='planilla')
+router.register(r'stock', StockViewSet, basename='stock')
+router.register(r'inventario', InventoryViewSet, basename='inventario')
+router.register(r'reservas-stock', ReservationViewSet, basename='reserva-stock')
+router.register(r'politicas-stock', StockPolicyViewSet, basename='politica-stock')
+router.register(r'productos', ProductViewSet, basename='producto')
 
 urlpatterns = [
     path('me/', current_user),

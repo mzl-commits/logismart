@@ -7,12 +7,14 @@ from clasificacion.views_frontend import (
     planillas_historial, ver_pdf_lote, spa_app
 )
 from clasificacion.views_subscription import (
-    suscripcion_view, crear_checkout_session, solicitar_cotizacion, stripe_webhook
+    suscripcion_view, crear_checkout_session, confirmar_checkout, crear_portal_cliente,
+    estado_suscripcion, solicitar_cotizacion, stripe_webhook
 )
 
 urlpatterns = [
     path('', spa_app, name='dashboard'),
     path('almacen/', spa_app, name='almacen_visual'),
+    path('stock/', spa_app, name='stock'),
     path('nueva-caja/', spa_app, name='nueva_caja'),
     path('cajas/', spa_app),
     path('configuracion/', spa_app, name='configuracion'),
@@ -24,6 +26,9 @@ urlpatterns = [
     path('logout/', logout_view, name='logout'),
     path('suscripcion/', suscripcion_view, name='suscripcion'),
     path('suscripcion/checkout/', crear_checkout_session, name='checkout'),
+    path('suscripcion/estado/', estado_suscripcion, name='subscription_status'),
+    path('suscripcion/confirmar/', confirmar_checkout, name='confirm_checkout'),
+    path('suscripcion/portal/', crear_portal_cliente, name='billing_portal'),
     path('suscripcion/cotizacion/', solicitar_cotizacion, name='cotizacion'),
     path('suscripcion/webhook/', stripe_webhook, name='stripe_webhook'),
     path('admin/', admin.site.urls),

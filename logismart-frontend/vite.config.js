@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const buildVersion = '20260702-ui5'; // Incrementar para invalidar cache
+const buildVersion = '20260703-ui10'; // Incrementar para invalidar cache
 
 // https://vite.dev/config/
 export default defineConfig({

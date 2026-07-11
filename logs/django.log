@@ -199,3 +199,51 @@
 [2026-06-25 16:03:12,000] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
 [2026-06-25 16:03:14,019] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
 [2026-06-25 16:03:14,533] INFO clasificacion: Caja creada via API v1: CAJA-API-V1 (proveedor=Proveedor Test, medida=Estándar (1.00x1.00x1.00))
+[2026-07-01 22:33:23,499] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-01 22:33:23,499] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-01 22:33:24,050] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-01 22:33:24,052] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-01 22:33:24,070] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-01 22:33:24,073] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-07-01 22:33:24,078] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-07-01 22:33:24,083] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-07-01 22:33:25,962] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-01 22:33:30,474] INFO clasificacion: Caja creada via API v1: CAJA-API-V1 (proveedor=Proveedor Test, medida=Estándar (1.00x1.00x1.00))
+[2026-07-02 14:48:18,290] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-02 14:48:18,291] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-02 14:48:18,889] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-02 14:48:18,889] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-02 14:48:18,903] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-02 14:48:18,905] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-07-02 14:48:18,908] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-07-02 14:48:18,912] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-07-02 14:48:20,683] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-02 14:53:52,172] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-02 14:53:52,173] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-02 14:53:52,775] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-02 14:53:52,776] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-02 14:53:52,799] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-02 14:53:52,804] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-07-02 14:53:52,809] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-07-02 14:53:52,815] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-07-02 14:53:54,496] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-02 14:55:14,304] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-02 14:55:14,305] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-02 14:55:14,902] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-02 14:55:14,902] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-02 14:55:14,919] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-02 14:55:14,921] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-07-02 14:55:14,923] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-07-02 14:55:14,928] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-07-02 14:55:16,641] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-02 14:59:07,459] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-02 14:59:07,460] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-02 14:59:08,031] INFO clasificacion: Planilla registrada para el operador: admin
+[2026-07-02 14:59:08,031] INFO clasificacion: Lote procesado: 1 paradas. Guía PDF generada: /api/cajas/descargar_pdf_lote/?cajas=CAJA-BATCH-001&usuario_id=1
+[2026-07-02 14:59:08,048] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-02 14:59:08,052] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=True, cat=otro).
+[2026-07-02 14:59:08,055] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=50, frágil=False, cat=otro).
+[2026-07-02 14:59:08,058] WARNING clasificacion: No hay ubicaciones disponibles para caja (peso=10, frágil=False, cat=otro).
+[2026-07-02 14:59:09,755] INFO clasificacion: Ubicación A1-N1-A1 (Caja 1) liberada.
+[2026-07-03 13:24:13,250] ERROR clasificacion: Webhook Stripe recibido sin STRIPE_WEBHOOK_SECRET configurado.
+[2026-07-03 13:24:55,139] ERROR clasificacion: Webhook Stripe recibido sin STRIPE_WEBHOOK_SECRET configurado.

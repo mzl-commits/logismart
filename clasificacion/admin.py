@@ -5,6 +5,7 @@ from .models import (
     Caja, Ubicacion, Medida, Proveedor,
     Usuario, HistorialMovimientos, Despacho,
 )
+from .models import MovimientoInventario, PoliticaStock, Producto, ReservaStock, Suscripcion
 
 
 @admin.register(Caja)
@@ -28,4 +29,9 @@ admin.site.register(Medida)
 admin.site.register(Proveedor)
 admin.site.register(Usuario)
 admin.site.register(HistorialMovimientos)
+admin.site.register(Producto)
+admin.site.register(MovimientoInventario)
+admin.site.register(ReservaStock)
+admin.site.register(PoliticaStock)
+admin.site.register(Suscripcion)
 admin.site.register(Despacho)

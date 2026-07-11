@@ -64,4 +64,11 @@ class AuthViewModel @Inject constructor(
             _uiState.value = AuthUiState()
         }
     }
+
+    fun loginOffline() {
+        viewModelScope.launch {
+            repository.loginOffline()
+            _uiState.update { it.copy(isLoading = false, isAuthenticated = true, errorMessage = null) }
+        }
+    }
 }

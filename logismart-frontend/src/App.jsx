@@ -12,6 +12,7 @@ import Planillas from './pages/Planillas';
 import Login from './pages/Login';
 import Suscripcion from './pages/Suscripcion';
 import PdfViewer from './pages/PdfViewer';
+import Stock from './pages/Stock';
 
 function AppContent() {
   const { pathname } = useLocation();
@@ -26,6 +27,7 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/almacen" element={<AlmacenVisual />} />
+            <Route path="/stock" element={<Stock />} />
             <Route path="/nueva-caja" element={<NuevaCaja />} />
             <Route path="/cajas" element={<NuevaCaja />} />
             <Route path="/despachos" element={<Despachos />} />

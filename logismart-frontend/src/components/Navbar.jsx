@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Boxes, ChevronDown, ClipboardList, Gauge, LogOut, Menu,
-  CreditCard, Moon, PackagePlus, Search, Settings, ShieldCheck, Sun,
+  CreditCard, Moon, PackagePlus, PackageSearch, Search, Settings, ShieldCheck, Sun,
   Truck, User, Warehouse, X
 } from 'lucide-react';
 import { getCajas, getCurrentUser } from '../api/endpoints';
@@ -10,6 +10,7 @@ import { getCajas, getCurrentUser } from '../api/endpoints';
 const primaryLinks = [
   { to: '/', label: 'Control', icon: Gauge, end: true },
   { to: '/almacen', label: 'Almacén', icon: Warehouse },
+  { to: '/stock', label: 'Stock', icon: PackageSearch },
   { to: '/despachos', label: 'Despachos', icon: Truck },
   { to: '/planillas', label: 'Planillas', icon: ClipboardList },
 ];

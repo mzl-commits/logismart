@@ -1,10 +1,12 @@
 # clasificacion/serializers.py
 from rest_framework import serializers
+from uuid import uuid4
 
 from .models import (
     Caja, Ubicacion, Medida, Proveedor,
     Usuario, HistorialMovimientos, Despacho, EstadoCarro, Categoria, ConfigCarro,
-    Vehiculo, Destino, SolicitudDespacho, Planilla
+    Vehiculo, Destino, SolicitudDespacho, Planilla, MovimientoInventario,
+    ReservaStock, PoliticaStock, Producto
 )
 
 class VehiculoSerializer(serializers.ModelSerializer):
@@ -68,6 +70,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
 class CajaSerializer(serializers.ModelSerializer):
     ubicacion_nombre = serializers.SerializerMethodField()
+    producto_sku = serializers.CharField(source='producto_ref.sku', read_only=True)
 
     class Meta:
         model = Caja
@@ -75,6 +78,19 @@ class CajaSerializer(serializers.ModelSerializer):
 
     def get_ubicacion_nombre(self, obj):
         return str(obj.id_ubicacion) if obj.id_ubicacion else ""
+
+    def create(self, validated_data):
+        if not validated_data.get('producto_ref'):
+            product, _ = Producto.objects.get_or_create(
+                nombre=validated_data['producto'],
+                defaults={
+                    'sku': f"PRD-{uuid4().hex[:10].upper()}",
+                    'categoria': validated_data.get('categoria', 'otro'),
+                    'codigo_barras': validated_data.get('codigo_barras'),
+                },
+            )
+            validated_data['producto_ref'] = product
+        return super().create(validated_data)
 
 
 class HistorialSerializer(serializers.ModelSerializer):
@@ -86,6 +102,34 @@ class HistorialSerializer(serializers.ModelSerializer):
 class DespachoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Despacho
+        fields = '__all__'
+
+class MovimientoInventarioSerializer(serializers.ModelSerializer):
+    producto = serializers.CharField(source='caja.producto', read_only=True)
+    caja_id = serializers.CharField(source='caja.id', read_only=True)
+    usuario_nombre = serializers.CharField(source='usuario.username', read_only=True)
+    class Meta:
+        model = MovimientoInventario
+        fields = '__all__'
+
+class ReservaStockSerializer(serializers.ModelSerializer):
+    producto = serializers.CharField(source='caja.producto', read_only=True)
+    class Meta:
+        model = ReservaStock
+        fields = '__all__'
+        read_only_fields = ['creada_por', 'estado']
+
+class PoliticaStockSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PoliticaStock
+        fields = '__all__'
+
+class ProductoSerializer(serializers.ModelSerializer):
+    stock_fisico = serializers.SerializerMethodField()
+    def get_stock_fisico(self, obj):
+        return sum(obj.lotes.exclude(estado='despachada').values_list('cantidad', flat=True))
+    class Meta:
+        model = Producto
         fields = '__all__'
 
 

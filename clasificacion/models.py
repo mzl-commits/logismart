@@ -130,6 +130,21 @@ class Usuario(models.Model):
         return f"{self.nombre} ({self.rol})"
 
 
+class Producto(models.Model):
+    sku = models.CharField(max_length=40, unique=True)
+    nombre = models.CharField(max_length=150)
+    categoria = models.CharField(max_length=30, default='otro')
+    codigo_barras = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    unidad = models.CharField(max_length=30, default='unidad')
+    activo = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        db_table = 'producto'
+        ordering = ['nombre']
+    def __str__(self):
+        return f'{self.sku} · {self.nombre}'
+
+
 class Caja(models.Model):
     PRIORIDADES = [
         ('baja', 'Baja'),
@@ -156,6 +171,10 @@ class Caja(models.Model):
 
     id = models.CharField(primary_key=True, max_length=20)
     producto = models.CharField(max_length=150)
+    producto_ref = models.ForeignKey(Producto, on_delete=models.PROTECT, null=True, blank=True, related_name='lotes')
+    codigo_barras = models.CharField(max_length=64, unique=True, null=True, blank=True)
+    lote = models.CharField(max_length=80, blank=True)
+    fecha_vencimiento = models.DateField(null=True, blank=True, db_index=True)
     cantidad = models.IntegerField(default=1)
     id_medida = models.ForeignKey(Medida, on_delete=models.PROTECT, db_column='id_medida')
     id_ubicacion = models.ForeignKey(Ubicacion, on_delete=models.SET_NULL,
@@ -237,6 +256,7 @@ class Despacho(models.Model):
     id_usuario_despacho = models.ForeignKey(Usuario, on_delete=models.PROTECT, db_column='id_usuario_despacho')
     destino = models.CharField(max_length=200)
     transporte_placa = models.CharField(max_length=20)
+    cantidad = models.PositiveIntegerField(default=1)
     fecha_salida = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -260,6 +280,75 @@ class HistorialMovimientos(models.Model):
     def __str__(self):
         return f"Log {self.id_log}: {self.estado_anterior} → {self.estado_nuevo}"
 
+
+
+class MovimientoInventario(models.Model):
+    TIPOS = [('entrada', 'Entrada'), ('salida', 'Salida'), ('reserva', 'Reserva'), ('liberacion', 'Liberación'), ('traslado', 'Traslado'), ('ajuste', 'Ajuste')]
+    id_movimiento = models.BigAutoField(primary_key=True)
+    caja = models.ForeignKey(Caja, on_delete=models.PROTECT, related_name='movimientos_inventario')
+    tipo = models.CharField(max_length=20, choices=TIPOS)
+    cantidad = models.IntegerField()
+    existencia_anterior = models.PositiveIntegerField()
+    existencia_posterior = models.PositiveIntegerField()
+    ubicacion_origen = models.ForeignKey(Ubicacion, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    ubicacion_destino = models.ForeignKey(Ubicacion, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    usuario = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True)
+    motivo = models.CharField(max_length=240, blank=True)
+    referencia = models.CharField(max_length=80, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
+    class Meta:
+        db_table = 'movimiento_inventario'
+        ordering = ['-fecha', '-id_movimiento']
+
+
+class ReservaStock(models.Model):
+    ESTADOS = [('activa', 'Activa'), ('consumida', 'Consumida'), ('cancelada', 'Cancelada')]
+    caja = models.ForeignKey(Caja, on_delete=models.PROTECT, related_name='reservas')
+    cantidad = models.PositiveIntegerField()
+    estado = models.CharField(max_length=12, choices=ESTADOS, default='activa', db_index=True)
+    destino = models.CharField(max_length=200, blank=True)
+    creada_por = models.ForeignKey('auth.User', on_delete=models.PROTECT, related_name='reservas_creadas')
+    creada_en = models.DateTimeField(auto_now_add=True)
+    actualizada_en = models.DateTimeField(auto_now=True)
+    class Meta:
+        db_table = 'reserva_stock'
+        ordering = ['-creada_en']
+
+
+class PoliticaStock(models.Model):
+    producto = models.CharField(max_length=150, unique=True)
+    minimo = models.PositiveIntegerField(default=0)
+    maximo = models.PositiveIntegerField(null=True, blank=True)
+    dias_sin_movimiento = models.PositiveIntegerField(default=30)
+    activa = models.BooleanField(default=True)
+    class Meta:
+        db_table = 'politica_stock'
+        ordering = ['producto']
+
+
+class Suscripcion(models.Model):
+    ESTADOS = [
+        ('incomplete', 'Incompleta'), ('incomplete_expired', 'Expirada'),
+        ('trialing', 'En prueba'), ('active', 'Activa'), ('past_due', 'Pago pendiente'),
+        ('canceled', 'Cancelada'), ('unpaid', 'Impaga'), ('paused', 'Pausada'),
+    ]
+    usuario = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='suscripcion_logismart')
+    stripe_customer_id = models.CharField(max_length=80, unique=True, null=True, blank=True)
+    stripe_subscription_id = models.CharField(max_length=80, unique=True, null=True, blank=True)
+    stripe_price_id = models.CharField(max_length=80, blank=True)
+    estado = models.CharField(max_length=24, choices=ESTADOS, default='incomplete')
+    periodo_fin = models.DateTimeField(null=True, blank=True)
+    cancela_al_final = models.BooleanField(default=False)
+    ultimo_evento = models.CharField(max_length=80, blank=True)
+    creada_en = models.DateTimeField(auto_now_add=True)
+    actualizada_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'suscripcion_logismart'
+
+    @property
+    def activa(self):
+        return self.estado in {'active', 'trialing'}
 
 
 class EstadoCarro(models.Model):

@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,6 +54,7 @@ fun LoginScreen(
     onUsernameChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
     onLogin: () -> Unit,
+    onOfflineLogin: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
@@ -192,6 +194,14 @@ fun LoginScreen(
                         } else {
                             Text("Iniciar sesión", fontWeight = FontWeight.SemiBold)
                         }
+                    }
+                    OutlinedButton(
+                        onClick = onOfflineLogin,
+                        enabled = !state.isLoading,
+                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
+                        Text("Continuar en modo offline")
                     }
                 }
             }

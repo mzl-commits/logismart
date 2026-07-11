@@ -5,7 +5,7 @@ Cubre lógica crítica: clasificador, optimizador y transiciones de estado.
 """
 from decimal import Decimal
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from .models import Caja, Ubicacion, Medida, Proveedor, Usuario
@@ -193,6 +193,7 @@ class OptimizadorTests(TestCase):
 
 # ─── Tests del RutaService ────────────────────────────────────────────────────
 
+@override_settings(ALWAYS_LONG_ROUTES=False)
 class RutaServiceTests(TestCase):
 
     def test_ruta_misma_posicion(self):

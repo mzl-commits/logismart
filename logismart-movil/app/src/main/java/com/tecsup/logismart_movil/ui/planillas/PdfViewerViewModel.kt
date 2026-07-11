@@ -10,6 +10,8 @@ import com.tecsup.logismart_movil.data.local.UserPreferences
 import com.tecsup.logismart_movil.data.local.SessionManager
 import com.tecsup.logismart_movil.data.localai.LocalAiEngine
 import com.tecsup.logismart_movil.data.pdf.PdfPageRenderer
+import com.tecsup.logismart_movil.data.pdf.OfflinePdfGenerator
+import com.tecsup.logismart_movil.data.demo.DemoDataSource
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -39,6 +41,7 @@ class PdfViewerViewModel @Inject constructor(
     private val userPreferences: UserPreferences,
     private val sessionManager: SessionManager,
     private val pdfPageRenderer: PdfPageRenderer,
+    private val offlinePdfGenerator: OfflinePdfGenerator,
     @param:ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -51,6 +54,10 @@ class PdfViewerViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = PdfViewerUiState(isLoading = true)
             val token = sessionManager.session.first()?.token.orEmpty()
+            if (DemoDataSource.offlineMode || token == "offline-demo-token") {
+                generateOfflinePdf(cajas)
+                return@launch
+            }
 
             when (val result = repository.downloadPdfLote(cajas, userId, token)) {
                 is ApiResult.Success -> {
@@ -75,26 +82,35 @@ class PdfViewerViewModel @Inject constructor(
                     }
 
                     if (saved) {
-                        pdfPageRenderer.render(file)
-                            .onSuccess { pages ->
-                                _uiState.value = PdfViewerUiState(pdfFile = file, pages = pages)
-                                generateLocalSummaryIfEnabled(cajas)
-                            }
-                            .onFailure {
-                                _uiState.value = PdfViewerUiState(errorMessage = "No se pudieron renderizar las páginas del PDF.")
-                            }
+                        renderPdf(file, cajas)
                     } else {
                         _uiState.value = PdfViewerUiState(errorMessage = "Error al guardar el archivo temporal.")
                     }
                 }
                 is ApiResult.Unauthorized -> {
-                    _uiState.value = PdfViewerUiState(errorMessage = "Acceso no autorizado. Inicie sesión nuevamente.")
+                    generateOfflinePdf(cajas)
                 }
                 is ApiResult.Error -> {
-                    _uiState.value = PdfViewerUiState(errorMessage = result.message)
+                    generateOfflinePdf(cajas)
                 }
             }
         }
+    }
+
+    private suspend fun generateOfflinePdf(cajas: String) {
+        val ids = cajas.split(',').map { it.trim() }.filter { it.isNotBlank() }.toSet()
+        offlinePdfGenerator.generate(ids)
+            .onSuccess { renderPdf(it, cajas) }
+            .onFailure { _uiState.value = PdfViewerUiState(errorMessage = "No se pudo generar la guía offline.") }
+    }
+
+    private suspend fun renderPdf(file: File, cajas: String) {
+        pdfPageRenderer.render(file)
+            .onSuccess { pages ->
+                _uiState.value = PdfViewerUiState(pdfFile = file, pages = pages)
+                generateLocalSummaryIfEnabled(cajas)
+            }
+            .onFailure { _uiState.value = PdfViewerUiState(errorMessage = "No se pudieron renderizar las páginas del PDF.") }
     }
 
     private fun generateLocalSummaryIfEnabled(cajas: String) {

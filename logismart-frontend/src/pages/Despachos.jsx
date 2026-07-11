@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Box, CheckSquare, MapPin, Truck } from 'lucide-react';
-import { confirmarDespacho, getCajas, getDespachos, getDestinos, getUsuarios, getVehiculos } from '../api/endpoints';
+import { despacharInventario, getCajas, getDespachos, getDestinos, getUsuarios, getVehiculos } from '../api/endpoints';
 import { EmptyState, MetricStrip, PageHeader, Panel, SkeletonRows, StatusBadge } from '../components/ui';
 
 export default function Despachos() {
   const [data,setData]=useState({despachos:[],cajas:[],usuarios:[],vehiculos:[],destinos:[]});
-  const [selected,setSelected]=useState([]); const [form,setForm]=useState({usuario:'',placa:'',destino:''});
+  const [selected,setSelected]=useState([]); const [form,setForm]=useState({usuario:'',placa:'',destino:'',cantidad:1});
   const [loading,setLoading]=useState(true); const [processing,setProcessing]=useState(false);
   const load=useCallback(async()=>{setLoading(true);try{const [d,c,u,v,t]=await Promise.all([getDespachos(),getCajas(),getUsuarios(),getVehiculos(),getDestinos()]);const rows=(r)=>r.data?.results??r.data??[];setData({despachos:rows(d),cajas:rows(c).filter(x=>x.estado==='almacenada'),usuarios:rows(u),vehiculos:rows(v),destinos:rows(t)});}finally{setLoading(false);}},[]);
   useEffect(()=>{const timer=setTimeout(()=>{void load();},0);return()=>clearTimeout(timer);},[load]);
-  const weight=useMemo(()=>selected.reduce((sum,id)=>sum+Number(data.cajas.find(x=>x.id===id)?.peso_kg||0),0),[selected,data.cajas]);
+  const weight=useMemo(()=>selected.reduce((sum,id)=>{const item=data.cajas.find(x=>x.id===id);return sum+Number(item?.peso_kg||0)*Math.min(Number(item?.cantidad||1),Number(form.cantidad||1));},0),[selected,data.cajas,form.cantidad]);
   const toggle=(id)=>setSelected(current=>current.includes(id)?current.filter(x=>x!==id):[...current,id]);
-  const dispatch=async()=>{if(!form.usuario||!form.placa||!form.destino||!selected.length)return;setProcessing(true);let errors=0;for(const id of selected){try{await confirmarDespacho(id,{id_usuario:Number(form.usuario),transporte_placa:form.placa,destino:form.destino});}catch{errors++;}}setProcessing(false);if(!errors){setSelected([]);setForm({usuario:'',placa:'',destino:''});}await load();if(errors)alert(`No se pudieron procesar ${errors} cajas.`);};
+  const dispatch=async()=>{if(!form.usuario||!form.placa||!form.destino||!selected.length)return;setProcessing(true);let errors=0;for(const id of selected){const item=data.cajas.find(x=>x.id===id);try{await despacharInventario({caja:id,cantidad:Math.min(Number(item?.cantidad||1),Number(form.cantidad||1)),transporte_placa:form.placa,destino:form.destino});}catch{errors++;}}setProcessing(false);if(!errors){setSelected([]);setForm({usuario:'',placa:'',destino:'',cantidad:1});}await load();if(errors)alert(`No se pudieron procesar ${errors} cajas.`);};
   const ready=data.cajas.length;
 
   if (loading && !data.cajas.length && !data.despachos.length) {
@@ -35,6 +35,7 @@ export default function Despachos() {
           <label><span>Responsable</span><select value={form.usuario} onChange={e=>setForm({...form,usuario:e.target.value})}><option value="">Seleccionar operador</option>{data.usuarios.map(x=><option key={x.id_usuario} value={x.id_usuario}>{x.nombre} ({x.rol})</option>)}</select></label>
           <label><span>Vehículo</span><select value={form.placa} onChange={e=>setForm({...form,placa:e.target.value})}><option value="">Seleccionar vehículo</option>{data.vehiculos.map(x=><option key={x.placa} value={x.placa}>{x.placa} / {x.marca} / {x.capacidad_kg} kg</option>)}</select></label>
           <label><span>Destino</span><select value={form.destino} onChange={e=>setForm({...form,destino:e.target.value})}><option value="">Seleccionar destino</option>{data.destinos.map(x=><option key={x.nombre} value={x.nombre}>{x.nombre} / {x.direccion}</option>)}</select></label>
+          <label><span>Unidades por referencia</span><input type="number" min="1" value={form.cantidad} onChange={e=>setForm({...form,cantidad:Math.max(1,Number(e.target.value)||1)})}/><small>Si una referencia tiene menos unidades, se despachará únicamente su saldo disponible.</small></label>
           <button className="button button--primary dispatch-submit" disabled={processing||!selected.length||!form.usuario||!form.placa||!form.destino} onClick={dispatch}><Truck size={17}/>{processing?'Registrando':'Confirmar despacho'}</button>
         </div></Panel>
         <Panel title="Últimas salidas"><div className="recent-dispatches">{data.despachos.slice(0,6).map(item=><article key={item.id_despacho}><span><CheckSquare size={16}/></span><div><strong>{item.id_caja_id}</strong><small><Truck size={12}/>{item.transporte_placa}<MapPin size={12}/>{item.destino}</small></div><time>{new Date(item.fecha_salida).toLocaleDateString('es-PE')}</time></article>)}{!data.despachos.length&&<EmptyState title="Sin despachos registrados"/>}</div></Panel>

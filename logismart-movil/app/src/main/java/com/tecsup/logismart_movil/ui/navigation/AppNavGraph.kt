@@ -32,6 +32,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.navArgument
 import com.tecsup.logismart_movil.data.local.SessionManager
+import com.tecsup.logismart_movil.data.demo.DemoDataSource
 import com.tecsup.logismart_movil.ui.auth.AuthViewModel
 import com.tecsup.logismart_movil.ui.auth.LoginScreen
 import com.tecsup.logismart_movil.ui.boxes.BoxesScreen
@@ -62,6 +63,10 @@ fun AppNavGraph(
     val navController = rememberNavController()
     val session by sessionManager.session.collectAsState(initial = null)
     var sessionLoaded by remember { mutableStateOf(false) }
+
+    LaunchedEffect(session?.token) {
+        DemoDataSource.offlineMode = session?.token == "offline-demo-token"
+    }
 
     LaunchedEffect(Unit) {
         sessionManager.session.first()
@@ -133,6 +138,7 @@ fun AppNavGraph(
                 onUsernameChange = authViewModel::onUsernameChange,
                 onPasswordChange = authViewModel::onPasswordChange,
                 onLogin = authViewModel::login,
+                onOfflineLogin = authViewModel::loginOffline,
             )
         }
         composable(Routes.Dashboard.route) {

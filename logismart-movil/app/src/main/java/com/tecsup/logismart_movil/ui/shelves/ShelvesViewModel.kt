@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 import com.tecsup.logismart_movil.domain.model.Slot
+import com.tecsup.logismart_movil.data.demo.DemoDataSource
 
 data class ShelvesUiState(
     val isLoading: Boolean = false,
@@ -34,6 +35,10 @@ class ShelvesViewModel @Inject constructor(
 
     fun loadShelves() {
         viewModelScope.launch {
+            if (DemoDataSource.offlineMode) {
+                _uiState.value = ShelvesUiState(shelves = demoShelves(), errorMessage = "Modo offline: datos locales")
+                return@launch
+            }
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
                 errorMessage = null

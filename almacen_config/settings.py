@@ -29,12 +29,12 @@ def _get_env(key, default=None, required=False):
 
 
 # ─── Seguridad ────────────────────────────────────────────────────────────────
+DEBUG = _get_env('DJANGO_DEBUG', default='False').lower() == 'true'
 SECRET_KEY = _get_env(
     'DJANGO_SECRET_KEY',
-    default='django-insecure-solo-desarrollo-cambia-en-produccion',
+    default='django-insecure-solo-desarrollo-cambia-en-produccion' if DEBUG else None,
+    required=not DEBUG,
 )
-
-DEBUG = _get_env('DJANGO_DEBUG', default='True').lower() == 'true'
 
 ALLOWED_HOSTS = _get_env('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1,10.0.2.2').split(',')
 
@@ -61,10 +61,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'clasificacion',
 ]
-
-REST_FRAMEWORK = {
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-}
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'API Robot AGV Logística',
@@ -104,10 +100,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'almacen_config.wsgi.application'
 ASGI_APPLICATION = 'almacen_config.asgi.application'
 
+REDIS_URL = _get_env('REDIS_URL', default='')
 CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
-    },
+    'default': ({
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {'hosts': [REDIS_URL]},
+    } if REDIS_URL else {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }),
 }
 
 
@@ -132,12 +132,18 @@ else:
 # SQLite para desarrollo. Para producción usar PostgreSQL:
 #   ENGINE: django.db.backends.postgresql
 #   NAME / USER / PASSWORD / HOST / PORT desde variables de entorno
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+if _get_env('POSTGRES_DB', default=''):
+    DATABASES = {'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': _get_env('POSTGRES_DB', required=True),
+        'USER': _get_env('POSTGRES_USER', required=True),
+        'PASSWORD': _get_env('POSTGRES_PASSWORD', required=True),
+        'HOST': _get_env('POSTGRES_HOST', default='127.0.0.1'),
+        'PORT': _get_env('POSTGRES_PORT', default='5432'),
+        'CONN_MAX_AGE': 60,
+    }}
+else:
+    DATABASES = {'default': {'ENGINE': 'django.db.backends.sqlite3', 'NAME': BASE_DIR / 'db.sqlite3'}}
 
 
 # ─── Django REST Framework ────────────────────────────────────────────────────
@@ -227,6 +233,13 @@ MQTT_CONFIG = {
 }
 
 LOGIN_URL = '/login/'
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'same-origin'
+CELERY_BROKER_URL = REDIS_URL or 'memory://'
+CELERY_RESULT_BACKEND = REDIS_URL or 'cache+memory://'
 
 # ─── Stripe ────────────────────────────────────────────────────────────────────
 # Reemplaza estos valores con tus claves reales de https://dashboard.stripe.com/apikeys

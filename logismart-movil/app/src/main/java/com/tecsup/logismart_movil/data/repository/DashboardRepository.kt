@@ -5,6 +5,7 @@ import com.tecsup.logismart_movil.data.model.ApiResult
 import com.tecsup.logismart_movil.data.remote.ApiError
 import com.tecsup.logismart_movil.data.remote.LogiSmartApi
 import com.tecsup.logismart_movil.ui.dashboard.DashboardSummary
+import com.tecsup.logismart_movil.data.demo.DemoDataSource
 
 class DashboardRepository(private val api: LogiSmartApi) {
     private val gson = Gson()
@@ -16,7 +17,7 @@ class DashboardRepository(private val api: LogiSmartApi) {
             ?: fallback
 
     suspend fun loadDashboard(): ApiResult<DashboardSummary> =
-        runCatching { api.dashboard() }.fold(
+        if (DemoDataSource.offlineMode) ApiResult.Success(DemoDataSource.dashboard()) else runCatching { api.dashboard() }.fold(
             onSuccess = { response ->
                 when {
                     response.isSuccessful && response.body() != null -> {
@@ -42,7 +43,7 @@ class DashboardRepository(private val api: LogiSmartApi) {
                 }
             },
             onFailure = {
-                ApiResult.Error("No se pudo conectar con el servidor LogiSmart.")
+                ApiResult.Success(DemoDataSource.dashboard())
             },
         )
 }

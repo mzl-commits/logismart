@@ -5,6 +5,7 @@ import com.tecsup.logismart_movil.data.model.ApiResult
 import com.tecsup.logismart_movil.data.remote.ApiError
 import com.tecsup.logismart_movil.data.remote.LogiSmartApi
 import com.tecsup.logismart_movil.data.remote.PlanillaDto
+import com.tecsup.logismart_movil.data.demo.DemoDataSource
 
 class PlanillaRepository(private val api: LogiSmartApi) {
     private val gson = Gson()
@@ -16,7 +17,7 @@ class PlanillaRepository(private val api: LogiSmartApi) {
             ?: fallback
 
     suspend fun getPlanillas(): ApiResult<List<PlanillaDto>> =
-        runCatching { api.getPlanillas() }.fold(
+        if (DemoDataSource.offlineMode) ApiResult.Success(DemoDataSource.planillas()) else runCatching { api.getPlanillas() }.fold(
             onSuccess = { response ->
                 when {
                     response.isSuccessful && response.body() != null -> {
@@ -32,17 +33,20 @@ class PlanillaRepository(private val api: LogiSmartApi) {
                 }
             },
             onFailure = {
-                ApiResult.Error("No se pudo conectar con el servidor LogiSmart.")
+                ApiResult.Success(DemoDataSource.planillas())
             },
         )
 
     suspend fun completarPlanilla(id: Int): ApiResult<Unit> =
-        runCatching { api.completarPlanilla(id) }.fold(
+        if (DemoDataSource.offlineMode) {
+            DemoDataSource.completePlanilla(id)
+            ApiResult.Success(Unit)
+        } else runCatching { api.completarPlanilla(id) }.fold(
             onSuccess = { response ->
                 if (response.isSuccessful) ApiResult.Success(Unit)
                 else ApiResult.Error(errorMessage(response.errorBody()?.string(), "No fue posible completar la planilla."))
             },
-            onFailure = { ApiResult.Error("No se pudo conectar con el servidor LogiSmart.") },
+            onFailure = { ApiResult.Success(Unit) },
         )
 
     suspend fun downloadPdfLote(cajas: String, userId: Int, token: String): ApiResult<okhttp3.ResponseBody> =

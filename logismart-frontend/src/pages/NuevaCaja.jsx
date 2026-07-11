@@ -16,7 +16,7 @@ export default function NuevaCaja() {
 
   const [form, setForm] = useState({
     id: '', producto: '', categoria: '', prioridad: 'media', 
-    peso: '', cantidad: 1, fragil: false, proveedor: '', medida: ''
+    peso: '', cantidad: 1, pesoTipo: 'total', codigo_barras: '', lote: '', fecha_vencimiento: '', fragil: false, proveedor: '', medida: ''
   });
 
   const [loadingForm, setLoadingForm] = useState(false);
@@ -76,20 +76,26 @@ export default function NuevaCaja() {
 
     setLoadingForm(true);
     try {
+      const cantidad = Math.max(1, parseInt(form.cantidad, 10) || 1);
+      const pesoIngresado = parseFloat(form.peso);
+      const pesoUnitario = form.pesoTipo === 'total' ? pesoIngresado / cantidad : pesoIngresado;
       await crearCaja({
         id: form.id,
         producto: form.producto,
         categoria: form.categoria,
         prioridad: form.prioridad,
-        peso_kg: parseFloat(form.peso),
-        cantidad: parseInt(form.cantidad),
+        peso_kg: Number(pesoUnitario.toFixed(2)),
+        cantidad,
+        codigo_barras: form.codigo_barras || null,
+        lote: form.lote,
+        fecha_vencimiento: form.fecha_vencimiento || null,
         es_fragil: form.fragil,
         id_medida: parseInt(form.medida),
         id_proveedor: parseInt(form.proveedor)
       });
       setForm({
         id: '', producto: '', categoria: '', prioridad: 'media', 
-        peso: '', cantidad: 1, fragil: false, proveedor: '', medida: ''
+        peso: '', cantidad: 1, pesoTipo: 'total', codigo_barras: '', lote: '', fecha_vencimiento: '', fragil: false, proveedor: '', medida: ''
       });
       load();
     } catch (error) {
@@ -235,6 +241,12 @@ export default function NuevaCaja() {
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+                  <div><label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Código de barras / QR</label><input type="text" className="w-full px-4 py-3" value={form.codigo_barras} onChange={e=>setForm({...form,codigo_barras:e.target.value})} placeholder="Escanear o escribir"/></div>
+                  <div><label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Lote</label><input type="text" className="w-full px-4 py-3" value={form.lote} onChange={e=>setForm({...form,lote:e.target.value})} placeholder="Lote del proveedor"/></div>
+                  <div><label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Vencimiento</label><input type="date" className="w-full px-4 py-3" value={form.fecha_vencimiento} onChange={e=>setForm({...form,fecha_vencimiento:e.target.value})}/></div>
+                </div>
+
                 {/* Categoría */}
                 <div className="mb-6">
                   <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Categoría</label>
@@ -278,9 +290,16 @@ export default function NuevaCaja() {
                 </div>
 
                 {/* Peso + Frágil */}
+                <div className="mb-4">
+                  <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">El peso ingresado corresponde a</label>
+                  <div className="segmented-control inline-flex" role="radiogroup" aria-label="Tipo de peso">
+                    <button type="button" role="radio" aria-checked={form.pesoTipo === 'total'} aria-selected={form.pesoTipo === 'total'} onClick={() => setForm({...form, pesoTipo: 'total'})}>Pedido completo</button>
+                    <button type="button" role="radio" aria-checked={form.pesoTipo === 'unitario'} aria-selected={form.pesoTipo === 'unitario'} onClick={() => setForm({...form, pesoTipo: 'unitario'})}>Cada unidad</button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
                   <div>
-                    <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Peso (kg)</label>
+                    <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">{form.pesoTipo === 'total' ? 'Peso total (kg)' : 'Peso por unidad (kg)'}</label>
                     <input type="number" step="0.1" min="0.1" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" 
                            value={form.peso} onChange={e => setForm({...form, peso: e.target.value})} placeholder="0.0" required />
                   </div>
@@ -300,6 +319,12 @@ export default function NuevaCaja() {
                     </div>
                   </div>
                 </div>
+
+                {Number(form.peso) > 0 && Number(form.cantidad) > 0 && <div className="weight-breakdown" aria-live="polite">
+                  <span><strong>{Number(form.cantidad)}</strong> unidades</span>
+                  <span><strong>{(form.pesoTipo === 'total' ? Number(form.peso) / Number(form.cantidad) : Number(form.peso)).toFixed(2)} kg</strong> por unidad</span>
+                  <span><strong>{(form.pesoTipo === 'total' ? Number(form.peso) : Number(form.peso) * Number(form.cantidad)).toFixed(2)} kg</strong> en total</span>
+                </div>}
 
                 {/* Proveedor + Medida */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
