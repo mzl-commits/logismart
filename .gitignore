@@ -1,4 +1,4 @@
-# Entorno Python
+# ─── Entorno Python ───────────────────────────────────────────────────────────
 venv/
 __pycache__/
 *.pyc
@@ -6,22 +6,48 @@ __pycache__/
 *.pyd
 .Python
 
-# Variables de entorno — NUNCA subir al repo
+# ─── Variables de entorno — NUNCA subir al repo ──────────────────────────────
 .env
 
-# Base de datos local
+# ─── Base de datos local ─────────────────────────────────────────────────────
 db.sqlite3
+*.sqlite
 
-# Archivos temporales
-*.tmp
-hola.txt
+# ─── Archivos estáticos recopilados ──────────────────────────────────────────
+staticfiles/
 
-# Distribución / empaquetado
+# ─── Logs ────────────────────────────────────────────────────────────────────
+logs/*.log
+
+# ─── Directorios de build y deploy ───────────────────────────────────────────
+outputs/
 dist/
 build/
 *.egg-info/
 
-# IDEs
+# ─── Temporales de documentación ─────────────────────────────────────────────
+tmp_doc_*/
+*.tmp
+
+# ─── Node.js (frontend) ─────────────────────────────────────────────────────
+node_modules/
+logismart-frontend/dist/
+
+# ─── Android (móvil) ─────────────────────────────────────────────────────────
+logismart-movil/.gradle/
+logismart-movil/.idea/
+logismart-movil/.kotlin/
+logismart-movil/build/
+logismart-movil/app/build/
+logismart-movil/local.properties
+
+# ─── Herramientas de agente / IA (personales) ────────────────────────────────
+.gemini/
+.agents/
+.impeccable/
+skills-lock.json
+
+# ─── IDEs ────────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
