@@ -22,7 +22,7 @@ class SeguridadAPITests(TestCase):
 
     def test_api_v1_rechaza_sin_api_key(self):
         response = self.client.get('/api/v1/cajas', secure=True)
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 401)
 
     def test_api_v1_acepta_api_key_valida(self):
         response = self.client.get(

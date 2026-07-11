@@ -20,13 +20,6 @@ class DestinoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class ProveedorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Proveedor
-        fields = '__all__'
-
-
-
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categoria
