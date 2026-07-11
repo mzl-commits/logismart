@@ -10,7 +10,7 @@ export default defineConfig({
     {
       name: 'logismart-cache-version',
       transformIndexHtml(html) {
-        return html.replace(/(\/static\/frontend\/assets\/app\.(?:css|js))/g, `$1?v=${buildVersion}`)
+        return html.replace(/(\/static\/frontend\/assets\/app\.css)/g, `$1?v=${buildVersion}`)
       },
     },
   ],

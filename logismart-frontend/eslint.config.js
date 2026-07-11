@@ -17,5 +17,9 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Fetching initial route data is intentional external-system synchronization.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

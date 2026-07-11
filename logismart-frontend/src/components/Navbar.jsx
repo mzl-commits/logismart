@@ -88,6 +88,10 @@ export default function Navbar() {
             <CreditCard size={17} /><span>Suscripción</span>
           </NavLink>
 
+          <a href="/api/docs/" className="account-nav-link" target="_blank" rel="noopener noreferrer">
+            <span style={{fontWeight: 600, fontSize: '0.85rem'}}>API Docs</span>
+          </a>
+
           {user?.is_superuser && (
             <div className="admin-menu" ref={adminRef}>
               <button className="icon-button" onClick={() => setAdminOpen((open) => !open)} aria-expanded={adminOpen} aria-label="Administración">
@@ -119,6 +123,7 @@ export default function Navbar() {
         {user?.is_superuser && <>
           <NavLink to="/nueva-caja" className={linkClass} onClick={closeMenus}><PackagePlus size={18} />Nueva caja</NavLink>
           <NavLink to="/suscripcion" className={linkClass} onClick={closeMenus}><CreditCard size={18} />Suscripción</NavLink>
+          <a href="/api/docs/" className="nav-link" target="_blank" rel="noopener noreferrer" onClick={closeMenus}>API Docs</a>
           <NavLink to="/administracion" className={linkClass} onClick={closeMenus}><ShieldCheck size={18} />Administración</NavLink>
           <NavLink to="/configuracion" className={linkClass} onClick={closeMenus}><Settings size={18} />Configuración</NavLink>
         </>}

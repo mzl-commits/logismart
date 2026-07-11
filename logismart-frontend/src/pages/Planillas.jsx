@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ClipboardList, Clock3, UserRound, FileText } from 'lucide-react';
 import { completarPlanilla, getPlanillas } from '../api/endpoints';
-import { EmptyState, MetricStrip, PageHeader, Panel, SkeletonRows, StatusBadge } from '../components/ui';
+import { EmptyState, MetricStrip, PageHeader, Panel, StatusBadge } from '../components/ui';
 
 export default function Planillas() {
   const [items, setItems] = useState([]);

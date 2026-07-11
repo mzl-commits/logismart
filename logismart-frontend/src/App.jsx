@@ -1,18 +1,19 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 
 // Páginas
-import Dashboard from './pages/Dashboard';
-import AlmacenVisual from './pages/AlmacenVisual';
-import NuevaCaja from './pages/NuevaCaja';
-import Despachos from './pages/Despachos';
-import Administracion from './pages/Administracion';
-import Configuracion from './pages/Configuracion';
-import Planillas from './pages/Planillas';
-import Login from './pages/Login';
-import Suscripcion from './pages/Suscripcion';
-import PdfViewer from './pages/PdfViewer';
-import Stock from './pages/Stock';
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const AlmacenVisual = lazy(() => import('./pages/AlmacenVisual'));
+const NuevaCaja = lazy(() => import('./pages/NuevaCaja'));
+const Despachos = lazy(() => import('./pages/Despachos'));
+const Administracion = lazy(() => import('./pages/Administracion'));
+const Configuracion = lazy(() => import('./pages/Configuracion'));
+const Planillas = lazy(() => import('./pages/Planillas'));
+const Login = lazy(() => import('./pages/Login'));
+const Suscripcion = lazy(() => import('./pages/Suscripcion'));
+const PdfViewer = lazy(() => import('./pages/PdfViewer'));
+const Stock = lazy(() => import('./pages/Stock'));
 
 function AppContent() {
   const { pathname } = useLocation();
@@ -24,6 +25,7 @@ function AppContent() {
         {!isPublic && <Navbar />}
         
         <main id="contenido-principal" className="workspace max-w-[1480px] mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-7">
+          <Suspense fallback={<div className="spinner" role="status" aria-label="Cargando página" />}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/almacen" element={<AlmacenVisual />} />
@@ -38,6 +40,7 @@ function AppContent() {
             <Route path="/suscripcion" element={<Suscripcion />} />
             <Route path="/ver-pdf-lote" element={<PdfViewer />} />
           </Routes>
+          </Suspense>
         </main>
       </div>
   );

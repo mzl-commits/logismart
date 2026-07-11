@@ -170,14 +170,20 @@ export default function Dashboard() {
         </div>
         <div className="bg-surface rounded-2xl border border-slate-800/60 p-6 flex items-center justify-center gap-6">
           <div style={{ width: 100, height: 100 }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={[{ value: ocupadas }, { value: libres }]} innerRadius={35} outerRadius={50} dataKey="value" stroke="none">
-                  <Cell fill={pctOcupacion >= 90 ? '#dc2626' : pctOcupacion >= 70 ? '#d97706' : '#52A27F'} />
-                  <Cell fill="#2A2A30" />
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
+            {totalUbic > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={[{ value: ocupadas }, { value: libres }]} innerRadius={35} outerRadius={50} dataKey="value" stroke="none">
+                    <Cell fill={pctOcupacion >= 90 ? '#dc2626' : pctOcupacion >= 70 ? '#d97706' : '#52A27F'} />
+                    <Cell fill="#2A2A30" />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center w-full h-full text-slate-600">
+                <i className="bi bi-pie-chart text-3xl"></i>
+              </div>
+            )}
           </div>
           <div className="text-center">
             <div className={`text-3xl font-extrabold ${pctOcupacion >= 90 ? 'text-red-500' : pctOcupacion >= 70 ? 'text-amber-500' : 'text-emerald-400'}`}>{pctOcupacion}%</div>

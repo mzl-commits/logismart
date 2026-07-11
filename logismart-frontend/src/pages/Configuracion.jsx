@@ -29,7 +29,6 @@ export default function Configuracion() {
   });
   const [wsConnected, setWsConnected] = useState(false);
   const [simulation, setSimulation] = useState(false);
-  const [simStep, setSimStep] = useState(0);
   const [simValues, setSimValues] = useState(null);
 
   useEffect(() => {
@@ -103,8 +102,8 @@ export default function Configuracion() {
     const estaMoviendose = (telemetry.estado === 'moviendo' || telemetry.estado === 'regresando');
     if (simulation && estaMoviendose) {
       const interval = setInterval(() => {
-        setSimStep(prev => {
-          const nextStep = prev + 1;
+        setSimValues(previous => {
+          const nextStep = (previous?.step ?? 0) + 1;
           let sOpt1 = false;
           let sOpt2 = true;
           let sOpt3 = true;
@@ -129,7 +128,8 @@ export default function Configuracion() {
           if (!sOpt2) mIzq = 1500;
           if (!sOpt3) mDer = 1500;
 
-          setSimValues({
+          return {
+            step: nextStep,
             sensor_opt_izq_ext: sOpt1,
             sensor_opt_izq_int: sOpt2,
             sensor_opt_der_int: sOpt3,
@@ -143,9 +143,7 @@ export default function Configuracion() {
             pos_y: telemetry.pos_y,
             destino_x: telemetry.destino_x,
             destino_y: telemetry.destino_y
-          });
-
-          return nextStep;
+          };
         });
       }, 150);
 
@@ -214,15 +212,12 @@ export default function Configuracion() {
     return acc;
   }, { pequena: 0, mediana: 0, grande: 0 });
 
-  const maxTotal = Math.max(maxPorTipo.pequena, 1);
-
   const parseMotorValue = (val, state) => {
     const v = Number(val) || 0;
     // Si parece un valor en microsegundos (1000 - 2000)
     if (v >= 900 && v <= 2100) {
       const isStopped = Math.abs(v - 1500) <= 15;
       const isForward = v > 1515;
-      const isReverse = v < 1485;
       const pct = Math.min(100, Math.round(Math.abs(v - 1500) / 5));
       return {
         raw: v,

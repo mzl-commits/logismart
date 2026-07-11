@@ -14,6 +14,7 @@ const statusLabels = {
 async function post(url, body = {}) {
   const response = await fetch(url, {
     method: 'POST',
+    credentials: 'same-origin',
     headers: { 'X-CSRFToken': csrf(), 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
