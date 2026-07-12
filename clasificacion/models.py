@@ -194,39 +194,6 @@ class Caja(models.Model):
         return f"Caja {self.id} - {self.producto}"
 
 
-class ConfigCarro(models.Model):
-    """Configuración singleton del carro automatizado."""
-    nombre         = models.CharField(max_length=50, default='Carro Principal')
-    largo_cm       = models.DecimalField(max_digits=8, decimal_places=1, default=100)
-    ancho_cm       = models.DecimalField(max_digits=8, decimal_places=1, default=80)
-    alto_cm        = models.DecimalField(max_digits=8, decimal_places=1, default=120)
-    peso_maximo_kg = models.DecimalField(max_digits=8, decimal_places=2, default=150)
-    max_paradas    = models.IntegerField(default=10)
-    pos_base_x     = models.IntegerField(default=1)
-    pos_base_y     = models.IntegerField(default=0)
-    notas          = models.TextField(blank=True)
-
-    class Meta:
-        db_table = 'config_carro'
-
-    @property
-    def volumen_cm3(self):
-        return float(self.largo_cm) * float(self.ancho_cm) * float(self.alto_cm)
-
-    @classmethod
-    def get_config(cls, carro_id=1):
-        obj, _ = cls.objects.get_or_create(pk=carro_id, defaults={'nombre': f'Carro {carro_id}'})
-        return obj
-
-    def save(self, *args, **kwargs):
-        if not self.pk:
-            self.pk = 1
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.nombre
-
-
 class Vehiculo(models.Model):
     id_vehiculo = models.AutoField(primary_key=True)
     placa = models.CharField(max_length=20, unique=True)
@@ -349,47 +316,6 @@ class Suscripcion(models.Model):
     @property
     def activa(self):
         return self.estado in {'active', 'trialing'}
-
-
-class EstadoCarro(models.Model):
-    ESTADOS = [
-        ('esperando',  'Esperando'),
-        ('moviendo',   'Moviendo'),
-        ('llego',      'Llegó'),
-        ('regresando', 'Regresando a base'),
-    ]
-
-    id = models.AutoField(primary_key=True)
-    pos_x = models.IntegerField(default=0)
-    pos_y = models.IntegerField(default=0)
-    destino_x = models.IntegerField(default=0)
-    destino_y = models.IntegerField(default=0)
-    ruta = models.JSONField(default=list, blank=True)
-    estado = models.CharField(max_length=20, choices=ESTADOS, default='esperando')
-    caja_id = models.CharField(max_length=20, null=True, blank=True)
-    # Soporte multi-parada
-    paradas = models.JSONField(default=list, blank=True)  # [{caja_id, x, y, ubicacion_id, ubicacion_nombre}]
-    parada_actual = models.IntegerField(default=0)
-    actualizado_en = models.DateTimeField(auto_now=True)
-
-    # Telemetría de sensores
-    sensor_opt_izq_ext = models.BooleanField(default=False)
-    sensor_opt_izq_int = models.BooleanField(default=False)
-    sensor_opt_der_int = models.BooleanField(default=False)
-    sensor_opt_der_ext = models.BooleanField(default=False)
-    sensor_obstaculo_frontal = models.BooleanField(default=False)
-    sensor_obstaculo_trasero = models.BooleanField(default=False)
-
-    # Telemetría de motores (us: 1000 - 2000, 1500 = detenido)
-    motor_izq_vel = models.IntegerField(default=1500)
-    motor_der_vel = models.IntegerField(default=1500)
-    bateria_pct = models.IntegerField(default=100)
-
-    class Meta:
-        db_table = 'estado_carro'
-
-    def __str__(self):
-        return f"Carro ({self.pos_x},{self.pos_y}) -> ({self.destino_x},{self.destino_y}) [{self.estado}]"
 
 
 class SolicitudDespacho(models.Model):

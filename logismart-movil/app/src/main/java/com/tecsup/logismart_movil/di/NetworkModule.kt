@@ -5,16 +5,13 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.tecsup.logismart_movil.data.local.SessionManager
 import com.tecsup.logismart_movil.data.local.UserPreferences
-import com.tecsup.logismart_movil.data.network.LogiSmartApiService
 import com.tecsup.logismart_movil.data.remote.LogiSmartApi
 import com.tecsup.logismart_movil.data.remote.LogisticsApiService
 import com.tecsup.logismart_movil.data.remote.ShelvesApi
 import com.tecsup.logismart_movil.data.repository.AuthRepository
-import com.tecsup.logismart_movil.data.repository.CarRepositoryImpl
 import com.tecsup.logismart_movil.data.repository.DashboardRepository
 import com.tecsup.logismart_movil.data.repository.LogisticsRepository
 import com.tecsup.logismart_movil.data.repository.PlanillaRepository
-import com.tecsup.logismart_movil.domain.repository.CarRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -57,9 +54,6 @@ object NetworkModule {
         sessionManager: SessionManager,
         userPreferences: UserPreferences
     ): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
         return OkHttpClient.Builder()
             // 1. Authentication header injector (Bearer JWT) based on Wash's SessionManager
             .addInterceptor { chain ->
@@ -80,7 +74,6 @@ object NetworkModule {
                 }
                 response
             }
-            .addInterceptor(loggingInterceptor)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
@@ -95,12 +88,6 @@ object NetworkModule {
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideLogiSmartApiService(retrofit: Retrofit): LogiSmartApiService {
-        return retrofit.create(LogiSmartApiService::class.java)
     }
 
     @Provides
@@ -152,9 +139,4 @@ object NetworkModule {
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
-    @Binds
-    @Singleton
-    abstract fun bindCarRepository(
-        carRepositoryImpl: CarRepositoryImpl
-    ): CarRepository
 }

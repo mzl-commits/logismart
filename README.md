@@ -1,28 +1,25 @@
 # LogiSmart
 
-Sistema web para clasificacion, almacenamiento y despacho asistido por AGV.
-El proyecto combina Django, DRF, Channels, Redis, PostgreSQL, MQTT y un
-frontend web para operar un almacen inteligente con telemetria en tiempo real.
+Sistema web para clasificación, almacenamiento y despacho de inventario.
+El proyecto combina Django, DRF, PostgreSQL y un frontend web para operar un
+almacén inteligente.
 
 ## Estado actual
 
 - Backend principal en Django/ASGI.
-- Produccion desplegada detras de Nginx + Daphne.
+- Producción desplegada detrás de Nginx + Daphne.
 - Base de datos de produccion migrada a PostgreSQL.
-- Redis habilitado para Channels.
-- MQTT autenticado para comandos y telemetria del AGV.
 - Suscripciones Stripe conectadas en modo de prueba.
 - Endpoints internos protegidos por sesion.
 - API externa `v1` protegida con `X-API-Key`.
 
 ## Modulos principales
 
-- `clasificacion/`: logica de negocio, API, vistas web, servicios AGV y MQTT.
-- `almacen_config/`: configuracion Django/ASGI.
+- `clasificacion/`: lógica de negocio, API y vistas web.
+- `almacen_config/`: configuración Django.
 - `deploy/`: unidades `systemd` y configuracion Nginx de referencia.
 - `logismart-frontend/`: frontend complementario del proyecto.
 - `logismart-movil/`: aplicación Android para la operación móvil.
-- `esp32_agv/`: firmware/documentacion del AGV.
 - `docs/`: arquitectura, seguridad, despliegue y documentación funcional.
 
 ## Arquitectura rapida
@@ -34,11 +31,9 @@ Browser / Cliente externo
         |
       Daphne (ASGI)
         |
-  Django + DRF + Channels
-     |        |         |
- Postgres   Redis     MQTT
-                         |
-                       ESP32 / AGV
+       Django + DRF
+           |
+        Postgres
 ```
 
 ## Puesta en marcha local
@@ -76,9 +71,8 @@ Las variables completas estan en `.env.example`. Las mas relevantes son:
 - `DJANGO_SECRET_KEY`
 - `DJANGO_DEBUG`
 - `DJANGO_ALLOWED_HOSTS`
-- `DB_ENGINE`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`
+- `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`
 - `REDIS_URL`
-- `MQTT_BROKER`, `MQTT_PORT`, `MQTT_USER`, `MQTT_PASS`
 - `EXTERNAL_API_KEY`
 - `STRIPE_PUBLIC_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`
 
@@ -90,8 +84,7 @@ Las variables completas estan en `.env.example`. Las mas relevantes son:
 - HSTS, `X-Content-Type-Options`, `Referrer-Policy` y `Permissions-Policy`.
 - API REST interna autenticada por sesion.
 - API externa protegida con comparacion de clave en tiempo constante.
-- WebSocket anonimo rechazado.
-- Credenciales sensibles eliminadas de defaults de codigo.
+- Las credenciales se leen desde `.env` y no se incluyen en el código fuente.
 
 ## Operacion y despliegue
 
@@ -113,6 +106,4 @@ para el flujo de verificación actualizado.
 ## Pendientes recomendados
 
 - Rotar claves Stripe antes de pasar a produccion real.
-- Considerar TLS para MQTT si el AGV operara fuera de una red confiable.
 - Automatizar `pg_dump` con retencion.
-- Documentar versionado del firmware ESP32 junto con comandos MQTT soportados.

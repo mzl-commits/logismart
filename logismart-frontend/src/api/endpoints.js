@@ -68,18 +68,9 @@ export const getReservasStock = () => api.get('reservas-stock/');
 export const getPoliticasStock = () => api.get('politicas-stock/');
 export const createPoliticaStock = (data) => api.post('politicas-stock/', data);
 
-// ── Config Carro ──────────────────────────────────────
-export const getConfigCarro  = ()       => api.get('config-carro/');
-export const updateConfigCarro = (data) => api.patch('config-carro/actualizar/', data);
-
 // ── Categorías ────────────────────────────────────────
 export const getCategorias   = ()       => api.get('categorias/');
 
-// ── Estado del Carro (MQTT/IoT) ───────────────────────
-export const getEstadoCarro  = ()       => api.get('carro/');
-export const avanzarCarro    = ()       => api.post('carro/avanzar/');
-export const resetCarro      = ()       => api.post('carro/reset/');
-export const confirmarParada = (data)   => api.post('carro/confirmar_parada/', data);
 export const getCurrentUser  = ()       => api.get('me/');
 
 // ── Planillas ───────────────────────────────────────────

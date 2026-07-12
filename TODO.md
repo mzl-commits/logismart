@@ -8,7 +8,6 @@
 - [x] Endurecimiento de seguridad Django/DRF.
 - [x] API externa `v1` protegida con `X-API-Key`.
 - [x] WebSocket anonimo bloqueado.
-- [x] Servicio MQTT autenticado.
 - [x] Suscripcion Stripe corrigiendo error de template.
 - [x] Reserva atomica de ubicaciones para evitar dobles asignaciones.
 
@@ -16,5 +15,3 @@
 
 - [ ] Rotar credenciales Stripe antes de produccion real.
 - [ ] Automatizar `pg_dump` con politica de retencion.
-- [ ] Evaluar MQTT sobre TLS si el AGV saldra de la red local.
-- [ ] Versionar y documentar mejor el contrato de firmware ESP32.

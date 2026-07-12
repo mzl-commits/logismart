@@ -13,10 +13,7 @@ class MobileTokenAuthentication(BaseAuthentication):
         authorization = request.headers.get('Authorization', '')
         scheme, _, token = authorization.partition(' ')
         if scheme.lower() != 'bearer' or not token:
-            # Fallback to query parameter token
-            token = request.GET.get('token', '')
-            if not token:
-                return None
+            return None
 
         try:
             payload = signing.loads(

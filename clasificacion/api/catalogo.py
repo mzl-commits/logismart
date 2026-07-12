@@ -1,7 +1,7 @@
 """API REST agrupada por dominio funcional."""
 
 from .common import (
-    Categoria, CategoriaSerializer, ConfigCarro, ConfigCarroSerializer,
+    Categoria, CategoriaSerializer,
     Destino, DestinoSerializer, HistorialMovimientos, HistorialSerializer,
     Medida, MedidaSerializer, Proveedor, ProveedorSerializer, Response,
     Ubicacion, UbicacionSerializer, Usuario, UsuarioSerializer, Vehiculo,
@@ -38,40 +38,6 @@ class MedidaViewSet(viewsets.ModelViewSet):
 class CategoriaViewSet(viewsets.ModelViewSet):
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
-
-
-class ConfigCarroViewSet(viewsets.ModelViewSet):
-    """Configuración de carros. Soporta carro_id dinámico."""
-    serializer_class = ConfigCarroSerializer
-
-    def get_queryset(self):
-        return ConfigCarro.objects.all()
-
-    def get_object(self):
-        pk = self.kwargs.get('pk')
-        if pk:
-            try:
-                return ConfigCarro.objects.get(pk=pk)
-            except ConfigCarro.DoesNotExist:
-                return ConfigCarro.get_config(int(pk))
-        carro_id = int(self.request.query_params.get('carro_id', 1))
-        return ConfigCarro.get_config(carro_id)
-
-    @action(detail=False, methods=['get'])
-    def actual(self, request):
-        carro_id = int(request.query_params.get('carro_id', 1))
-        config = ConfigCarro.get_config(carro_id)
-        return Response(ConfigCarroSerializer(config).data)
-
-    @action(detail=False, methods=['patch', 'put'])
-    def actualizar(self, request):
-        carro_id = int(request.query_params.get('carro_id', 1))
-        config = ConfigCarro.get_config(carro_id)
-        serializer = ConfigCarroSerializer(config, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
 
 
 class ProveedorViewSet(viewsets.ModelViewSet):

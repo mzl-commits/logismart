@@ -36,7 +36,12 @@ SECRET_KEY = _get_env(
     required=not DEBUG,
 )
 
-ALLOWED_HOSTS = _get_env('DJANGO_ALLOWED_HOSTS', default='localhost,127.0.0.1,10.0.2.2').split(',')
+def _get_env_list(key, default=''):
+    return [item.strip() for item in _get_env(key, default=default).split(',') if item.strip()]
+
+
+ALLOWED_HOSTS = _get_env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2')
+EXTERNAL_API_KEY = _get_env('EXTERNAL_API_KEY', default='')
 
 CSRF_TRUSTED_ORIGINS = [
     'https://logistica.promube.com',
@@ -48,8 +53,6 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # ─── Aplicaciones ─────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
-    'daphne',
-    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -63,8 +66,8 @@ INSTALLED_APPS = [
 ]
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'API Robot AGV Logística',
-    'DESCRIPTION': 'Documentación de los endpoints para el sistema inteligente de logística y carrito automatizado.',
+    'TITLE': 'API LogiSmart',
+    'DESCRIPTION': 'Documentación de los endpoints del sistema de logística e inventario.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
@@ -101,23 +104,6 @@ WSGI_APPLICATION = 'almacen_config.wsgi.application'
 ASGI_APPLICATION = 'almacen_config.asgi.application'
 
 REDIS_URL = _get_env('REDIS_URL', default='')
-CHANNEL_LAYERS = {
-    'default': ({
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [REDIS_URL]},
-    } if REDIS_URL else {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    }),
-}
-
-
-# ─── Configuración ESP32 ──────────────────────────────────────────────────────
-ESP32_CONFIG = {
-    'PORT': _get_env('ESP32_PORT', default='COM3'),
-    'BAUD_RATE': 115200,
-    'TIMEOUT': 2,
-    'SIMULATION_MODE': _get_env('ESP32_SIMULATION_MODE', default='True').lower() == 'true',
-}
 
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
@@ -125,7 +111,7 @@ ESP32_CONFIG = {
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
-    CORS_ALLOWED_ORIGINS = _get_env('CORS_ALLOWED_ORIGINS', default='').split(',')
+    CORS_ALLOWED_ORIGINS = _get_env_list('CORS_ALLOWED_ORIGINS')
 
 
 # ─── Base de datos ────────────────────────────────────────────────────────────
@@ -157,7 +143,6 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'clasificacion.authentication.MobileTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
     ],
 }
 
@@ -222,22 +207,11 @@ LOGGING = {
     },
 }
 
-# ─── Configuración MQTT ───────────────────────────────────────────────────────
-MQTT_CONFIG = {
-    'BROKER': _get_env('MQTT_BROKER', default='38.250.116.213'),  # Por defecto el broker del VPS
-    'PORT': int(_get_env('MQTT_PORT', default=1883)),
-    'USER': _get_env('MQTT_USER', default='yuri'),
-    'PASS': _get_env('MQTT_PASS', default='Montescoli3'),
-    'TOPIC_TELEMETRIA': 'logismart/carro/telemetria',
-    'TOPIC_COMANDO': 'logismart/carro/comando',
-}
-
 LOGIN_URL = '/login/'
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_HTTPONLY = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'same-origin'
+X_FRAME_OPTIONS = 'DENY'
 CELERY_BROKER_URL = REDIS_URL or 'memory://'
 CELERY_RESULT_BACKEND = REDIS_URL or 'cache+memory://'
 
@@ -249,4 +223,20 @@ STRIPE_PUBLISHABLE_KEY = _get_env('STRIPE_PUBLISHABLE_KEY', default='pk_test_REE
 STRIPE_PRICE_ID        = _get_env('STRIPE_PRICE_ID',        default='')   # ID del precio mensual en Stripe Dashboard
 STRIPE_WEBHOOK_SECRET  = _get_env('STRIPE_WEBHOOK_SECRET',  default='')   # whsec_... del webhook configurado
 
-X_FRAME_OPTIONS = 'SAMEORIGIN'
+if not DEBUG:
+    if not ALLOWED_HOSTS:
+        raise ValueError('DJANGO_ALLOWED_HOSTS es obligatorio en producción.')
+    if not CORS_ALLOWED_ORIGINS:
+        raise ValueError('CORS_ALLOWED_ORIGINS es obligatorio en producción.')
+    if not EXTERNAL_API_KEY:
+        raise ValueError('EXTERNAL_API_KEY es obligatorio en producción.')
+    if not REDIS_URL:
+        raise ValueError('REDIS_URL es obligatorio en producción.')
+    if not _get_env('POSTGRES_DB', default=''):
+        raise ValueError('POSTGRES_DB es obligatorio en producción.')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True

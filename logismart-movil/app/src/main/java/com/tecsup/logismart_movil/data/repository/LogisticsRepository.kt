@@ -45,7 +45,7 @@ class LogisticsRepository(
             origen = "Almacén principal",
             destino = destino ?: "Sin destino",
             estado = "Completado",
-            ruta = "Base AGV → Estante → Zona de despacho",
+            ruta = "Almacén → Estante → Zona de despacho",
             tiempo = "15 min",
             cargaTransportada = idCaja ?: "Caja no registrada",
             transporte = transportePlaca ?: "Sin placa"
@@ -61,7 +61,6 @@ class LogisticsRepository(
             categoria = categoria ?: "Sin categoría",
             estado = estado ?: "Pendiente",
             ubicacion = if (!ubicacionNombre.isNullOrBlank()) ubicacionNombre else (idUbicacion?.let { "Ubicación $it" } ?: "Sin ubicación"),
-            carroAsignado = if (estado == "en_transito") "AGV principal" else "Sin asignar",
             esFragil = esFragil ?: false
         )
     }

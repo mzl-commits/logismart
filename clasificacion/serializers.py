@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from .models import (
     Caja, Ubicacion, Medida, Proveedor,
-    Usuario, HistorialMovimientos, Despacho, EstadoCarro, Categoria, ConfigCarro,
+    Usuario, HistorialMovimientos, Despacho, Categoria,
     Vehiculo, Destino, SolicitudDespacho, Planilla, MovimientoInventario,
     ReservaStock, PoliticaStock, Producto
 )
@@ -23,14 +23,6 @@ class DestinoSerializer(serializers.ModelSerializer):
 class CategoriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Categoria
-        fields = '__all__'
-
-
-class ConfigCarroSerializer(serializers.ModelSerializer):
-    volumen_cm3 = serializers.ReadOnlyField()
-
-    class Meta:
-        model = ConfigCarro
         fields = '__all__'
 
 
@@ -123,12 +115,6 @@ class ProductoSerializer(serializers.ModelSerializer):
         return sum(obj.lotes.exclude(estado='despachada').values_list('cantidad', flat=True))
     class Meta:
         model = Producto
-        fields = '__all__'
-
-
-class EstadoCarroSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = EstadoCarro
         fields = '__all__'
 
 

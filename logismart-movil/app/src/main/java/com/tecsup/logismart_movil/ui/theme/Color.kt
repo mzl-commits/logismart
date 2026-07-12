@@ -26,7 +26,6 @@ val AmberWarning = Color(0xFFF59E0B)
 val RoseDanger = Color(0xFFDC2626)
 val InfoBlue = Color(0xFF168AC2)
 
-// Alias conservados para los paneles del AGV; ahora siguen el tema claro web.
 val DarkBackground = Slate50
 val DarkCard = Color.White
 val DarkCardBorder = Slate200

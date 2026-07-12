@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from .models import Caja, Ubicacion, HistorialMovimientos, Medida, Proveedor, Usuario, Categoria, ConfigCarro, Vehiculo, Destino, SolicitudDespacho
+from .models import Caja, Ubicacion, HistorialMovimientos, Medida, Proveedor, Usuario, Categoria, Vehiculo, Destino, SolicitudDespacho
 from .services import ClasificadorCajas, OptimizadorUbicaciones
 
 
@@ -112,53 +112,7 @@ def nueva_caja(request):
 
 @login_required
 def configuracion(request):
-    if not request.user.is_superuser:
-        return redirect('/?error=no_access')
-    carro_id = int(request.GET.get('carro_id', 1))
-    if carro_id not in [1, 2]:
-        carro_id = 1
-    config = ConfigCarro.get_config(carro_id)
-    medidas = list(Medida.objects.all())
-    cart_vol = config.volumen_cm3
-    cart_peso = float(config.peso_maximo_kg)
-
-    breakdown = []
-    for m in medidas:
-        vol_m = float(m.volumen) if m.volumen else 0
-        caben_vol = int(cart_vol / vol_m) if vol_m > 0 else None
-        if vol_m == 0:
-            tamano = 'indefinido'
-        elif vol_m <= 8000:
-            tamano = 'pequena'
-        elif vol_m <= 64000:
-            tamano = 'mediana'
-        else:
-            tamano = 'grande'
-        breakdown.append({
-            'medida': m,
-            'vol_cm3': round(vol_m),
-            'caben_vol': caben_vol,
-            'tamano': tamano,
-        })
-
-    # Medida representativa mas pequeña de cada tipo
-    def _primero(tipo):
-        found = [b for b in breakdown if b['tamano'] == tipo]
-        return max(found, key=lambda x: x['caben_vol'] or 0)['caben_vol'] if found else 0
-
-    resumen = {
-        'pequenas': _primero('pequena'),
-        'medianas': _primero('mediana'),
-        'grandes':  _primero('grande'),
-    }
-
-    return render(request, 'clasificacion/configuracion.html', {
-        'config': config,
-        'carro_id': carro_id,
-        'breakdown': breakdown,
-        'resumen': resumen,
-        'cart_vol': round(cart_vol),
-    })
+    return spa_app(request)
 
 
 @login_required

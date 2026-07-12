@@ -74,6 +74,5 @@ data class LogisticBox(
     val categoria: String,
     val estado: String,
     val ubicacion: String,
-    val carroAsignado: String,
     val esFragil: Boolean
 )

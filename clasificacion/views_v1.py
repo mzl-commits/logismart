@@ -179,7 +179,7 @@ class CajaV1ListView(APIView):
         except Exception as e:
             logger.error('Error creando caja v1: %s | data=%s', e, data)
             return Response(
-                {'error': 'Error interno al crear la caja.', 'detalle': str(e)},
+                {'error': 'Error interno al crear la caja.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -278,7 +278,7 @@ class CajaV1EstadoView(APIView):
 
         except Exception as e:
             logger.error('Error al actualizar estado caja v1: %s', e)
-            return Response({'error': 'Error interno al actualizar estado.', 'detalle': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Error interno al actualizar estado.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({
             'ok': True,
@@ -305,32 +305,31 @@ class DespachoV1CreateView(APIView):
         placa = data.get('transporte_placa', '').strip()
         usuario_id = data.get('id_usuario_despacho')
 
-        if not caja_id:
-            return Response({'error': 'El campo id_caja es obligatorio.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not caja_id or not destino or not placa or not usuario_id:
+            return Response(
+                {'error': 'id_caja, destino, transporte_placa e id_usuario_despacho son obligatorios.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
-            caja = Caja.objects.get(id=caja_id)
-        except Caja.DoesNotExist:
-            return Response({'error': f'No existe una caja con id "{caja_id}".'}, status=status.HTTP_404_NOT_FOUND)
-
-        usuario = None
-        if usuario_id:
-            try:
-                usuario = Usuario.objects.get(id_usuario=usuario_id)
-            except Usuario.DoesNotExist:
-                return Response({'error': f'No existe un usuario con id_usuario={usuario_id}.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        if caja.estado == 'despachada':
-            return Response({'error': 'La caja ya ha sido despachada previamente.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        estado_anterior = caja.estado
-        ubicacion_anterior = caja.id_ubicacion
+            usuario = Usuario.objects.get(id_usuario=usuario_id)
+        except Usuario.DoesNotExist:
+            return Response({'error': f'No existe un usuario con id_usuario={usuario_id}.'}, status=status.HTTP_400_BAD_REQUEST)
 
         from django.db import transaction
         from .services.optimizador import OptimizadorUbicaciones
 
         try:
             with transaction.atomic():
+                try:
+                    caja = Caja.objects.select_for_update().select_related('id_ubicacion').get(id=caja_id)
+                except Caja.DoesNotExist:
+                    return Response({'error': f'No existe una caja con id "{caja_id}".'}, status=status.HTTP_404_NOT_FOUND)
+                if caja.estado == 'despachada':
+                    return Response({'error': 'La caja ya ha sido despachada previamente.'}, status=status.HTTP_400_BAD_REQUEST)
+
+                estado_anterior = caja.estado
+                ubicacion_anterior = caja.id_ubicacion
                 caja.estado = 'despachada'
                 caja.id_ubicacion = None
                 caja.save()
@@ -338,18 +337,17 @@ class DespachoV1CreateView(APIView):
                 if ubicacion_anterior:
                     OptimizadorUbicaciones.liberar_ubicacion(ubicacion_anterior)
 
-                if usuario:
-                    _registrar_historial(caja, estado_anterior, usuario.id_usuario)
+                _registrar_historial(caja, estado_anterior, usuario.id_usuario)
 
                 despacho = Despacho.objects.create(
                     id_caja=caja,
                     id_usuario_despacho=usuario,
-                    destino=destino or 'No especificado',
-                    transporte_placa=placa or 'N/A'
+                    destino=destino,
+                    transporte_placa=placa
                 )
         except Exception as e:
             logger.error('Error al registrar despacho v1: %s', e)
-            return Response({'error': 'Error interno al registrar el despacho.', 'detalle': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({'error': 'Error interno al registrar el despacho.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return Response({
             'ok': True,

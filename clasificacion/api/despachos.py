@@ -12,9 +12,6 @@ class DespachoViewSet(viewsets.ModelViewSet):
     serializer_class = DespachoSerializer
 
 
-# ── EstadoCarroViewSet ────────────────────────────────────────────────────────
-
-
 class SolicitudDespachoViewSet(viewsets.ModelViewSet):
     queryset = SolicitudDespacho.objects.all().order_by('-fecha_solicitud')
     serializer_class = SolicitudDespachoSerializer

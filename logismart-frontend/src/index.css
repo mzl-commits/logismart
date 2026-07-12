@@ -231,23 +231,6 @@
   animation: slideDown 0.2s ease-out forwards;
 }
 
-/* Telemetry AGV Dashboard Styles */
-.agv-container { display: flex; flex-direction: column; align-items: center; gap: 16px; margin: 15px 0; }
-.agv-chassis {
-    width: 160px;
-    height: 220px;
-    background: var(--color-chassis-bg);
-    border: 2px solid var(--color-chassis-border);
-    border-radius: 20px;
-    position: relative;
-    box-shadow: 0 0 25px rgba(0, 0, 0, 0.05);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s ease;
-}
 .wheel {
     width: 14px;
     height: 48px;

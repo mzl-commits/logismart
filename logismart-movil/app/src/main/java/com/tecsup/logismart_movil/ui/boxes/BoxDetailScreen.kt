@@ -27,7 +27,7 @@ import com.tecsup.logismart_movil.ui.components.LogiSmartTopAppBar
                     Text(box.producto, style=MaterialTheme.typography.headlineSmall)
                     Surface(color=MaterialTheme.colorScheme.primaryContainer, shape=RoundedCornerShape(9.dp)){Text(box.estado, Modifier.padding(horizontal=10.dp,vertical=6.dp), style=MaterialTheme.typography.labelMedium)}
                     HorizontalDivider()
-                    Detail(Icons.Default.Category,"Categoría",box.categoria); Detail(Icons.Default.Scale,"Peso","${box.pesoKg} kg"); Detail(Icons.Default.Numbers,"Cantidad",box.cantidad.toString()); Detail(Icons.Default.LocationOn,"Ubicación",box.ubicacion); Detail(Icons.Default.SmartToy,"Carro asignado",box.carroAsignado)
+                    Detail(Icons.Default.Category,"Categoría",box.categoria); Detail(Icons.Default.Scale,"Peso","${box.pesoKg} kg"); Detail(Icons.Default.Numbers,"Cantidad",box.cantidad.toString()); Detail(Icons.Default.LocationOn,"Ubicación",box.ubicacion)
                     if(box.esFragil) Detail(Icons.Default.Warning,"Manipulación","Producto frágil")
                 }
             }

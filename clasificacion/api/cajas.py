@@ -1,10 +1,10 @@
 """API REST agrupada por dominio funcional."""
 
 from .common import (
-    Caja, CajaSerializer, ClasificadorCajas, ConfigCarro, Despacho, EstadoCarro,
+    Caja, CajaSerializer, ClasificadorCajas, Despacho,
     Flowable, HttpResponse, OptimizadorUbicaciones, Paragraph, ParagraphStyle,
     Planilla, Response, RutaService, SimpleDocTemplate, Spacer, Table, TableStyle,
-    Ubicacion, Usuario, _enviar_esp32, _get_or_create_carro,
+    Ubicacion, Usuario,
     _registrar_historial, action, colors, datetime, getSampleStyleSheet, io,
     letter, logger, math, status, timezone, transaction, viewsets,
 )
@@ -207,30 +207,11 @@ class CajaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
  
-        config = ConfigCarro.get_config()
-        peso_acumulado = 0.0
-        volumen_acumulado = 0.0
-        cajas_a_procesar = []
- 
-        # Seleccionar cajas que caben en el carro
-        for caja in cajas_pendientes:
-            if len(cajas_a_procesar) >= config.max_paradas:
-                break
-            
-            peso_caja = float(caja.peso_kg)
-            vol_caja = float(caja.id_medida.volumen) if caja.id_medida and caja.id_medida.volumen else 0.0
- 
-            if peso_acumulado + peso_caja <= float(config.peso_maximo_kg) and \
-               (volumen_acumulado + vol_caja <= float(config.volumen_cm3) or vol_caja == 0):
-                peso_acumulado += peso_caja
-                volumen_acumulado += vol_caja
-                cajas_a_procesar.append(caja)
- 
-        if not cajas_a_procesar:
-            return Response(
-                {'error': 'Ninguna caja pendiente cabe en el carro con la configuración actual'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        try:
+            limite = min(max(int(request.data.get('limite', 20)), 1), 100)
+        except (TypeError, ValueError):
+            return Response({'error': 'El límite debe ser un número entero.'}, status=status.HTTP_400_BAD_REQUEST)
+        cajas_a_procesar = cajas_pendientes[:limite]
  
         paradas = []
         sin_ubicacion = []
@@ -284,8 +265,8 @@ class CajaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
  
-        # Heurística TSP (Vecino más cercano) para ordenar la secuencia desde la base configurada
-        paradas_ordenadas = RutaService.optimizar_paradas(config.pos_base_x, config.pos_base_y, paradas)
+        # Ruta sugerida para el operador desde el punto de inicio del almacén.
+        paradas_ordenadas = RutaService.optimizar_paradas(0, 0, paradas)
         cajas_ids_str = ",".join([p['caja_id'] for p in paradas_ordenadas])
         
         # URL dinámica para la descarga del PDF
@@ -380,12 +361,8 @@ class CajaViewSet(viewsets.ModelViewSet):
         if not paradas:
             return HttpResponse("Las cajas del lote no tienen ubicaciones asignadas.", status=400)
             
-        # Obtener configuración para determinar la base
-        config = ConfigCarro.get_config()
-        base_x = config.pos_base_x
-        base_y = config.pos_base_y
-        
-        # Ordenar las paradas por la ruta óptima TSP desde la base
+        base_x = 0
+        base_y = 0
         paradas_ordenadas = RutaService.optimizar_paradas(base_x, base_y, paradas)
         
         # Generar reporte PDF
@@ -534,30 +511,7 @@ class CajaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        config = ConfigCarro.get_config()
-        peso_acumulado = 0.0
-        volumen_acumulado = 0.0
-        cajas_a_procesar = []
-
-        # Seleccionar cajas que caben en el carro
-        for caja in cajas_pendientes:
-            if len(cajas_a_procesar) >= config.max_paradas:
-                break
-            
-            peso_caja = float(caja.peso_kg)
-            vol_caja = float(caja.id_medida.volumen) if caja.id_medida and caja.id_medida.volumen else 0.0
-
-            if peso_acumulado + peso_caja <= float(config.peso_maximo_kg) and \
-               (volumen_acumulado + vol_caja <= float(config.volumen_cm3) or vol_caja == 0):
-                peso_acumulado += peso_caja
-                volumen_acumulado += vol_caja
-                cajas_a_procesar.append(caja)
-
-        if not cajas_a_procesar:
-            return Response(
-                {'error': 'Ninguna caja pendiente cabe en el carro con la configuración actual'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        cajas_a_procesar = cajas_pendientes
 
         cajas_preview = []
         for caja in cajas_a_procesar:
@@ -641,21 +595,6 @@ class CajaViewSet(viewsets.ModelViewSet):
             OptimizadorUbicaciones.ocupar_ubicacion(mejor_ubi)
             _registrar_historial(caja, estado_anterior, usuario_id)
 
-        carro_id = int(request.data.get('carro_id', 1))
-        carro = _get_or_create_carro(carro_id)
-        ruta = RutaService.generar_ruta(carro.pos_x, carro.pos_y, mejor_ubi.coord_x, mejor_ubi.coord_y)
-        carro.paradas = [{'caja_id': caja.id, 'producto': caja.producto,
-                          'x': mejor_ubi.coord_x, 'y': mejor_ubi.coord_y,
-                          'ubicacion_id': mejor_ubi.id_ubicacion, 'ubicacion_nombre': str(mejor_ubi)}]
-        carro.parada_actual = 0
-        carro.destino_x = mejor_ubi.coord_x
-        carro.destino_y = mejor_ubi.coord_y
-        carro.ruta = ruta
-        carro.estado = 'moviendo'
-        carro.caja_id = caja.id
-        carro.save()
-
-        esp32_resultado = _enviar_esp32(mejor_ubi.coord_x, mejor_ubi.coord_y, caja_id=caja.id, carro_id=carro_id)
         return Response({
             'mensaje': '✅ Caja procesada',
             'caja': CajaSerializer(caja).data,
@@ -668,7 +607,6 @@ class CajaViewSet(viewsets.ModelViewSet):
                                                          'permite_quimico': mejor_ubi.permite_quimico,
                                                          'prioridad_categoria': mejor_ubi.prioridad_categoria}},
             'recomendacion': detalle or {},
-            'esp32': esp32_resultado,
         })
 
     @action(detail=True, methods=['post'])
@@ -682,11 +620,6 @@ class CajaViewSet(viewsets.ModelViewSet):
             caja.estado = 'almacenada'
             caja.save()
             _registrar_historial(caja, estado_anterior, _resolve_usuario_id(request))
-        carro = EstadoCarro.objects.filter(id=1).first()
-        if carro and carro.caja_id == caja.id:
-            carro.estado = 'llego'
-            carro.ruta = []
-            carro.save()
         return Response({'mensaje': 'Caja almacenada', 'caja': CajaSerializer(caja).data})
 
     @action(detail=True, methods=['post'])

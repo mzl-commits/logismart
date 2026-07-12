@@ -448,14 +448,6 @@ private fun BoxCard(
                 }
             }
 
-            if (box.carroAsignado.isNotBlank() && box.carroAsignado != "Sin asignar") {
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Icon(Icons.Default.SmartToy, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.secondary)
-                    Text("Carro: ${box.carroAsignado}", color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium))
-                }
-            }
-
             if (box.esFragil) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(

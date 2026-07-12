@@ -10,7 +10,7 @@ class HasExternalAPIKey(BasePermission):
     message = 'API key ausente o inválida.'
 
     def has_permission(self, request, view):
-        configured_key = settings.EXTERNAL_API_KEY
+        configured_key = getattr(settings, 'EXTERNAL_API_KEY', '')
         provided_key = request.headers.get('X-API-Key', '')
         return bool(
             configured_key

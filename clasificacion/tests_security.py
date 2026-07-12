@@ -1,5 +1,3 @@
-from asgiref.sync import async_to_sync
-from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 
@@ -51,16 +49,3 @@ class SeguridadAPITests(TestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertFalse(Caja.objects.get(pk='CAJA-API-V1').es_fragil)
-
-
-class SeguridadWebSocketTests(TestCase):
-    def test_websocket_rechaza_anonimos(self):
-        from almacen_config.asgi import application
-
-        async def comprobar():
-            communicator = WebsocketCommunicator(application, '/ws/carro/')
-            connected, close_code = await communicator.connect()
-            self.assertFalse(connected)
-            self.assertEqual(close_code, 4401)
-
-        async_to_sync(comprobar)()
