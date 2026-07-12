@@ -10,7 +10,7 @@ class InventoryFlowTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user('almacenero', password='test-pass')
         self.client.force_login(self.user)
-        self.legacy_user = Usuario.objects.create(nombre='almacenero', rol='operador')
+        self.legacy_user = Usuario.objects.create(nombre='almacenero', rol='operador', usuario_auth=self.user)
         measure = Medida.objects.create(nombre='Unidad', largo=1, ancho=1, alto=1, volumen=1)
         provider = Proveedor.objects.create(nombre_empresa='Proveedor', contacto='contacto')
         self.location = Ubicacion.objects.create(pasillo='A', estante=1, nivel=1, estado_ocupacion=True)

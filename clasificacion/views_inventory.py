@@ -111,6 +111,12 @@ class InventoryViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def despachar(self, request):
         quantity = int(request.data.get('cantidad', 0))
+        legacy_user = Usuario.objects.filter(usuario_auth=request.user).first()
+        if not legacy_user:
+            return Response(
+                {'error': 'El usuario autenticado no tiene un perfil logistico asignado.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         with transaction.atomic():
             caja = Caja.objects.select_for_update().get(pk=request.data.get('caja'), estado='almacenada')
             if quantity < 1 or quantity > _available(caja):
@@ -121,12 +127,8 @@ class InventoryViewSet(viewsets.ViewSet):
             if caja.cantidad == 0:
                 caja.estado = 'despachada'; caja.id_ubicacion = None
             caja.save(update_fields=['cantidad', 'estado', 'id_ubicacion'])
-            legacy_user = Usuario.objects.filter(nombre__iexact=request.user.username).first() or Usuario.objects.first()
-            if legacy_user:
-                shipment = Despacho.objects.create(id_caja=caja, id_usuario_despacho=legacy_user, cantidad=quantity, destino=request.data.get('destino', 'No especificado'), transporte_placa=request.data.get('transporte_placa', 'N/A'))
-                reference = f'DESP-{shipment.pk}'
-            else:
-                reference = ''
+            shipment = Despacho.objects.create(id_caja=caja, id_usuario_despacho=legacy_user, cantidad=quantity, destino=request.data.get('destino', 'No especificado'), transporte_placa=request.data.get('transporte_placa', 'N/A'))
+            reference = f'DESP-{shipment.pk}'
             _move(caja, 'salida', -quantity, before, caja.cantidad, request, motivo='Despacho parcial' if caja.cantidad else 'Despacho total', referencia=reference, origen=origin)
         return Response({'mensaje': 'Despacho registrado.', 'cantidad_despachada': quantity, 'cantidad_restante': caja.cantidad})
 

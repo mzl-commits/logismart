@@ -148,6 +148,10 @@ class WarehouseMap(Flowable):
 
 
 def _resolve_usuario_id(request):
+    if request.user and request.user.is_authenticated:
+        perfil = Usuario.objects.filter(usuario_auth=request.user).first()
+        if perfil:
+            return perfil.id_usuario
     val = request.data.get('id_usuario')
     if val:
         try:
@@ -514,6 +518,8 @@ class CajaViewSet(viewsets.ModelViewSet):
         cajas_a_procesar = cajas_pendientes
 
         cajas_preview = []
+        peso_acumulado = 0.0
+        volumen_acumulado = 0.0
         for caja in cajas_a_procesar:
             clasificacion = ClasificadorCajas.clasificar(caja)
             mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
@@ -528,6 +534,9 @@ class CajaViewSet(viewsets.ModelViewSet):
                 'sugerida_id': mejor_ubi.id_ubicacion if mejor_ubi else None,
                 'sugerida_nombre': str(mejor_ubi) if mejor_ubi else 'Ninguna compatible',
             })
+            peso_acumulado += float(caja.peso_kg)
+            if caja.id_medida and caja.id_medida.volumen:
+                volumen_acumulado += float(caja.id_medida.volumen)
 
         # Todas las ubicaciones desocupadas
         from ..models import Ubicacion
@@ -542,7 +551,7 @@ class CajaViewSet(viewsets.ModelViewSet):
             'ubicaciones_libres': ubicaciones_libres,
             'peso_total': peso_acumulado,
             'volumen_total': volumen_acumulado,
-            'max_paradas': config.max_paradas,
+            'limite_aplicado': len(cajas_a_procesar),
         })
 
     @action(detail=True, methods=['get'])

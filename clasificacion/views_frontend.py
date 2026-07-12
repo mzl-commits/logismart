@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from .models import Caja, Ubicacion, HistorialMovimientos, Medida, Proveedor, Usuario, Categoria, Vehiculo, Destino, SolicitudDespacho
+from .models import Caja, Ubicacion, HistorialMovimientos, Medida, Proveedor, Usuario, Categoria, Destino, SolicitudDespacho
 from .services import ClasificadorCajas, OptimizadorUbicaciones
 
 
@@ -86,7 +86,6 @@ def dashboard(request):
         'chart_ingresos_json': json.dumps(chart_ingresos),
         'chart_salidas_json': json.dumps(chart_salidas),
         'usuarios': Usuario.objects.all(),
-        'vehiculos': Vehiculo.objects.all(),
         'destinos': Destino.objects.all(),
     })
 
@@ -125,7 +124,6 @@ def despachos(request):
         'cajas_almacenadas': cajas_almacenadas,
         'historial_despachos': historial_despachos,
         'usuarios': Usuario.objects.all(),
-        'vehiculos': Vehiculo.objects.all(),
         'destinos': Destino.objects.all(),
     })
 
@@ -137,7 +135,6 @@ def administracion(request):
     return render(request, 'clasificacion/administracion.html', {
         'usuarios': Usuario.objects.all(),
         'proveedores': Proveedor.objects.all(),
-        'vehiculos': Vehiculo.objects.all(),
         'destinos': Destino.objects.all(),
         'solicitudes_pendientes': SolicitudDespacho.objects.filter(estado='pendiente').select_related('usuario_solicita', 'operador_responsable'),
     })

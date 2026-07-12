@@ -49,3 +49,25 @@ class SeguridadAPITests(TestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertFalse(Caja.objects.get(pk='CAJA-API-V1').es_fragil)
+
+    def test_usuario_no_admin_no_puede_modificar_catalogos(self):
+        user = get_user_model().objects.create_user(username='operador', password='Clave-Segura-123')
+        self.client.force_login(user)
+        response = self.client.post(
+            '/api/proveedores/',
+            data={'nombre_empresa': 'No autorizado', 'contacto': 'prueba'},
+            content_type='application/json',
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_puede_modificar_catalogos(self):
+        admin = get_user_model().objects.create_superuser(username='admin-catalogo', password='Clave-Segura-123')
+        self.client.force_login(admin)
+        response = self.client.post(
+            '/api/proveedores/',
+            data={'nombre_empresa': 'Proveedor autorizado', 'contacto': 'prueba'},
+            content_type='application/json',
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 201)

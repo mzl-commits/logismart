@@ -10,10 +10,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.DeleteModel(
-            name='ConfigCarro',
-        ),
-        migrations.DeleteModel(
-            name='EstadoCarro',
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL('DROP TABLE IF EXISTS config_carro'),
+                migrations.RunSQL('DROP TABLE IF EXISTS estado_carro'),
+            ],
+            state_operations=[
+                migrations.DeleteModel(name='ConfigCarro'),
+                migrations.DeleteModel(name='EstadoCarro'),
+            ],
         ),
     ]

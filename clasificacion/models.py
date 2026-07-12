@@ -27,6 +27,7 @@ class Proveedor(models.Model):
 
     class Meta:
         db_table = 'proveedores'
+        ordering = ['nombre_empresa']
 
     def __str__(self):
         return self.nombre_empresa
@@ -120,11 +121,16 @@ class Usuario(models.Model):
         ('despachador', 'Despachador'),
     ]
     id_usuario = models.AutoField(primary_key=True)
+    usuario_auth = models.OneToOneField(
+        'auth.User', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='perfil_logistico'
+    )
     nombre = models.CharField(max_length=100)
     rol = models.CharField(max_length=20, choices=ROLES)
 
     class Meta:
         db_table = 'usuarios'
+        ordering = ['nombre']
 
     def __str__(self):
         return f"{self.nombre} ({self.rol})"
@@ -202,9 +208,11 @@ class Vehiculo(models.Model):
 
     class Meta:
         db_table = 'vehiculo'
+        ordering = ['placa']
 
     def __str__(self):
         return f"{self.placa} ({self.marca})"
+
 
 class Destino(models.Model):
     id_destino = models.AutoField(primary_key=True)
@@ -213,6 +221,7 @@ class Destino(models.Model):
 
     class Meta:
         db_table = 'destino'
+        ordering = ['nombre']
 
     def __str__(self):
         return self.nombre
