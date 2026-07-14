@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const buildVersion = '20260703-ui10'; // Incrementar para invalidar cache
+const buildVersion = '20260714-ui11'; // Incrementar para invalidar cache
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,7 +10,7 @@ export default defineConfig({
     {
       name: 'logismart-cache-version',
       transformIndexHtml(html) {
-        return html.replace(/(\/static\/frontend\/assets\/app\.css)/g, `$1?v=${buildVersion}`)
+        return html.replace(/(\/static\/frontend\/assets\/app\.(?:js|css))/g, `$1?v=${buildVersion}`)
       },
     },
   ],
