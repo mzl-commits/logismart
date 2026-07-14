@@ -1,0 +1,1 @@
+import{mt as e}from"./app-20260714-ui11.js";var t=e(`check`,[[`path`,{d:`M20 6 9 17l-5-5`,key:`1gmf2c`}]]);export{t};

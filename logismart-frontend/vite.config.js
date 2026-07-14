@@ -10,7 +10,7 @@ export default defineConfig({
     {
       name: 'logismart-cache-version',
       transformIndexHtml(html) {
-        return html.replace(/(\/static\/frontend\/assets\/app\.(?:js|css))/g, `$1?v=${buildVersion}`)
+        return html.replace(/(\/static\/frontend\/assets\/app\.css)/g, `$1?v=${buildVersion}`)
       },
     },
   ],
@@ -30,7 +30,7 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        entryFileNames: 'assets/app.js',
+        entryFileNames: `assets/app-${buildVersion}.js`,
         chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: (assetInfo) => assetInfo.name?.endsWith('.css')
           ? 'assets/app.css'
