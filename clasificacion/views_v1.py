@@ -9,6 +9,7 @@ Traduce el vocabulario del equipo externo al formato interno de LogiSmart:
   - Campos FK opcionales: usa defaults cuando no se envían
 """
 import logging
+from decimal import Decimal, InvalidOperation
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -98,6 +99,7 @@ class CajaV1ListView(APIView):
         caja_id = data.get('id', '').strip()
         producto = data.get('producto', '').strip()
         cantidad = data.get('cantidad')
+        peso_raw = data.get('peso_kg')
 
         errors = {}
         if not caja_id:
@@ -106,6 +108,20 @@ class CajaV1ListView(APIView):
             errors['producto'] = 'El campo producto es obligatorio.'
         if cantidad is None:
             errors['cantidad'] = 'El campo cantidad es obligatorio.'
+        try:
+            cantidad_normalizada = int(cantidad)
+            if cantidad_normalizada <= 0:
+                errors['cantidad'] = 'La cantidad debe ser mayor que cero.'
+        except (TypeError, ValueError):
+            errors['cantidad'] = 'La cantidad debe ser un número entero positivo.'
+            cantidad_normalizada = None
+        try:
+            peso_normalizado = Decimal(str(peso_raw))
+            if peso_normalizado <= 0:
+                errors['peso_kg'] = 'El peso debe ser mayor que cero.'
+        except (InvalidOperation, TypeError, ValueError):
+            errors['peso_kg'] = 'El campo peso_kg es obligatorio y debe ser positivo.'
+            peso_normalizado = None
         if errors:
             return Response({'errores': errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -120,9 +136,8 @@ class CajaV1ListView(APIView):
         prioridad_raw = data.get('prioridad', 'MEDIA')
         prioridad = PRIORIDAD_MAP.get(str(prioridad_raw).upper(), 'media')
 
-        # ── Traducir estado inicial ────────────────────────────────────────────
-        estado_raw = data.get('estado_envio', 'LLEGANDO')
-        estado = ESTADO_MAP.get(str(estado_raw).upper(), 'pendiente')
+        # Toda alta debe pasar por clasificación y slotting antes de ingresar.
+        estado = 'pendiente'
 
         # ── Resolver medida ────────────────────────────────────────────────────
         id_medida_raw = data.get('id_medida')
@@ -167,13 +182,14 @@ class CajaV1ListView(APIView):
             caja = Caja.objects.create(
                 id=caja_id,
                 producto=producto,
-                cantidad=int(cantidad),
+                cantidad=cantidad_normalizada,
                 id_medida=medida,
                 id_proveedor=proveedor,
-                peso_kg=data.get('peso_kg') or 0,
+                peso_kg=peso_normalizado,
                 prioridad=prioridad,
                 categoria=data.get('categoria', 'otro').lower()[:30],
                 es_fragil=str(data.get('es_fragil', False)).strip().lower() in ('true', '1') if isinstance(data.get('es_fragil'), str) else bool(data.get('es_fragil', False)),
+                requiere_refrigeracion=str(data.get('requiere_refrigeracion', False)).strip().lower() in ('true', '1') if isinstance(data.get('requiere_refrigeracion'), str) else bool(data.get('requiere_refrigeracion', False)),
                 estado=estado,
             )
         except Exception as e:

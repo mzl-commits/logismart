@@ -17,7 +17,17 @@ export function saveLocalAiConfig(config) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...DEFAULT_LOCAL_AI, ...config }));
 }
 
+export function validateLocalAiConfig(config) {
+  const endpoint = String(config?.endpoint || '').trim();
+  const model = String(config?.model || '').trim();
+  if (!/^https?:\/\/[^\s]+$/i.test(endpoint)) return 'La direccion debe ser una URL HTTP o HTTPS valida.';
+  if (!model) return 'Indica el nombre del modelo local.';
+  return '';
+}
+
 export async function testLocalAi(config = getLocalAiConfig()) {
+  const validationError = validateLocalAiConfig(config);
+  if (validationError) throw new Error(validationError);
   const response = await fetch(`${config.endpoint.replace(/\/$/, '')}/api/tags`, {
     signal: AbortSignal.timeout(5000),
   });
@@ -75,15 +85,12 @@ function wrapText(text, font, size, maxWidth) {
   return lines;
 }
 
-export async function openAiEnhancedPdf(pdfUrl, operationalData, targetWindow = null) {
-  const openUrl = url => {
-    if (targetWindow && !targetWindow.closed) targetWindow.location.href = url;
-    else window.open(url, '_blank');
-  };
+const previewUrl = pdfUrl => `${pdfUrl}${pdfUrl.includes('?') ? '&' : '?'}preview=true`;
+
+export async function prepareAiEnhancedPdf(pdfUrl, operationalData) {
   const config = getLocalAiConfig();
   if (!config.enabled) {
-    openUrl(pdfUrl);
-    return { enhanced: false };
+    return { enhanced: false, previewUrl: previewUrl(pdfUrl), downloadUrl: pdfUrl };
   }
 
   try {
@@ -112,11 +119,8 @@ export async function openAiEnhancedPdf(pdfUrl, operationalData, targetWindow = 
 
     const blob = new Blob([await document.save()], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
-    openUrl(url);
-    setTimeout(() => URL.revokeObjectURL(url), 120000);
-    return { enhanced: true };
+    return { enhanced: true, previewUrl: url, downloadUrl: url, objectUrl: true };
   } catch (error) {
-    openUrl(pdfUrl);
-    return { enhanced: false, error };
+    return { enhanced: false, previewUrl: previewUrl(pdfUrl), downloadUrl: pdfUrl, error };
   }
 }

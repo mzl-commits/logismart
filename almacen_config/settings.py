@@ -43,10 +43,10 @@ def _get_env_list(key, default=''):
 ALLOWED_HOSTS = _get_env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,10.0.2.2')
 EXTERNAL_API_KEY = _get_env('EXTERNAL_API_KEY', default='')
 
-CSRF_TRUSTED_ORIGINS = [
-    'https://logistica.promube.com',
-    'http://logistica.promube.com',
-]
+CSRF_TRUSTED_ORIGINS = _get_env_list(
+    'CSRF_TRUSTED_ORIGINS',
+    'https://logistica.promube.com,http://logistica.promube.com,http://127.0.0.1:5173,http://localhost:5173',
+)
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 

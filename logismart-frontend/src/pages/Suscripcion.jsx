@@ -36,6 +36,7 @@ export default function Suscripcion() {
   useEffect(() => {
     let cancelled = false;
     const confirm = async () => {
+      try {
       if (checkoutSucceeded && sessionId) {
         setBusy(true);
         try {
@@ -48,10 +49,14 @@ export default function Suscripcion() {
         }
       }
       const response = await fetch('/suscripcion/estado/', { credentials: 'same-origin' });
+      if (!response.ok) throw new Error('No se pudo consultar el estado de la suscripcion.');
       const nextStatus = await response.json();
       if (!cancelled) {
         setStatus(nextStatus);
         setLoading(false);
+      }
+      } catch (error) {
+      if (!cancelled) { setMessage(error.message); setLoading(false); }
       }
     };
     void confirm();

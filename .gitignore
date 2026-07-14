@@ -32,6 +32,8 @@ tmp_doc_*/
 # ─── Node.js (frontend) ─────────────────────────────────────────────────────
 node_modules/
 logismart-frontend/dist/
+logismart-frontend/playwright-report/
+logismart-frontend/test-results/
 
 # ─── Android (móvil) ─────────────────────────────────────────────────────────
 logismart-movil/.gradle/

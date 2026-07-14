@@ -1,6 +1,11 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
+import { ShieldAlert } from 'lucide-react';
 import Navbar from './components/Navbar';
+import { AuthProvider } from './context/AuthContext';
+import { useAuth } from './context/useAuth';
+import { EmptyState } from './components/ui';
 
 // Páginas
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -14,6 +19,16 @@ const Login = lazy(() => import('./pages/Login'));
 const Suscripcion = lazy(() => import('./pages/Suscripcion'));
 const PdfViewer = lazy(() => import('./pages/PdfViewer'));
 const Stock = lazy(() => import('./pages/Stock'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+function AdminRoute({ children }) {
+  const { isAdmin, loading } = useAuth();
+  if (loading) return <div className="spinner" role="status" aria-label="Validando sesión" />;
+  if (!isAdmin) {
+    return <div className="p-8 mt-10"><EmptyState title="Acceso Denegado" description="No tienes permisos para ver esta página." icon={ShieldAlert} /></div>;
+  }
+  return children;
+}
 
 function AppContent() {
   const { pathname } = useLocation();
@@ -30,15 +45,16 @@ function AppContent() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/almacen" element={<AlmacenVisual />} />
             <Route path="/stock" element={<Stock />} />
-            <Route path="/nueva-caja" element={<NuevaCaja />} />
-            <Route path="/cajas" element={<NuevaCaja />} />
+            <Route path="/nueva-caja" element={<AdminRoute><NuevaCaja /></AdminRoute>} />
+            <Route path="/cajas" element={<AdminRoute><NuevaCaja /></AdminRoute>} />
             <Route path="/despachos" element={<Despachos />} />
-            <Route path="/administracion" element={<Administracion />} />
-            <Route path="/configuracion" element={<Configuracion />} />
+            <Route path="/administracion" element={<AdminRoute><Administracion /></AdminRoute>} />
+            <Route path="/configuracion" element={<AdminRoute><Configuracion /></AdminRoute>} />
             <Route path="/planillas" element={<Planillas />} />
             <Route path="/login" element={<Login />} />
             <Route path="/suscripcion" element={<Suscripcion />} />
             <Route path="/ver-pdf-lote" element={<PdfViewer />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
           </Suspense>
         </main>
@@ -49,7 +65,19 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <AuthProvider>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: 'var(--color-surface)',
+              color: 'var(--color-light)',
+              border: '1px solid var(--color-border)'
+            }
+          }}
+        />
+        <AppContent />
+      </AuthProvider>
     </BrowserRouter>
   );
 }

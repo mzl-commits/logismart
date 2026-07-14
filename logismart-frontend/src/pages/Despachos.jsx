@@ -1,17 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Box, CheckSquare, MapPin, Truck } from 'lucide-react';
-import { despacharInventario, getCajas, getDespachos, getDestinos, getVehiculos } from '../api/endpoints';
+import { despacharInventarioLote, getCajas, getDespachos, getDestinos, getVehiculos } from '../api/endpoints';
 import { EmptyState, MetricStrip, PageHeader, Panel, SkeletonRows, StatusBadge } from '../components/ui';
+import { toast } from 'react-hot-toast';
 
 export default function Despachos() {
   const [data,setData]=useState({despachos:[],cajas:[],destinos:[],vehiculos:[]});
   const [selected,setSelected]=useState([]); const [form,setForm]=useState({placa:'',destino:'',cantidad:1});
-  const [loading,setLoading]=useState(true); const [processing,setProcessing]=useState(false);
-  const load=useCallback(async()=>{setLoading(true);try{const [d,c,t,v]=await Promise.all([getDespachos(),getCajas(),getDestinos(),getVehiculos()]);const rows=(r)=>r.data?.results??r.data??[];setData({despachos:rows(d),cajas:rows(c).filter(x=>x.estado==='almacenada'),destinos:rows(t),vehiculos:rows(v)});}finally{setLoading(false);}},[]);
+  const [loading,setLoading]=useState(true); const [processing,setProcessing]=useState(false); const [loadError,setLoadError]=useState('');
+  const idempotencyKey = useRef(null);
+  const load=useCallback(async()=>{setLoading(true);setLoadError('');try{const [d,c,t,v]=await Promise.all([getDespachos(),getCajas(),getDestinos(),getVehiculos()]);const rows=(r)=>r.data?.results??r.data??[];setData({despachos:rows(d),cajas:rows(c).filter(x=>x.estado==='almacenada'),destinos:rows(t),vehiculos:rows(v)});}catch(error){setLoadError('No se pudo cargar la informacion de despachos. Intenta nuevamente.');console.error(error);}finally{setLoading(false);}},[]);
   useEffect(()=>{const timer=setTimeout(()=>{void load();},0);return()=>clearTimeout(timer);},[load]);
   const weight=useMemo(()=>selected.reduce((sum,id)=>{const item=data.cajas.find(x=>x.id===id);return sum+Number(item?.peso_kg||0)*Math.min(Number(item?.cantidad||1),Number(form.cantidad||1));},0),[selected,data.cajas,form.cantidad]);
   const toggle=(id)=>setSelected(current=>current.includes(id)?current.filter(x=>x!==id):[...current,id]);
-  const dispatch=async()=>{if(!form.placa||!form.destino||!selected.length)return;setProcessing(true);let errors=0;for(const id of selected){const item=data.cajas.find(x=>x.id===id);try{await despacharInventario({caja:id,cantidad:Math.min(Number(item?.cantidad||1),Number(form.cantidad||1)),transporte_placa:form.placa,destino:form.destino});}catch{errors++;}}setProcessing(false);if(!errors){setSelected([]);setForm({placa:'',destino:'',cantidad:1});}await load();if(errors)alert(`No se pudieron procesar ${errors} cajas.`);};
+  const dispatch=async()=>{if(!form.placa||!form.destino||!selected.length)return;setProcessing(true);idempotencyKey.current ||= crypto.randomUUID();try{const items=selected.map(id=>{const item=data.cajas.find(x=>x.id===id);return {caja:id,cantidad:Math.min(Number(item?.cantidad||1),Number(form.cantidad||1))};});await despacharInventarioLote({items,transporte_placa:form.placa,destino:form.destino,idempotency_key:idempotencyKey.current});idempotencyKey.current=null;setSelected([]);setForm({placa:'',destino:'',cantidad:1});toast.success('Despacho registrado correctamente.');await load();}catch(error){toast.error(error.response?.data?.error||'No se pudo registrar el despacho. Puedes reintentar sin duplicar la salida.');}finally{setProcessing(false);}};
   const ready=data.cajas.length;
 
   if (loading && !data.cajas.length && !data.despachos.length) {
@@ -25,6 +27,7 @@ export default function Despachos() {
 
   return <div className="page-stack">
     <PageHeader title="Despachos" description="Selecciona la carga, asigna transporte y registra la salida del almacén." />
+    {loadError && <div className="inline-alert inline-alert--warning" role="alert">{loadError} <button className="button button--secondary" onClick={load}>Reintentar</button></div>}
     <MetricStrip items={[{label:'Listas para salida',value:ready,tone:ready?'info':'neutral'},{label:'Seleccionadas',value:selected.length,tone:selected.length?'warning':'neutral'},{label:'Peso seleccionado',value:`${weight.toFixed(1)} kg`},{label:'Salidas registradas',value:data.despachos.length,tone:'success'}]} />
     <div className="dispatch-layout">
       <Panel title="Carga disponible" description="Cajas almacenadas que pueden incluirse en el siguiente despacho." actions={data.cajas.length?<label className="select-all"><input type="checkbox" checked={selected.length===data.cajas.length} onChange={e=>setSelected(e.target.checked?data.cajas.map(x=>x.id):[])}/>Seleccionar todas</label>:null}>

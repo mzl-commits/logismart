@@ -22,6 +22,9 @@ export const createDespacho  = (data)   => api.post('despachos/', data);
 
 // ── Medidas ───────────────────────────────────────────
 export const getMedidas      = ()       => api.get('medidas/');
+export const createMedida    = (data)   => api.post('medidas/', data);
+export const updateMedida    = (id, d)  => api.patch(`medidas/${id}/`, d);
+export const deleteMedida    = (id)     => api.delete(`medidas/${id}/`);
 
 // ── Proveedores ───────────────────────────────────────
 export const getProveedores  = ()       => api.get('proveedores/');
@@ -63,10 +66,13 @@ export const getAlertasStock = () => api.get('inventario/alertas/');
 export const reservarStock = (data) => api.post('inventario/reservar/', data);
 export const liberarReserva = (data) => api.post('inventario/liberar/', data);
 export const despacharInventario = (data) => api.post('inventario/despachar/', data);
+export const despacharInventarioLote = (data) => api.post('inventario/despachar_lote/', data);
 export const ajustarInventario = (data) => api.post('inventario/ajustar/', data);
 export const getReservasStock = () => api.get('reservas-stock/');
 export const getPoliticasStock = () => api.get('politicas-stock/');
 export const createPoliticaStock = (data) => api.post('politicas-stock/', data);
+export const updatePoliticaStock = (id, data) => api.patch(`politicas-stock/${id}/`, data);
+export const deletePoliticaStock = (id) => api.delete(`politicas-stock/${id}/`);
 
 // ── Categorías ────────────────────────────────────────
 export const getCategorias   = ()       => api.get('categorias/');

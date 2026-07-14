@@ -1,6 +1,8 @@
 # clasificacion/serializers.py
 from rest_framework import serializers
 from uuid import uuid4
+from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from .models import (
     Caja, Ubicacion, Medida, Proveedor,
@@ -30,6 +32,14 @@ class MedidaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Medida
         fields = '__all__'
+        read_only_fields = ['volumen']
+
+    def validate(self, attrs):
+        for campo in ('largo', 'ancho', 'alto'):
+            valor = attrs.get(campo, getattr(self.instance, campo, None))
+            if valor is not None and valor <= 0:
+                raise serializers.ValidationError({campo: 'Debe ser mayor que cero.'})
+        return attrs
 
 
 class ProveedorSerializer(serializers.ModelSerializer):
@@ -46,11 +56,83 @@ class UbicacionSerializer(serializers.ModelSerializer):
         model = Ubicacion
         fields = '__all__'
 
+    def validate(self, attrs):
+        positivos = ('capacidad_peso_kg', 'ancho_util_cm', 'fondo_util_cm', 'alto_util_cm')
+        for campo in positivos:
+            valor = attrs.get(campo, getattr(self.instance, campo, None))
+            if valor is not None and valor <= 0:
+                raise serializers.ValidationError({campo: 'Debe ser mayor que cero.'})
+        distancia = attrs.get(
+            'distancia_salida_m',
+            getattr(self.instance, 'distancia_salida_m', None),
+        )
+        if distancia is not None and distancia < 0:
+            raise serializers.ValidationError({
+                'distancia_salida_m': 'No puede ser negativa.',
+            })
+        return attrs
+
 
 class UsuarioSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(write_only=True, required=False)
+    email = serializers.EmailField(write_only=True, required=False, allow_blank=True)
+    password = serializers.CharField(write_only=True, required=False, min_length=8)
+    activo = serializers.SerializerMethodField()
+
     class Meta:
         model = Usuario
-        fields = '__all__'
+        fields = ['id_usuario', 'nombre', 'rol', 'username', 'email', 'password', 'activo']
+
+    def get_activo(self, obj):
+        return bool(obj.usuario_auth and obj.usuario_auth.is_active)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        data['username'] = instance.usuario_auth.username if instance.usuario_auth else ''
+        data['email'] = instance.usuario_auth.email if instance.usuario_auth else ''
+        return data
+
+    def validate(self, attrs):
+        username = attrs.get('username')
+        if self.instance is None and not username:
+            raise serializers.ValidationError({'username': 'El nombre de usuario es obligatorio.'})
+        if self.instance is None and not attrs.get('password'):
+            raise serializers.ValidationError({'password': 'La contraseña es obligatoria.'})
+        User = get_user_model()
+        current_auth_id = self.instance.usuario_auth_id if self.instance else None
+        if username and User.objects.exclude(pk=current_auth_id).filter(username__iexact=username).exists():
+            raise serializers.ValidationError({'username': 'Este nombre de usuario ya existe.'})
+        return attrs
+
+    @transaction.atomic
+    def create(self, validated_data):
+        User = get_user_model()
+        username = validated_data.pop('username')
+        email = validated_data.pop('email', '')
+        password = validated_data.pop('password')
+        is_admin = validated_data.get('rol') == 'admin'
+        auth_user = User.objects.create_user(
+            username=username, email=email, password=password,
+            is_staff=is_admin, is_superuser=False,
+        )
+        return Usuario.objects.create(usuario_auth=auth_user, **validated_data)
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        username = validated_data.pop('username', None)
+        email = validated_data.pop('email', None)
+        password = validated_data.pop('password', None)
+        instance.nombre = validated_data.get('nombre', instance.nombre)
+        instance.rol = validated_data.get('rol', instance.rol)
+        instance.save(update_fields=['nombre', 'rol'])
+        auth_user = instance.usuario_auth
+        if auth_user:
+            if username: auth_user.username = username
+            if email is not None: auth_user.email = email
+            auth_user.is_staff = instance.rol == 'admin'
+            if password: auth_user.set_password(password)
+            auth_user.save()
+        return instance
 
 
 class CajaSerializer(serializers.ModelSerializer):
@@ -60,9 +142,20 @@ class CajaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Caja
         fields = '__all__'
+        read_only_fields = ['id_ubicacion', 'estado', 'hora_llegada']
 
     def get_ubicacion_nombre(self, obj):
         return str(obj.id_ubicacion) if obj.id_ubicacion else ""
+
+    def validate_cantidad(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Debe ser mayor que cero.')
+        return value
+
+    def validate_peso_kg(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Debe ser mayor que cero.')
+        return value
 
     def create(self, validated_data):
         if not validated_data.get('producto_ref'):

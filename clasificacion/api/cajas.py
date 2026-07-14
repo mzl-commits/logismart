@@ -148,23 +148,9 @@ class WarehouseMap(Flowable):
 
 
 def _resolve_usuario_id(request):
-    if request.user and request.user.is_authenticated:
-        perfil = Usuario.objects.filter(usuario_auth=request.user).first()
-        if perfil:
-            return perfil.id_usuario
-    val = request.data.get('id_usuario')
-    if val:
-        try:
-            return int(val)
-        except (ValueError, TypeError):
-            pass
-    if request.user and request.user.is_authenticated:
-        u = Usuario.objects.filter(nombre__iexact=request.user.username).first() or \
-            Usuario.objects.filter(nombre__iexact=request.user.first_name).first() or \
-            Usuario.objects.first()
-        if u:
-            return u.id_usuario
-    return None
+    if not request.user or not request.user.is_authenticated:
+        return None
+    return Usuario.objects.filter(usuario_auth=request.user).values_list('id_usuario', flat=True).first()
 
 
 class CajaViewSet(viewsets.ModelViewSet):
@@ -201,101 +187,151 @@ class CajaViewSet(viewsets.ModelViewSet):
         - Calcula ruta óptima desde base (0,0).
         - Genera un enlace de descarga para el reporte PDF.
         """
-        usuario_id = request.data.get('id_usuario')
-        asignaciones = request.data.get('asignaciones', {})  # Diccionario { "id_caja": id_ubicacion_manual }
-        cajas_pendientes = list(Caja.objects.filter(estado='pendiente').select_related('id_medida'))
- 
-        if not cajas_pendientes:
+        usuario_id = _resolve_usuario_id(request)
+        if not usuario_id:
             return Response(
-                {'error': 'No hay cajas pendientes para procesar'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'error': 'El usuario autenticado no tiene un perfil logistico asignado.', 'code': 'logistic_profile_required'},
+                status=status.HTTP_400_BAD_REQUEST,
             )
- 
+        asignaciones = request.data.get('asignaciones', {})
+        if not isinstance(asignaciones, dict):
+            return Response(
+                {'error': 'Las asignaciones deben enviarse como un objeto caja-ubicacion.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
             limite = min(max(int(request.data.get('limite', 20)), 1), 100)
         except (TypeError, ValueError):
             return Response({'error': 'El límite debe ser un número entero.'}, status=status.HTTP_400_BAD_REQUEST)
-        cajas_a_procesar = cajas_pendientes[:limite]
- 
-        paradas = []
-        sin_ubicacion = []
- 
-        for caja in cajas_a_procesar:
-            caja_id_str = str(caja.id)
-            mejor_ubi = None
-            detalle = None
- 
-            # Verificar si el usuario asignó una ubicación manualmente
-            if caja_id_str in asignaciones and asignaciones[caja_id_str] is not None:
-                try:
-                    from ..models import Ubicacion
-                    manual_ubi_id = int(asignaciones[caja_id_str])
-                    mejor_ubi = Ubicacion.objects.get(pk=manual_ubi_id)
-                    detalle = {'score': 100, 'tipo': 'Manual'}
-                except (Ubicacion.DoesNotExist, ValueError):
-                    pass
- 
-            # Si no hay asignación manual, buscar la recomendada
-            if not mejor_ubi:
-                clasificacion = ClasificadorCajas.clasificar(caja)
-                mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
-                    clasificacion, caja=caja, incluir_detalle=True
+
+        with transaction.atomic():
+            cajas_a_procesar = list(
+                Caja.objects.select_for_update()
+                .filter(estado='pendiente')
+                .select_related('id_medida')
+                .order_by('hora_llegada', 'id')[:limite]
+            )
+            if not cajas_a_procesar:
+                return Response(
+                    {'error': 'No hay cajas pendientes para procesar'},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
- 
-            if not mejor_ubi:
-                sin_ubicacion.append(caja.id)
-                continue
- 
-            with transaction.atomic():
+
+            # Mantiene estable el inventario de espacios durante toda la planificacion.
+            list(Ubicacion.objects.select_for_update().filter(activo=True))
+
+            manuales = {}
+            for caja in cajas_a_procesar:
+                valor = asignaciones.get(str(caja.id))
+                if valor in (None, ''):
+                    continue
+                try:
+                    manuales[str(caja.id)] = int(valor)
+                except (TypeError, ValueError):
+                    return Response(
+                        {'error': f'La ubicacion manual de {caja.id} no es valida.'},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            ids_manuales = list(manuales.values())
+            if len(ids_manuales) != len(set(ids_manuales)):
+                return Response(
+                    {
+                        'error': 'Una ubicacion manual no puede asignarse a mas de una caja.',
+                        'code': 'duplicate_manual_location',
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            ubicaciones_manuales = {
+                ubicacion.id_ubicacion: ubicacion
+                for ubicacion in Ubicacion.objects.filter(pk__in=ids_manuales)
+            }
+            faltantes = sorted(set(ids_manuales) - set(ubicaciones_manuales))
+            if faltantes:
+                return Response(
+                    {'error': 'Hay ubicaciones manuales inexistentes.', 'ubicaciones': faltantes},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            plan = {}
+            for caja in cajas_a_procesar:
+                caja_id = str(caja.id)
+                if caja_id not in manuales:
+                    continue
+                ubicacion = ubicaciones_manuales[manuales[caja_id]]
+                compatible, detalle = OptimizadorUbicaciones.validar_ubicacion(caja, ubicacion)
+                if not compatible:
+                    return Response(
+                        {
+                            'error': f'La ubicacion manual elegida para {caja.id} es incompatible.',
+                            'code': 'invalid_manual_assignment',
+                            'motivos': detalle.get('motivos', []),
+                        },
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                detalle['tipo'] = 'manual'
+                plan[caja_id] = (ubicacion, detalle)
+
+            cajas_automaticas = [
+                caja for caja in cajas_a_procesar if str(caja.id) not in manuales
+            ]
+            plan.update(OptimizadorUbicaciones.recomendar_lote(
+                cajas_automaticas,
+                ubicaciones_excluidas=ids_manuales,
+            ))
+
+            paradas = []
+            sin_ubicacion = []
+            ubicaciones_reservadas = []
+            for caja in cajas_a_procesar:
+                mejor_ubi, detalle = plan.get(str(caja.id), (None, None))
+                if not mejor_ubi:
+                    sin_ubicacion.append(caja.id)
+                    continue
+
                 caja.id_ubicacion = mejor_ubi
                 caja.estado = 'en_transito'
-                caja.save()
-                OptimizadorUbicaciones.ocupar_ubicacion(mejor_ubi)
+                caja.save(update_fields=['id_ubicacion', 'estado'])
                 _registrar_historial(caja, 'pendiente', usuario_id)
- 
-            paradas.append({
-                'caja_id': caja.id,
-                'producto': caja.producto,
-                'x': mejor_ubi.coord_x,
-                'y': mejor_ubi.coord_y,
-                'ubicacion_id': mejor_ubi.id_ubicacion,
-                'ubicacion_nombre': str(mejor_ubi),
-                'score': detalle.get('score') if detalle else None,
-            })
- 
-        if not paradas:
-            return Response(
-                {'error': 'Ninguna caja pudo ser asignada a una ubicación'},
-                status=status.HTTP_400_BAD_REQUEST
+                ubicaciones_reservadas.append(mejor_ubi.id_ubicacion)
+                paradas.append({
+                    'caja_id': caja.id,
+                    'producto': caja.producto,
+                    'x': mejor_ubi.coord_x,
+                    'y': mejor_ubi.coord_y,
+                    'ubicacion_id': mejor_ubi.id_ubicacion,
+                    'ubicacion_nombre': str(mejor_ubi),
+                    'score': detalle.get('score') if detalle else None,
+                    'tipo_asignacion': detalle.get('tipo', 'automatica') if detalle else 'automatica',
+                    'motivos': detalle.get('motivos', []) if detalle else [],
+                })
+
+            if not paradas:
+                return Response(
+                    {'error': 'Ninguna caja pudo ser asignada a una ubicación'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            Ubicacion.objects.filter(pk__in=ubicaciones_reservadas).update(estado_ocupacion=True)
+            paradas_ordenadas = RutaService.optimizar_paradas(0, 0, paradas)
+            Planilla.objects.create(
+                cajas_ids=[p['caja_id'] for p in paradas_ordenadas],
+                operador=request.user,
             )
- 
-        # Ruta sugerida para el operador desde el punto de inicio del almacén.
-        paradas_ordenadas = RutaService.optimizar_paradas(0, 0, paradas)
+
         cajas_ids_str = ",".join([p['caja_id'] for p in paradas_ordenadas])
         
         # URL dinámica para la descarga del PDF
-        pdf_url = f"/api/cajas/descargar_pdf_lote/?cajas={cajas_ids_str}&usuario_id={usuario_id or ''}"
+        pdf_url = f"/api/cajas/descargar_pdf_lote/?cajas={cajas_ids_str}&usuario_id={request.user.id}"
         
-        # Registrar Planilla para el operador móvil (auth.User)
-        if usuario_id:
-            try:
-                from django.contrib.auth.models import User
-                from ..models import Planilla
-                operador_user = User.objects.get(pk=int(usuario_id))
-                cajas_list = [p['caja_id'] for p in paradas_ordenadas]
-                
-                Planilla.objects.create(
-                    cajas_ids=cajas_list,
-                    operador=operador_user
-                )
-                logger.info("Planilla registrada para el operador: %s", operador_user.username)
-            except Exception as e:
-                logger.error("Error al registrar Planilla en procesar_lote: %s", str(e))
+        logger.info("Planilla registrada para el operador: %s", request.user.username)
 
         logger.info("Lote procesado: %d paradas. Guía PDF generada: %s", len(paradas_ordenadas), pdf_url)
  
         return Response({
-            'mensaje': f'✅ {len(paradas)} caja(s) procesada(s) con éxito. Descargando guía de ruta...',
+            'mensaje': f'{len(paradas)} caja(s) procesada(s) con éxito. Guía lista para revisión.',
             'total_paradas': len(paradas_ordenadas),
             'paradas': paradas_ordenadas,
             'sin_ubicacion': sin_ubicacion,
@@ -508,7 +544,20 @@ class CajaViewSet(viewsets.ModelViewSet):
         Previsualiza qué cajas se procesarán y sus ubicaciones sugeridas,
         así como todas las ubicaciones libres en el almacén.
         """
-        cajas_pendientes = list(Caja.objects.filter(estado='pendiente').select_related('id_medida'))
+        valor_limite = request.data.get('limite') or request.query_params.get('limite', 20)
+        try:
+            limite = min(max(int(valor_limite), 1), 100)
+        except (TypeError, ValueError):
+            return Response(
+                {'error': 'El límite debe ser un número entero.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        cajas_pendientes = list(
+            Caja.objects.filter(estado='pendiente')
+            .select_related('id_medida')
+            .order_by('hora_llegada', 'id')[:limite]
+        )
         if not cajas_pendientes:
             return Response(
                 {'error': 'No hay cajas pendientes para procesar'},
@@ -516,31 +565,41 @@ class CajaViewSet(viewsets.ModelViewSet):
             )
 
         cajas_a_procesar = cajas_pendientes
+        plan = OptimizadorUbicaciones.recomendar_lote(cajas_a_procesar)
 
         cajas_preview = []
         peso_acumulado = 0.0
         volumen_acumulado = 0.0
         for caja in cajas_a_procesar:
             clasificacion = ClasificadorCajas.clasificar(caja)
-            mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
-                clasificacion, caja=caja, incluir_detalle=True
+            mejor_ubi, detalle = plan.get(str(caja.id), (None, None))
+            compatibles = OptimizadorUbicaciones.evaluar_candidatos(
+                caja,
+                clasificacion=clasificacion,
             )
             cajas_preview.append({
                 'id': caja.id,
                 'producto': caja.producto,
                 'peso_kg': float(caja.peso_kg),
+                'peso_total_kg': clasificacion['peso_total_kg'],
+                'cantidad': clasificacion['cantidad'],
                 'categoria': caja.categoria,
                 'es_fragil': caja.es_fragil,
+                'requiere_refrigeracion': caja.requiere_refrigeracion,
                 'sugerida_id': mejor_ubi.id_ubicacion if mejor_ubi else None,
                 'sugerida_nombre': str(mejor_ubi) if mejor_ubi else 'Ninguna compatible',
+                'recomendacion': detalle or {},
+                'ubicaciones_compatibles_ids': [
+                    ubicacion.id_ubicacion for ubicacion, _ in compatibles
+                ],
             })
-            peso_acumulado += float(caja.peso_kg)
+            peso_acumulado += clasificacion['peso_total_kg']
             if caja.id_medida and caja.id_medida.volumen:
                 volumen_acumulado += float(caja.id_medida.volumen)
 
         # Todas las ubicaciones desocupadas
         from ..models import Ubicacion
-        libres_qs = Ubicacion.objects.filter(estado_ocupacion=False)
+        libres_qs = Ubicacion.objects.filter(estado_ocupacion=False, activo=True)
         ubicaciones_libres = [
             {'id_ubicacion': u.id_ubicacion, 'nombre': str(u)}
             for u in libres_qs
@@ -577,9 +636,16 @@ class CajaViewSet(viewsets.ModelViewSet):
                 'metadatos_estante': {
                     'tipo_estante': mejor_ubi.tipo_estante,
                     'capacidad_peso_kg': str(mejor_ubi.capacidad_peso_kg),
+                    'dimensiones_utiles_cm': {
+                        'ancho': str(mejor_ubi.ancho_util_cm),
+                        'fondo': str(mejor_ubi.fondo_util_cm),
+                        'alto': str(mejor_ubi.alto_util_cm),
+                    },
+                    'distancia_salida_m': str(mejor_ubi.distancia_salida_m),
                     'permite_fragil': mejor_ubi.permite_fragil,
                     'permite_quimico': mejor_ubi.permite_quimico,
                     'prioridad_categoria': mejor_ubi.prioridad_categoria,
+                    'activo': mejor_ubi.activo,
                 },
             },
         })
@@ -587,20 +653,37 @@ class CajaViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def procesar(self, request, pk=None):
         """Procesa una sola caja (flujo legacy individual)."""
-        caja = self.get_object()
-        estado_anterior = caja.estado
+        caja_ref = self.get_object()
         usuario_id = _resolve_usuario_id(request)
-        clasificacion = ClasificadorCajas.clasificar(caja)
-        mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
-            clasificacion, caja=caja, incluir_detalle=True
-        )
-        if not mejor_ubi:
-            return Response({'error': 'No hay ubicaciones disponibles'}, status=status.HTTP_400_BAD_REQUEST)
+        if not usuario_id:
+            return Response({'error': 'El usuario autenticado no tiene un perfil logistico asignado.', 'code': 'logistic_profile_required'}, status=status.HTTP_400_BAD_REQUEST)
 
         with transaction.atomic():
+            caja = Caja.objects.select_for_update().select_related('id_medida').get(pk=caja_ref.pk)
+            if caja.estado not in ('pendiente', 'clasificada'):
+                return Response(
+                    {
+                        'error': 'Transición inválida',
+                        'detalle': f"La caja en estado '{caja.estado}' no puede volver a procesarse.",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            list(Ubicacion.objects.select_for_update().filter(activo=True))
+            estado_anterior = caja.estado
+            clasificacion = ClasificadorCajas.clasificar(caja)
+            mejor_ubi, detalle = OptimizadorUbicaciones.encontrar_mejor_ubicacion(
+                clasificacion, caja=caja, incluir_detalle=True
+            )
+            if not mejor_ubi:
+                return Response(
+                    {'error': 'No hay ubicaciones disponibles'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             caja.id_ubicacion = mejor_ubi
             caja.estado = 'en_transito'
-            caja.save()
+            caja.save(update_fields=['id_ubicacion', 'estado'])
             OptimizadorUbicaciones.ocupar_ubicacion(mejor_ubi)
             _registrar_historial(caja, estado_anterior, usuario_id)
 
@@ -621,6 +704,9 @@ class CajaViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def confirmar_almacenada(self, request, pk=None):
         caja = self.get_object()
+        usuario_id = _resolve_usuario_id(request)
+        if not usuario_id:
+            return Response({'error': 'El usuario autenticado no tiene un perfil logistico asignado.', 'code': 'logistic_profile_required'}, status=status.HTTP_400_BAD_REQUEST)
         if caja.estado != 'en_transito':
             return Response({'error': 'Transición inválida',
                              'detalle': f"Estado actual: '{caja.estado}'"}, status=status.HTTP_400_BAD_REQUEST)
@@ -628,7 +714,7 @@ class CajaViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             caja.estado = 'almacenada'
             caja.save()
-            _registrar_historial(caja, estado_anterior, _resolve_usuario_id(request))
+            _registrar_historial(caja, estado_anterior, usuario_id)
         return Response({'mensaje': 'Caja almacenada', 'caja': CajaSerializer(caja).data})
 
     @action(detail=True, methods=['post'])
@@ -640,6 +726,8 @@ class CajaViewSet(viewsets.ModelViewSet):
         estado_anterior = caja.estado
         ubicacion_anterior = caja.id_ubicacion
         usuario_id = _resolve_usuario_id(request)
+        if not usuario_id:
+            return Response({'error': 'El usuario autenticado no tiene un perfil logistico asignado.', 'code': 'logistic_profile_required'}, status=status.HTTP_400_BAD_REQUEST)
         destino = request.data.get('destino', 'No especificado')
         placa = request.data.get('transporte_placa', 'N/A')
 

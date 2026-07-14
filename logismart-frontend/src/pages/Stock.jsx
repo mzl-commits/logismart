@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   AlertCircle, AlertTriangle, CalendarRange, Download, History, PackageSearch, RefreshCw, Search,
 } from 'lucide-react';
-import { createPoliticaStock, exportarStock, getAlertasStock, getCategorias, getInventario, getKardex, getStock, reservarStock } from '../api/endpoints';
+import { exportarStock, getAlertasStock, getCategorias, getInventario, getKardex, getStock, reservarStock } from '../api/endpoints';
 import { EmptyState, MetricStrip, PageHeader, Panel, SkeletonRows, StatusBadge } from '../components/ui';
 
 const today = new Date();
@@ -33,10 +34,12 @@ function filenameFromDisposition(disposition) {
 }
 
 export default function Stock() {
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') || '';
   const [filters, setFilters] = useState({
     fecha_desde: dateValue(rangeStart),
     fecha_hasta: dateValue(today),
-    search: '',
+    search: initialSearch,
     categoria: '',
     estado: '',
   });
@@ -48,7 +51,6 @@ export default function Stock() {
   const [error, setError] = useState('');
   const [operations, setOperations] = useState({ inventory: [], movements: [], alerts: [] });
   const [reservation, setReservation] = useState({ caja: '', cantidad: 1, destino: '' });
-  const [policy, setPolicy] = useState({ producto: '', minimo: 0, maximo: '', dias_sin_movimiento: 30 });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -103,7 +105,6 @@ export default function Stock() {
     setOperations({ inventory: inventory.data.items ?? [], movements: movements.data ?? [], alerts: alerts.data ?? [] });
   };
   const saveReservation = async (event) => { event.preventDefault(); setError(''); try { await reservarStock({...reservation,cantidad:Number(reservation.cantidad)}); setReservation({caja:'',cantidad:1,destino:''}); await refreshOperations(); } catch (requestError) { setError(requestError.response?.data?.error || 'No se pudo reservar el stock.'); } };
-  const savePolicy = async (event) => { event.preventDefault(); setError(''); try { await createPoliticaStock({...policy,minimo:Number(policy.minimo),maximo:policy.maximo===''?null:Number(policy.maximo),dias_sin_movimiento:Number(policy.dias_sin_movimiento)}); setPolicy({producto:'',minimo:0,maximo:'',dias_sin_movimiento:30}); await refreshOperations(); } catch { setError('No se pudo guardar la política de stock.'); } };
 
   return <div className="page-stack stock-page">
     <PageHeader
@@ -152,7 +153,6 @@ export default function Stock() {
     </Panel>
     <div className="stock-operations-grid">
       <Panel title="Reservar existencias" description="Separa unidades sin alterar el stock físico."><form className="stock-inline-form" onSubmit={saveReservation}><select required value={reservation.caja} onChange={e=>setReservation({...reservation,caja:e.target.value})}><option value="">Seleccionar producto / lote</option>{operations.inventory.filter(item=>item.disponible>0).map(item=><option key={item.id} value={item.id}>{item.producto} · {item.id} · {item.disponible} disponibles</option>)}</select><input type="number" min="1" value={reservation.cantidad} onChange={e=>setReservation({...reservation,cantidad:e.target.value})}/><input placeholder="Destino o pedido" value={reservation.destino} onChange={e=>setReservation({...reservation,destino:e.target.value})}/><button className="button button--primary">Reservar</button></form></Panel>
-      <Panel title="Política de stock" description="Define mínimos, máximos y días sin movimiento."><form className="stock-inline-form" onSubmit={savePolicy}><input required placeholder="Producto exacto" value={policy.producto} onChange={e=>setPolicy({...policy,producto:e.target.value})}/><div className="stock-policy-numbers"><input type="number" min="0" placeholder="Mínimo" value={policy.minimo} onChange={e=>setPolicy({...policy,minimo:e.target.value})}/><input type="number" min="0" placeholder="Máximo" value={policy.maximo} onChange={e=>setPolicy({...policy,maximo:e.target.value})}/><input type="number" min="1" title="Días sin movimiento" value={policy.dias_sin_movimiento} onChange={e=>setPolicy({...policy,dias_sin_movimiento:e.target.value})}/></div><button className="button button--secondary">Guardar política</button></form></Panel>
       <Panel title="Alertas de inventario" description="Mínimos, máximos, inmovilización y vencimientos.">
         {operations.alerts.length ? <div className="stock-event-list">{operations.alerts.slice(0,8).map((alert,index)=><article key={`${alert.tipo}-${alert.producto}-${index}`}><AlertTriangle size={16}/><div><strong>{alert.producto}</strong><small>{alert.tipo.replace('_',' ')} · {alert.actual ?? alert.fecha ?? alert.registros}</small></div></article>)}</div> : <EmptyState icon={AlertTriangle} title="Sin alertas activas" description="Configura políticas de mínimo y máximo para recibir avisos."/>}
       </Panel>

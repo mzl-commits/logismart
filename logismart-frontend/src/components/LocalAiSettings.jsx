@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { getLocalAiConfig, saveLocalAiConfig, testLocalAi } from '../services/localAi';
+import { getLocalAiConfig, saveLocalAiConfig, testLocalAi, validateLocalAiConfig } from '../services/localAi';
 
 export default function LocalAiSettings() {
   const [config, setConfig] = useState(getLocalAiConfig);
   const [status, setStatus] = useState({ type: 'idle', message: 'Sin comprobar' });
   const [models, setModels] = useState([]);
+  const [validationError, setValidationError] = useState('');
 
   const test = async () => {
+    const error = validateLocalAiConfig(config);
+    setValidationError(error);
+    if (error) { setStatus({ type: 'error', message: error }); return; }
     setStatus({ type: 'loading', message: 'Comprobando Ollama…' });
     try {
       const result = await testLocalAi(config);
@@ -21,6 +25,9 @@ export default function LocalAiSettings() {
   };
 
   const save = () => {
+    const error = validateLocalAiConfig(config);
+    setValidationError(error);
+    if (error) { setStatus({ type: 'error', message: error }); return; }
     saveLocalAiConfig(config);
     setStatus(prev => ({ ...prev, message: 'Configuración local guardada' }));
   };
@@ -49,6 +56,7 @@ export default function LocalAiSettings() {
             <datalist id="ollama-models">{models.map(model => <option value={model} key={model} />)}</datalist>
           </label>
         </div>
+        {validationError && <div className="inline-alert inline-alert--danger" role="alert">{validationError}</div>}
         <div className="bg-slate-900/40 border border-slate-800 rounded-xl p-4 text-sm text-slate-400">
           Instala Ollama y ejecuta <code className="text-violet-300">ollama pull gemma3:1b</code>. Autoriza este portal mediante <code className="text-violet-300">OLLAMA_ORIGINS=https://logistica.promube.com</code>.
         </div>

@@ -41,6 +41,7 @@ class SeguridadAPITests(TestCase):
                 'id': 'CAJA-API-V1',
                 'producto': 'Prueba booleana',
                 'cantidad': 1,
+                'peso_kg': 1,
                 'es_fragil': 'false',
             },
             content_type='application/json',
@@ -49,6 +50,37 @@ class SeguridadAPITests(TestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertFalse(Caja.objects.get(pk='CAJA-API-V1').es_fragil)
+
+    def test_api_v1_rechaza_caja_sin_peso(self):
+        Medida.objects.create(nombre='Estándar', largo=1, ancho=1, alto=1, volumen=1)
+        Proveedor.objects.create(nombre_empresa='Proveedor Test', contacto='test@example.com')
+        response = self.client.post(
+            '/api/v1/cajas',
+            data={'id': 'CAJA-SIN-PESO', 'producto': 'Incompleta', 'cantidad': 1},
+            content_type='application/json',
+            HTTP_X_API_KEY='integration-test-key',
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('peso_kg', response.json()['errores'])
+
+    def test_api_v1_no_permite_saltar_slotting(self):
+        Medida.objects.create(nombre='Estándar', largo=1, ancho=1, alto=1, volumen=1)
+        Proveedor.objects.create(nombre_empresa='Proveedor Test', contacto='test@example.com')
+        response = self.client.post(
+            '/api/v1/cajas',
+            data={
+                'id': 'CAJA-CONTROL-V1', 'producto': 'Controlada',
+                'cantidad': 1, 'peso_kg': 2, 'estado_envio': 'EN_ALMACEN',
+            },
+            content_type='application/json',
+            HTTP_X_API_KEY='integration-test-key',
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 201)
+        caja = Caja.objects.get(pk='CAJA-CONTROL-V1')
+        self.assertEqual(caja.estado, 'pendiente')
+        self.assertIsNone(caja.id_ubicacion)
 
     def test_usuario_no_admin_no_puede_modificar_catalogos(self):
         user = get_user_model().objects.create_user(username='operador', password='Clave-Segura-123')

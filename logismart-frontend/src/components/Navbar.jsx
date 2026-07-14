@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Boxes, ChevronDown, ClipboardList, Gauge, LogOut, Menu,
   CreditCard, Moon, PackagePlus, PackageSearch, Search, Settings, ShieldCheck, Sun,
   Truck, User, Warehouse, X
 } from 'lucide-react';
-import { getCajas, getCurrentUser } from '../api/endpoints';
+import { getCajas } from '../api/endpoints';
+import { useAuth } from '../context/useAuth';
 
 const primaryLinks = [
   { to: '/', label: 'Control', icon: Gauge, end: true },
@@ -21,7 +22,9 @@ export default function Navbar() {
   const [pending, setPending] = useState(0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
-  const [user, setUser] = useState(null);
+  const [search, setSearch] = useState('');
+  const navigate = useNavigate();
+  const { user, loading, isAdmin } = useAuth();
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const adminRef = useRef(null);
 
@@ -31,11 +34,12 @@ export default function Navbar() {
   }, [theme]);
 
   useEffect(() => {
-    getCurrentUser().then(({ data }) => {
-      if (data?.is_authenticated) setUser(data);
-      else window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
-    }).catch(() => { window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`; });
+    if (!loading && !user) {
+      window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+    }
+  }, [user, loading]);
 
+  useEffect(() => {
     getCajas().then(({ data }) => {
       const rows = data?.results ?? data ?? [];
       setPending(rows.filter((item) => item.estado === 'pendiente').length);
@@ -49,6 +53,11 @@ export default function Navbar() {
   }, []);
 
   const closeMenus = () => { setMobileOpen(false); setAdminOpen(false); };
+  const submitSearch = (event) => {
+    event.preventDefault();
+    const term = search.trim();
+    if (term) navigate(`/stock?search=${encodeURIComponent(term)}`);
+  };
 
   return (
     <header className="command-bar">
@@ -67,18 +76,18 @@ export default function Navbar() {
         </nav>
 
         <div className="command-actions">
-          <label className="command-search">
+          <form className="command-search" onSubmit={submitSearch} role="search">
             <Search size={15} aria-hidden="true" />
-            <span className="sr-only">Buscar caja</span>
-            <input type="search" placeholder="Buscar caja" />
-          </label>
+            <label className="sr-only" htmlFor="global-search">Buscar caja</label>
+            <input id="global-search" type="search" placeholder="Buscar caja" value={search} onChange={(event) => setSearch(event.target.value)} />
+          </form>
 
           <div className="operation-status" title={`${pending} cajas pendientes`}>
             <span className="operation-status__dot" />
             <span>{pending} pendientes</span>
           </div>
 
-          {user?.is_superuser && (
+          {isAdmin && (
             <NavLink to="/nueva-caja" className="button button--primary command-new">
               <PackagePlus size={17} /><span>Nueva caja</span>
             </NavLink>
@@ -92,7 +101,7 @@ export default function Navbar() {
             <span style={{fontWeight: 600, fontSize: '0.85rem'}}>API Docs</span>
           </a>
 
-          {user?.is_superuser && (
+          {isAdmin && (
             <div className="admin-menu" ref={adminRef}>
               <button className="icon-button" onClick={() => setAdminOpen((open) => !open)} aria-expanded={adminOpen} aria-label="Administración">
                 <ShieldCheck size={18} /><ChevronDown size={13} />
@@ -120,7 +129,8 @@ export default function Navbar() {
 
       {mobileOpen && <nav className="mobile-nav" aria-label="Navegación móvil">
         {primaryLinks.map(({ icon: Icon, ...link }) => <NavLink key={link.to} {...link} className={linkClass} onClick={closeMenus}><Icon size={18} />{link.label}</NavLink>)}
-        {user?.is_superuser && <>
+        {!isAdmin && <NavLink to="/suscripcion" className={linkClass} onClick={closeMenus}><CreditCard size={18} />Suscripcion</NavLink>}
+        {isAdmin && <>
           <NavLink to="/nueva-caja" className={linkClass} onClick={closeMenus}><PackagePlus size={18} />Nueva caja</NavLink>
           <NavLink to="/suscripcion" className={linkClass} onClick={closeMenus}><CreditCard size={18} />Suscripción</NavLink>
           <a href="/api/docs/" className="nav-link" target="_blank" rel="noopener noreferrer" onClick={closeMenus}>API Docs</a>

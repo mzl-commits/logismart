@@ -14,7 +14,17 @@ export default defineConfig({
       },
     },
   ],
-  base: '/static/frontend/',
+  base: process.env.NODE_ENV === 'production' ? '/static/frontend/' : '/',
+  server: {
+    host: '127.0.0.1',
+    proxy: {
+      '/api': 'http://127.0.0.1:8000',
+      '/login': 'http://127.0.0.1:8000',
+      '/logout': 'http://127.0.0.1:8000',
+      '/suscripcion': 'http://127.0.0.1:8000',
+      '/static': 'http://127.0.0.1:8000',
+    },
+  },
   build: {
     outDir: '../clasificacion/static/frontend',
     emptyOutDir: true,

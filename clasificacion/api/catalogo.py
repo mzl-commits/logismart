@@ -52,9 +52,19 @@ class ProveedorViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
 
 
-class UsuarioViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Usuario.objects.all()
+class UsuarioViewSet(viewsets.ModelViewSet):
+    queryset = Usuario.objects.select_related('usuario_auth').exclude(usuario_auth__is_active=False)
     serializer_class = UsuarioSerializer
+    permission_classes = [IsAdminOrReadOnly]
+
+    def destroy(self, request, *args, **kwargs):
+        usuario = self.get_object()
+        if usuario.usuario_auth_id == request.user.id:
+            return Response({'error': 'No puedes desactivar tu propia cuenta.'}, status=400)
+        if usuario.usuario_auth:
+            usuario.usuario_auth.is_active = False
+            usuario.usuario_auth.save(update_fields=['is_active'])
+        return Response(status=204)
 
 
 class HistorialViewSet(viewsets.ReadOnlyModelViewSet):
@@ -71,9 +81,11 @@ def current_user(request):
             'is_authenticated': True,
             'username': request.user.username,
             'is_superuser': request.user.is_superuser,
+            'is_staff': request.user.is_staff,
         })
     return Response({
         'is_authenticated': False,
         'username': '',
         'is_superuser': False,
+        'is_staff': False,
     })

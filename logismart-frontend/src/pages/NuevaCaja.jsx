@@ -1,6 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { getCajas, getProveedores, getMedidas, getUsuarios, getCategorias, crearCaja, sugerirId, procesarLote, previsualizarLote, getUbicaciones } from '../api/endpoints';
-import { openAiEnhancedPdf } from '../services/localAi';
+import { getCajas, getProveedores, getMedidas, getCategorias, crearCaja, sugerirId, procesarLote, previsualizarLote, getUbicaciones } from '../api/endpoints';
+import { prepareAiEnhancedPdf } from '../services/localAi';
+import { toast } from 'react-hot-toast';
+import WarehouseGrid from '../components/WarehouseGrid';
+import GuidePreviewModal from '../components/GuidePreviewModal';
 
 const SHELF_TYPE_LABEL = {
   general: 'General', pesado: 'Carga pesada', fragil: 'Protección frágil',
@@ -11,17 +14,16 @@ export default function NuevaCaja() {
   const [cajas, setCajas] = useState([]);
   const [proveedores, setProveedores] = useState([]);
   const [medidas, setMedidas] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
   const [categorias, setCategorias] = useState([]);
 
   const [form, setForm] = useState({
     id: '', producto: '', categoria: '', prioridad: 'media', 
-    peso: '', cantidad: 1, pesoTipo: 'total', codigo_barras: '', lote: '', fecha_vencimiento: '', fragil: false, proveedor: '', medida: ''
+    peso: '', cantidad: 1, pesoTipo: 'total', codigo_barras: '', lote: '', fecha_vencimiento: '', fragil: false, refrigeracion: false, proveedor: '', medida: ''
   });
 
+  const [errors, setErrors] = useState({});
   const [loadingForm, setLoadingForm] = useState(false);
   const [loadingEnvio, setLoadingEnvio] = useState(false);
-  const [usuarioEnvio, setUsuarioEnvio] = useState('');
   const [previewData, setPreviewData] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [asignaciones, setAsignaciones] = useState({});
@@ -29,11 +31,12 @@ export default function NuevaCaja() {
   const [allUbicaciones, setAllUbicaciones] = useState([]);
   const [selectedBoxId, setSelectedBoxId] = useState('');
   const [activePasillo, setActivePasillo] = useState('A');
+  const [generatedGuide, setGeneratedGuide] = useState(null);
 
   const load = useCallback(async () => {
     try {
-      const [rc, rp, rm, ru, rcat, rsug, rubi] = await Promise.all([
-        getCajas(), getProveedores(), getMedidas(), getUsuarios(), getCategorias(), sugerirId(), getUbicaciones()
+      const [rc, rp, rm, rcat, rsug, rubi] = await Promise.all([
+        getCajas(), getProveedores(), getMedidas(), getCategorias(), sugerirId(), getUbicaciones()
       ]);
       const getData = res => res.data?.results ?? res.data ?? [];
       
@@ -41,7 +44,6 @@ export default function NuevaCaja() {
       setCajas(allCajas.filter(c => c.estado === 'pendiente'));
       setProveedores(getData(rp));
       setMedidas(getData(rm));
-      setUsuarios(getData(ru));
       setAllUbicaciones(getData(rubi));
       
       const cats = getData(rcat);
@@ -67,12 +69,29 @@ export default function NuevaCaja() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
+  useEffect(() => () => {
+    if (generatedGuide?.objectUrl) URL.revokeObjectURL(generatedGuide.previewUrl);
+  }, [generatedGuide]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.id || !form.producto || !form.categoria || !form.prioridad || !form.peso || !form.proveedor || !form.medida) {
-      alert("Por favor completa todos los campos.");
+
+    // Validación local robusta
+    const newErrors = {};
+    if (!form.id) newErrors.id = 'El ID es obligatorio';
+    if (!form.producto) newErrors.producto = 'El producto es obligatorio';
+    if (!form.peso) newErrors.peso = 'El peso es obligatorio';
+    if (!form.proveedor) newErrors.proveedor = 'El proveedor es obligatorio';
+    if (!form.medida) newErrors.medida = 'La medida es obligatoria';
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      document.getElementById(Object.keys(newErrors)[0])?.focus();
+      toast.error('Por favor completa todos los campos marcados en rojo.');
       return;
     }
+
+    setErrors({});
 
     setLoadingForm(true);
     try {
@@ -90,16 +109,18 @@ export default function NuevaCaja() {
         lote: form.lote,
         fecha_vencimiento: form.fecha_vencimiento || null,
         es_fragil: form.fragil,
+        requiere_refrigeracion: form.refrigeracion,
         id_medida: parseInt(form.medida),
         id_proveedor: parseInt(form.proveedor)
       });
       setForm({
         id: '', producto: '', categoria: '', prioridad: 'media', 
-        peso: '', cantidad: 1, pesoTipo: 'total', codigo_barras: '', lote: '', fecha_vencimiento: '', fragil: false, proveedor: '', medida: ''
+        peso: '', cantidad: 1, pesoTipo: 'total', codigo_barras: '', lote: '', fecha_vencimiento: '', fragil: false, refrigeracion: false, proveedor: '', medida: ''
       });
       load();
+      toast.success("Caja registrada y agregada a la cola.");
     } catch (error) {
-      alert("Error al crear caja.");
+      toast.error("Error al crear caja.");
       console.error(error);
     } finally {
       setLoadingForm(false);
@@ -107,10 +128,6 @@ export default function NuevaCaja() {
   };
 
   const handlePrevisualizarCola = async () => {
-    if (!usuarioEnvio) {
-      alert('Selecciona un operador responsable.');
-      return;
-    }
     setLoadingEnvio(true);
     try {
       const res = await previsualizarLote();
@@ -133,7 +150,7 @@ export default function NuevaCaja() {
 
       setShowPreview(true);
     } catch (error) {
-      alert('Error al generar la previsualización de la cola');
+      toast.error('Error al generar la previsualización de la cola');
       console.error(error);
     } finally {
       setLoadingEnvio(false);
@@ -148,51 +165,48 @@ export default function NuevaCaja() {
   };
 
   const confirmarYProcesarCola = async () => {
-    if (!usuarioEnvio) {
-      alert('Selecciona un operador responsable.');
-      return;
-    }
-
     const selectedUbis = Object.values(asignaciones).filter(Boolean);
     const duplicates = selectedUbis.some((item, index) => selectedUbis.indexOf(item) !== index);
     if (duplicates) {
-      alert('Error: No puedes asignar la misma ubicación a dos cajas distintas.');
+      toast.error('Error: No puedes asignar la misma ubicación a dos cajas distintas.');
       return;
     }
 
-    const pdfWindow = window.open('', '_blank');
-    if (pdfWindow) {
-      pdfWindow.document.title = 'Preparando guía LogiSmart';
-      pdfWindow.document.body.innerHTML = '<div style="font-family:system-ui;padding:40px;color:#334155">Preparando guía PDF e informe local…</div>';
-    }
     setLoadingConfirmar(true);
     try {
-      const res = await procesarLote({
-        id_usuario: parseInt(usuarioEnvio),
-        asignaciones: asignaciones
-      });
+      const asignacionesManuales = Object.fromEntries(
+        Object.entries(asignaciones).filter(([cajaId, ubicacionId]) => {
+          const sugerida = previewData?.cajas?.find(caja => caja.id === cajaId)?.sugerida_id;
+          return ubicacionId && Number(ubicacionId) !== Number(sugerida);
+        }),
+      );
+      const res = await procesarLote({ asignaciones: asignacionesManuales });
       if (res.data.pdf_url) {
+        const pdfUrl = window.location.origin + res.data.pdf_url;
         const operationalData = {
           total_cajas: previewData?.paradas?.length ?? previewData?.total_cajas,
           peso_total_kg: previewData?.peso_total,
           paradas: previewData?.paradas,
           asignaciones,
         };
-        const result = await openAiEnhancedPdf(
-          window.location.origin + res.data.pdf_url,
-          operationalData,
-          pdfWindow,
-        );
-        if (result.error) console.warn('Se usó el PDF tradicional porque la IA local no estuvo disponible.', result.error);
-      } else if (pdfWindow) {
-        pdfWindow.close();
+        setGeneratedGuide({ previewUrl: `${pdfUrl}&preview=true`, downloadUrl: pdfUrl, enhanced: false, preparing: true });
+        setShowPreview(false);
+        void prepareAiEnhancedPdf(pdfUrl, operationalData).then(result => {
+          setGeneratedGuide(current => {
+            if (!current) {
+              if (result.objectUrl) URL.revokeObjectURL(result.previewUrl);
+              return current;
+            }
+            return { ...result, preparing: false };
+          });
+          if (result.error) console.warn('Se usó el PDF tradicional porque la IA local no estuvo disponible.', result.error);
+        });
       }
-      alert(res.data.mensaje || 'Cola procesada con éxito. Descargando guía de ruta...');
-      setShowPreview(false);
+      toast.success(res.data.mensaje || 'Planilla creada. Revisa la guía antes de descargarla.');
+      if (!res.data.pdf_url) setShowPreview(false);
       load();
     } catch (error) {
-      if (pdfWindow) pdfWindow.close();
-      alert(error.response?.data?.error || 'Error al procesar la cola');
+      toast.error(error.response?.data?.error || 'Error al procesar la cola');
       console.error(error);
     } finally {
       setLoadingConfirmar(false);
@@ -206,6 +220,7 @@ export default function NuevaCaja() {
     media: 'bg-sky-500/20 text-sky-400 border border-sky-500/30', 
     baja: 'bg-slate-500/20 text-slate-400 border border-slate-500/30' 
   };
+  const selectedPreviewCaja = previewData?.cajas?.find(caja => caja.id === selectedBoxId);
 
   return (
     <>
@@ -226,18 +241,20 @@ export default function NuevaCaja() {
               <span className="font-semibold text-white flex items-center gap-2"><i className="bi bi-box"></i> Datos de la caja</span>
             </div>
             <div className="p-6">
-              <form onSubmit={handleSubmit}>
+              <form noValidate onSubmit={handleSubmit}>
                 {/* ID + Producto */}
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-6">
                   <div className="md:col-span-5">
-                    <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">ID de caja</label>
-                    <input type="text" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" 
-                           value={form.id} onChange={e => setForm({...form, id: e.target.value})} required />
+                    <label htmlFor="caja-id" className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">ID de caja</label>
+                     <input type="text" className={`w-full bg-slate-900/50 border rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-1 transition-all ${errors.id ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-700 focus:border-sky-500 focus:ring-sky-500'}`}
+                           id="caja-id" aria-invalid={Boolean(errors.id)} aria-describedby={errors.id ? 'caja-id-error' : undefined} value={form.id} onChange={e => { setForm({...form, id: e.target.value}); setErrors(prev => ({...prev, id: null})); }} required />
+                    {errors.id && <span id="caja-id-error" className="text-red-500 text-xs mt-1 block font-semibold">{errors.id}</span>}
                   </div>
                   <div className="md:col-span-7">
                     <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Producto / descripción</label>
-                    <input type="text" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" 
-                           value={form.producto} onChange={e => setForm({...form, producto: e.target.value})} placeholder="Ej. Laptop Dell XPS 15" required />
+                     <input type="text" className={`w-full bg-slate-900/50 border rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-1 transition-all ${errors.producto ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-700 focus:border-sky-500 focus:ring-sky-500'}`}
+                           id="caja-producto" aria-invalid={Boolean(errors.producto)} aria-describedby={errors.producto ? 'caja-producto-error' : undefined} value={form.producto} onChange={e => { setForm({...form, producto: e.target.value}); setErrors(prev => ({...prev, producto: null})); }} placeholder="Ej. Laptop Dell XPS 15" required />
+                    {errors.producto && <span id="caja-producto-error" className="text-red-500 text-xs mt-1 block font-semibold">{errors.producto}</span>}
                   </div>
                 </div>
 
@@ -297,11 +314,12 @@ export default function NuevaCaja() {
                     <button type="button" role="radio" aria-checked={form.pesoTipo === 'unitario'} aria-selected={form.pesoTipo === 'unitario'} onClick={() => setForm({...form, pesoTipo: 'unitario'})}>Cada unidad</button>
                   </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
                   <div>
                     <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">{form.pesoTipo === 'total' ? 'Peso total (kg)' : 'Peso por unidad (kg)'}</label>
-                    <input type="number" step="0.1" min="0.1" className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all" 
-                           value={form.peso} onChange={e => setForm({...form, peso: e.target.value})} placeholder="0.0" required />
+                     <input type="number" step="0.1" min="0.1" className={`w-full bg-slate-900/50 border rounded-xl px-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-1 transition-all ${errors.peso ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-700 focus:border-sky-500 focus:ring-sky-500'}`}
+                           id="caja-peso" aria-invalid={Boolean(errors.peso)} aria-describedby={errors.peso ? 'caja-peso-error' : undefined} value={form.peso} onChange={e => { setForm({...form, peso: e.target.value}); setErrors(prev => ({...prev, peso: null})); }} placeholder="0.0" required />
+                    {errors.peso && <span id="caja-peso-error" className="text-red-500 text-xs mt-1 block font-semibold">{errors.peso}</span>}
                   </div>
                   <div>
                     <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Cantidad</label>
@@ -309,14 +327,20 @@ export default function NuevaCaja() {
                            value={form.cantidad} onChange={e => setForm({...form, cantidad: e.target.value})} required />
                   </div>
                   <div>
-                    <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">¿Es frágil?</label>
-                    <div className="flex items-center gap-3 mt-3">
-                      <div className={`w-12 h-6 rounded-full relative cursor-pointer transition-colors border ${form.fragil ? 'bg-sky-500 border-sky-400' : 'bg-slate-800 border-slate-700'}`}
-                           onClick={() => setForm({...form, fragil: !form.fragil})}>
-                        <div className={`absolute top-[1px] w-[20px] h-[20px] bg-white rounded-full transition-all ${form.fragil ? 'left-[25px]' : 'left-[1px]'}`}></div>
-                      </div>
+                    <label htmlFor="caja-fragil" className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">¿Es frágil?</label>
+                    <label className="relative inline-flex items-center gap-3 mt-3 cursor-pointer">
+                      <input id="caja-fragil" className="switch-input" type="checkbox" checked={form.fragil} onChange={e => setForm({...form, fragil: e.target.checked})} />
+                      <span className="switch" aria-hidden="true" />
                       <span className={`font-medium ${form.fragil ? 'text-sky-400' : 'text-slate-400'}`}>{form.fragil ? 'Sí' : 'No'}</span>
-                    </div>
+                    </label>
+                  </div>
+                  <div>
+                    <label htmlFor="caja-refrigeracion" className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">¿Cadena de frío?</label>
+                    <label className="relative inline-flex items-center gap-3 mt-3 cursor-pointer">
+                      <input id="caja-refrigeracion" className="switch-input" type="checkbox" checked={form.refrigeracion} onChange={e => setForm({...form, refrigeracion: e.target.checked})} />
+                      <span className="switch" aria-hidden="true" />
+                      <span className={`font-medium ${form.refrigeracion ? 'text-sky-400' : 'text-slate-400'}`}>{form.refrigeracion ? 'Requerida' : 'No'}</span>
+                    </label>
                   </div>
                 </div>
 
@@ -330,19 +354,21 @@ export default function NuevaCaja() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
                   <div>
                     <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Proveedor</label>
-                    <select className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" 
-                            value={form.proveedor} onChange={e => setForm({...form, proveedor: e.target.value})} required>
+                     <select className={`w-full bg-slate-900/50 border rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-1 transition-all appearance-none ${errors.proveedor ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-700 focus:border-sky-500 focus:ring-sky-500'}`}
+                            id="caja-proveedor" value={form.proveedor} onChange={e => { setForm({...form, proveedor: e.target.value}); setErrors(prev => ({...prev, proveedor: null})); }} required>
                       <option value="">Seleccionar proveedor...</option>
                       {proveedores.map(p => <option key={p.id_proveedor} value={p.id_proveedor}>{p.nombre_empresa}</option>)}
                     </select>
+                    {errors.proveedor && <span className="text-red-500 text-xs mt-1 block font-semibold">{errors.proveedor}</span>}
                   </div>
                   <div>
                     <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Medida / tamaño</label>
-                    <select className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" 
-                            value={form.medida} onChange={e => setForm({...form, medida: e.target.value})} required>
+                     <select className={`w-full bg-slate-900/50 border rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-1 transition-all appearance-none ${errors.medida ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-700 focus:border-sky-500 focus:ring-sky-500'}`}
+                            id="caja-medida" value={form.medida} onChange={e => { setForm({...form, medida: e.target.value}); setErrors(prev => ({...prev, medida: null})); }} required>
                       <option value="">Seleccionar medida...</option>
                       {medidas.map(m => <option key={m.id_medida} value={m.id_medida}>{m.nombre} ({m.largo}x{m.ancho}x{m.alto})</option>)}
                     </select>
+                    {errors.medida && <span className="text-red-500 text-xs mt-1 block font-semibold">{errors.medida}</span>}
                   </div>
                 </div>
 
@@ -376,27 +402,21 @@ export default function NuevaCaja() {
                     <div className="flex-1">
                       <div className="font-bold text-white text-base">{c.producto}</div>
                       <div className="text-sm text-slate-400 mt-1 flex items-center gap-2 flex-wrap">
-                        <span className="text-sky-400 font-medium">{c.id}</span> · {c.peso_kg} kg · 
+                        <span className="text-sky-400 font-medium">{c.id}</span> · {(Number(c.peso_kg) * Number(c.cantidad || 1)).toFixed(2)} kg totales ·
                         <span className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider ${prioColors[c.prioridad] || prioColors.media}`}>{c.prioridad}</span>
                       </div>
                     </div>
                     {c.es_fragil && <span title="Frágil" className="text-2xl drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]"><i className="bi bi-shield-fill-exclamation text-sky-400" /></span>}
+                    {c.requiere_refrigeracion && <span title="Cadena de frío" className="text-2xl"><i className="bi bi-snow text-sky-400" /></span>}
                   </div>
                 ))}
               </div>
 
               <div className="mt-6 pt-5 border-t border-slate-800/60 shrink-0">
-                <div className="mb-4">
-                  <label className="form-label text-slate-400 text-xs uppercase tracking-wider font-semibold mb-2 block">Operador Responsable</label>
-                  <select className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 transition-all appearance-none" 
-                          value={usuarioEnvio} onChange={e => setUsuarioEnvio(e.target.value)}>
-                    <option value="">Seleccionar...</option>
-                    {usuarios.map(u => <option key={u.id_usuario} value={u.id_usuario}>{u.nombre} ({u.rol})</option>)}
-                  </select>
-                </div>
+                <p className="mb-4 text-sm text-slate-400">El responsable se registra automáticamente con la sesión autenticada.</p>
                 <button className="w-full bg-sky-600 hover:bg-sky-500 disabled:opacity-50 disabled:hover:bg-sky-600 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 hover:shadow-sky-500/30 transition-all" 
                         disabled={!cajas.length || loadingEnvio} onClick={handlePrevisualizarCola}>
-                  <i className="bi bi-file-earmark-pdf text-lg"></i> {loadingEnvio ? 'Cargando...' : 'Procesar cola y previsualizar guía'}
+                  <i className="bi bi-diagram-3 text-lg"></i> {loadingEnvio ? 'Preparando revisión...' : 'Revisar cola y ubicaciones'}
                 </button>
               </div>
             </div>
@@ -447,9 +467,9 @@ export default function NuevaCaja() {
                       >
                         <div className="font-bold text-white text-xs leading-snug">{caja.producto}</div>
                         <div className="text-[10px] text-slate-500 mt-1 flex items-center justify-between w-full">
-                          <span>ID: <strong className="text-slate-400">{caja.id}</strong> · {caja.peso_kg} kg</span>
+                          <span>ID: <strong className="text-slate-400">{caja.id}</strong> · {caja.peso_total_kg ?? caja.peso_kg} kg</span>
                           <span className={`px-2 py-0.5 rounded font-black ${isManual ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'}`}>
-                            {isManual ? 'Manual' : 'Óptima'}: {assignedLabel}
+                            {isManual ? 'Manual' : `Recomendada ${caja.recomendacion?.score ?? '-'}%`}: {assignedLabel}
                           </span>
                         </div>
                       </button>
@@ -461,9 +481,18 @@ export default function NuevaCaja() {
               {/* Right Column: Visual Warehouse Map */}
               <div className="lg:col-span-8 flex flex-col min-h-0">
                 <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center justify-between">
-                  <span>Asignar ubicación para: <strong className="text-sky-400">{(previewData.cajas.find(c => c.id === selectedBoxId))?.producto || ''}</strong></span>
+                  <span>Asignar ubicación para: <strong className="text-sky-400">{selectedPreviewCaja?.producto || ''}</strong></span>
                   <span className="text-slate-600">Pasillos & Estantes en cuadrícula</span>
                 </div>
+                {selectedPreviewCaja?.recomendacion?.score != null && <div className="slotting-explanation" aria-live="polite">
+                  <div><strong>Recomendación {selectedPreviewCaja.recomendacion.score}/100</strong><span>{selectedPreviewCaja.sugerida_nombre}</span></div>
+                  <dl>
+                    <div><dt>Peso total</dt><dd>{selectedPreviewCaja.recomendacion.metricas?.peso_total_kg ?? selectedPreviewCaja.peso_total_kg} kg</dd></div>
+                    <div><dt>Uso de capacidad</dt><dd>{selectedPreviewCaja.recomendacion.metricas?.utilizacion_peso_pct ?? '-'}%</dd></div>
+                    <div><dt>Distancia</dt><dd>{selectedPreviewCaja.recomendacion.metricas?.distancia_salida_m ?? '-'} m</dd></div>
+                  </dl>
+                  <p>{selectedPreviewCaja.recomendacion.motivos?.slice(3, 6).join(' · ') || 'Cumple las restricciones físicas y operativas.'}</p>
+                </div>}
 
                 {/* Pasillo selector tabs */}
                 {(() => {
@@ -479,6 +508,20 @@ export default function NuevaCaja() {
                     if (!porEstante[u.estante]) porEstante[u.estante] = [];
                     porEstante[u.estante].push(u);
                   });
+
+                  const currentRecommendation = selectedPreviewCaja?.sugerida_id;
+                  const compatibleIds = selectedPreviewCaja?.ubicaciones_compatibles_ids ?? null;
+                  const reservedIds = Object.entries(asignaciones).filter(([cajaId]) => cajaId !== selectedBoxId).map(([, locationId]) => locationId).filter(Boolean);
+                  if (allUbicaciones.length >= 0) return <WarehouseGrid
+                    locations={allUbicaciones}
+                    selectedId={asignaciones[selectedBoxId]}
+                    recommendedId={currentRecommendation}
+                    reservedIds={reservedIds}
+                    compatibleIds={compatibleIds}
+                    focusAisle={activePasillo}
+                    allowOccupied={false}
+                    onSelect={location => handleUbiChange(selectedBoxId, location.id_ubicacion)}
+                  />;
 
                   return (
                     <>
@@ -600,7 +643,7 @@ export default function NuevaCaja() {
             {/* Footer */}
             <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/10 flex justify-between items-center gap-3 shrink-0">
               <div className="text-xs text-slate-500">
-                Peso total de la cola: <span className="text-slate-300 font-bold">{previewData.peso_total?.toFixed(1)}</span> kg / {previewData.max_paradas} paradas máx.
+                Peso total: <span className="text-slate-300 font-bold">{previewData.peso_total?.toFixed(1)}</span> kg · {previewData.cajas.length} cajas en esta planilla
               </div>
               <div className="flex gap-3">
                 <button 
@@ -616,13 +659,14 @@ export default function NuevaCaja() {
                   disabled={loadingConfirmar}
                   className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5 disabled:opacity-50 shadow-lg shadow-sky-500/20"
                 >
-                  <i className="bi bi-check-lg"></i> {loadingConfirmar ? 'Procesando...' : 'Confirmar Cola y Generar Guía PDF'}
+                  <i className="bi bi-check-lg"></i> {loadingConfirmar ? 'Creando planilla y guía...' : 'Crear planilla y generar guía'}
                 </button>
               </div>
             </div>
           </div>
         </div>
       )}
+      <GuidePreviewModal guide={generatedGuide} onClose={() => setGeneratedGuide(null)} />
     </>
   );
 }

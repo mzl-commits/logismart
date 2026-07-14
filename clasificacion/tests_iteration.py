@@ -70,7 +70,8 @@ class IterationTests(TestCase):
         data = response.json()
         self.assertEqual(data['caja_id'], caja.id)
         self.assertIn('ubicacion_recomendada', data)
-        self.assertEqual(data['ubicacion_recomendada']['id'], self.location1.id_ubicacion)
+        # La carga prioritaria y ligera se manipula mejor a altura media.
+        self.assertEqual(data['ubicacion_recomendada']['id'], self.location2.id_ubicacion)
 
     def test_iter4_previsualizar_lote(self):
         """Iteración 4: Simulación y previsualización de carga en lote."""

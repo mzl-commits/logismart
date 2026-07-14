@@ -10,7 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import SAFE_METHODS, BasePermission, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import Caja, Despacho, MovimientoInventario, PoliticaStock, Producto, ReservaStock, Usuario
+from .models import Caja, Despacho, DespachoOperacion, MovimientoInventario, PoliticaStock, Producto, ReservaStock, Usuario
 from .serializers import MovimientoInventarioSerializer, PoliticaStockSerializer, ProductoSerializer, ReservaStockSerializer
 
 
@@ -131,6 +131,80 @@ class InventoryViewSet(viewsets.ViewSet):
             reference = f'DESP-{shipment.pk}'
             _move(caja, 'salida', -quantity, before, caja.cantidad, request, motivo='Despacho parcial' if caja.cantidad else 'Despacho total', referencia=reference, origen=origin)
         return Response({'mensaje': 'Despacho registrado.', 'cantidad_despachada': quantity, 'cantidad_restante': caja.cantidad})
+
+    @action(detail=False, methods=['post'], url_path='despachar_lote')
+    def despachar_lote(self, request):
+        """Registra todas las salidas de una operación como una sola transacción."""
+        idempotency_key = request.headers.get('Idempotency-Key') or request.data.get('idempotency_key')
+        if not idempotency_key:
+            return Response({'error': 'Falta la clave de idempotencia de la operacion.'}, status=status.HTTP_400_BAD_REQUEST)
+        items = request.data.get('items') or []
+        if not isinstance(items, list) or not items:
+            return Response({'error': 'Debes seleccionar al menos una caja.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        legacy_user = Usuario.objects.filter(usuario_auth=request.user).first()
+        if not legacy_user:
+            return Response(
+                {'error': 'El usuario autenticado no tiene un perfil logistico asignado.', 'code': 'logistic_profile_required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        previous = DespachoOperacion.objects.filter(clave=idempotency_key, usuario=request.user).first()
+        if previous:
+            return Response(previous.respuesta, status=status.HTTP_200_OK)
+
+        normalized = []
+        seen = set()
+        try:
+            for item in items:
+                caja_id = item.get('caja')
+                quantity = int(item.get('cantidad', 0))
+                if caja_id in seen:
+                    return Response({'error': f'La caja {caja_id} esta repetida en el lote.'}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+                seen.add(caja_id)
+                normalized.append((caja_id, quantity))
+        except (AttributeError, TypeError, ValueError):
+            return Response({'error': 'El formato de las cajas del lote no es valido.'}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        locked = []
+        with transaction.atomic():
+            operation = DespachoOperacion.objects.create(clave=idempotency_key, usuario=request.user)
+            for caja_id, quantity in normalized:
+                try:
+                    caja = Caja.objects.select_for_update().get(pk=caja_id, estado='almacenada')
+                except Caja.DoesNotExist:
+                    return Response({'error': f'La caja {caja_id} ya no esta disponible para despacho.'}, status=status.HTTP_409_CONFLICT)
+                if quantity < 1 or quantity > _available(caja):
+                    return Response({'error': f'Cantidad no disponible para la caja {caja_id}.'}, status=status.HTTP_409_CONFLICT)
+                locked.append((caja, quantity))
+
+            results = []
+            for caja, quantity in locked:
+                before = caja.cantidad
+                origin = caja.id_ubicacion
+                caja.cantidad -= quantity
+                if caja.cantidad == 0:
+                    caja.estado = 'despachada'
+                    caja.id_ubicacion = None
+                caja.save(update_fields=['cantidad', 'estado', 'id_ubicacion'])
+                shipment = Despacho.objects.create(
+                    id_caja=caja,
+                    id_usuario_despacho=legacy_user,
+                    cantidad=quantity,
+                    destino=request.data.get('destino', 'No especificado'),
+                    transporte_placa=request.data.get('transporte_placa', 'N/A'),
+                )
+                _move(caja, 'salida', -quantity, before, caja.cantidad, request,
+                      motivo='Despacho parcial' if caja.cantidad else 'Despacho total',
+                      referencia=f'DESP-{shipment.pk}', origen=origin)
+                if origin and caja.cantidad == 0:
+                    origin.estado_ocupacion = False
+                    origin.save(update_fields=['estado_ocupacion'])
+                results.append({'caja': caja.pk, 'cantidad_despachada': quantity, 'cantidad_restante': caja.cantidad})
+
+            response_data = {'mensaje': 'Despacho por lote registrado.', 'cantidad_despachada': sum(item[1] for item in normalized), 'items': results}
+            operation.respuesta = response_data
+            operation.save(update_fields=['respuesta'])
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'])
     def ajustar(self, request):

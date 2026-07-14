@@ -1,5 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from clasificacion.views_frontend import (
     dashboard, almacen_visual, nueva_caja, configuracion,
@@ -10,6 +13,11 @@ from clasificacion.views_subscription import (
     suscripcion_view, crear_checkout_session, confirmar_checkout, crear_portal_cliente,
     estado_suscripcion, solicitar_cotizacion, stripe_webhook
 )
+
+
+@ensure_csrf_cookie
+def csrf_bootstrap(request):
+    return JsonResponse({'csrfToken': get_token(request)})
 
 urlpatterns = [
     path('', spa_app, name='dashboard'),
@@ -33,6 +41,7 @@ urlpatterns = [
     path('suscripcion/webhook/', stripe_webhook, name='stripe_webhook'),
     path('admin/', admin.site.urls),
     path('api/', include('clasificacion.urls')),
+    path('api/csrf/', csrf_bootstrap, name='csrf_bootstrap'),
     path('api/v1/', include('clasificacion.urls_v1')),   # Adaptador equipo externo
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),

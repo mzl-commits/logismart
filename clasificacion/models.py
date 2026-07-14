@@ -11,6 +11,17 @@ class Medida(models.Model):
 
     class Meta:
         db_table = 'medidas'
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(largo__gt=0)
+                    & models.Q(ancho__gt=0)
+                    & models.Q(alto__gt=0)
+                    & models.Q(volumen__gt=0)
+                ),
+                name='medida_dimensiones_positivas',
+            ),
+        ]
 
     def save(self, *args, **kwargs):
         self.volumen = self.largo * self.ancho * self.alto
@@ -78,6 +89,11 @@ class Ubicacion(models.Model):
     # Metadatos logísticos del estante
     tipo_estante = models.CharField(max_length=20, choices=TIPOS_ESTANTE, default='general')
     capacidad_peso_kg = models.DecimalField(max_digits=8, decimal_places=2, default=50)
+    ancho_util_cm = models.DecimalField(max_digits=7, decimal_places=2, default=80)
+    fondo_util_cm = models.DecimalField(max_digits=7, decimal_places=2, default=80)
+    alto_util_cm = models.DecimalField(max_digits=7, decimal_places=2, default=60)
+    distancia_salida_m = models.DecimalField(max_digits=7, decimal_places=2, default=0)
+    activo = models.BooleanField(default=True)
     permite_fragil = models.BooleanField(default=True)
     permite_quimico = models.BooleanField(default=False)
     prioridad_categoria = models.CharField(
@@ -92,6 +108,28 @@ class Ubicacion(models.Model):
     class Meta:
         db_table = 'ubicaciones'
         unique_together = ('pasillo', 'estante', 'nivel', 'lado', 'casillero')
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(capacidad_peso_kg__gt=0),
+                name='ubicacion_capacidad_peso_positiva',
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(ancho_util_cm__gt=0)
+                    & models.Q(fondo_util_cm__gt=0)
+                    & models.Q(alto_util_cm__gt=0)
+                ),
+                name='ubicacion_dimensiones_positivas',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(distancia_salida_m__gte=0),
+                name='ubicacion_distancia_no_negativa',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(estante__gte=1) & models.Q(nivel__gte=1),
+                name='ubicacion_indices_positivos',
+            ),
+        ]
 
     @property
     def coord_x(self):
@@ -105,6 +143,10 @@ class Ubicacion(models.Model):
     @property
     def coord_y(self):
         return self.estante
+
+    @property
+    def capacidad_volumen_cm3(self):
+        return self.ancho_util_cm * self.fondo_util_cm * self.alto_util_cm
 
     def __str__(self):
         lado_char = self.lado[0].upper() if self.lado else 'A'
@@ -190,11 +232,25 @@ class Caja(models.Model):
     prioridad = models.CharField(max_length=20, choices=PRIORIDADES, default='media')
     categoria = models.CharField(max_length=30, default='otro')  # slug de Categoria
     es_fragil = models.BooleanField(default=False)
+    requiere_refrigeracion = models.BooleanField(default=False)
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
     hora_llegada = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = 'caja'
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(cantidad__gt=0)
+                    | models.Q(cantidad=0, estado='despachada')
+                ),
+                name='caja_cantidad_positiva',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(peso_kg__gt=0),
+                name='caja_peso_positivo',
+            ),
+        ]
 
     def __str__(self):
         return f"Caja {self.id} - {self.producto}"
@@ -240,6 +296,18 @@ class Despacho(models.Model):
 
     def __str__(self):
         return f"Despacho {self.id_despacho} → {self.destino}"
+
+
+class DespachoOperacion(models.Model):
+    """Registro idempotente de una operación de despacho por lote."""
+    clave = models.CharField(max_length=120, unique=True)
+    usuario = models.ForeignKey('auth.User', on_delete=models.PROTECT)
+    respuesta = models.JSONField(default=dict)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'despacho_operacion'
+        ordering = ['-creado_en']
 
 
 class HistorialMovimientos(models.Model):

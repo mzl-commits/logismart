@@ -1,12 +1,15 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell
+  Tooltip, Legend, PieChart, Pie, Cell, ResponsiveContainer
 } from 'recharts';
 import {
   getCajas, getUbicaciones, getHistorial, getDespachos, getCategorias, procesarCaja, confirmarAlmacenada
 } from '../api/endpoints';
+import { Modal, PageHeader } from '../components/ui';
+import { useAuth } from '../context/useAuth';
+import { toast } from 'react-hot-toast';
 
 const CAT_ICON_CLASS = {
   electronica: 'bi-cpu',
@@ -17,19 +20,29 @@ const CAT_ICON_CLASS = {
   otro:        'bi-box-seam',
 };
 
+const ACTIVE_BOXES_PAGE_SIZE = 8;
+
 export default function Dashboard() {
   const [cajas, setCajas] = useState([]);
   const [ubicaciones, setUbicaciones] = useState([]);
   const [historial, setHistorial] = useState([]);
-  const [chartData, setChartData] = useState([]);
+  const [despachos, setDespachos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [estadoFiltro, setEstadoFiltro] = useState('all');
   const [categoriaFiltro, setCategoriaFiltro] = useState('all');
   const [categorias, setCategorias] = useState([]);
+  const [loadError, setLoadError] = useState('');
+  const [pendingAction, setPendingAction] = useState(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [chartsReady, setChartsReady] = useState(false);
+  const [activePage, setActivePage] = useState(1);
+  const [chartRange, setChartRange] = useState(7);
+  const { isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError('');
     try {
       const [rc, ru, rh, rd, rcat] = await Promise.all([
         getCajas(), getUbicaciones(), getHistorial(), getDespachos(), getCategorias()
@@ -40,27 +53,13 @@ export default function Dashboard() {
       const despachosData = getData(rd);
 
       setCajas(cajasData);
+      setDespachos(despachosData);
       setUbicaciones(getData(ru));
       setHistorial(getData(rh).slice(0, 15));
       setCategorias(getData(rcat));
 
-      // Construir datos de gráfico por fecha (últimos 7 días)
-      const hoy = new Date();
-      const dias = Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(hoy);
-        d.setDate(hoy.getDate() - (6 - i));
-        return d.toISOString().slice(0, 10);
-      });
-
-      const countPor = (arr, campo) =>
-         dias.map(f => arr.filter(x => (x[campo] ?? '').slice(0, 10) === f).length);
-
-      setChartData(dias.map((f, i) => ({
-        fecha: f.slice(5),
-        ingresos: countPor(cajasData, 'hora_llegada')[i],
-        salidas: countPor(despachosData, 'fecha_salida')[i],
-      })));
     } catch (e) {
+      setLoadError('No se pudo cargar el dashboard. Intenta nuevamente.');
       console.error(e);
     } finally {
       setLoading(false);
@@ -68,10 +67,32 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setChartsReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   const activas = cajas.filter(c => c.estado !== 'despachada');
   const filtradas = activas.filter(c => (estadoFiltro === 'all' || c.estado === estadoFiltro) && (categoriaFiltro === 'all' || c.categoria === categoriaFiltro));
+  const activePages = Math.max(1, Math.ceil(filtradas.length / ACTIVE_BOXES_PAGE_SIZE));
+  const pagedBoxes = filtradas.slice((activePage - 1) * ACTIVE_BOXES_PAGE_SIZE, activePage * ACTIVE_BOXES_PAGE_SIZE);
+  const chartData = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: chartRange }, (_, index) => {
+      const date = new Date(today);
+      date.setDate(today.getDate() - (chartRange - 1 - index));
+      const key = date.toISOString().slice(0, 10);
+      return {
+        fecha: key.slice(5),
+        ingresos: cajas.filter(item => (item.hora_llegada ?? '').slice(0, 10) === key).length,
+        salidas: despachos.filter(item => (item.fecha_salida ?? '').slice(0, 10) === key).length,
+      };
+    });
+  }, [cajas, despachos, chartRange]);
   const pendientes = cajas.filter(c => c.estado === 'pendiente').length;
+
+  useEffect(() => { setActivePage(1); }, [estadoFiltro, categoriaFiltro]);
+  useEffect(() => { if (activePage > activePages) setActivePage(activePages); }, [activePage, activePages]);
 
   const getUbicacionNombre = (id) => {
     if (!id) return '—';
@@ -95,20 +116,12 @@ export default function Dashboard() {
 
   return (
     <>
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 fade-in">
-        <div>
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <i className="bi bi-speedometer2 text-sky-400"></i> Dashboard
-          </h2>
-          <p className="text-slate-500 text-sm mt-1">Cajas activas · Almacén · Historial</p>
-        </div>
-        <div className="text-right">
-          <NavLink to="/cajas" className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5 no-underline">
-            <i className="bi bi-plus-lg"></i> Nueva caja
-          </NavLink>
-        </div>
-      </div>
+      {loadError && <div className="inline-alert inline-alert--warning mb-4" role="alert">{loadError} <button className="button button--secondary" onClick={load}>Reintentar</button></div>}
+      <PageHeader
+        title="Dashboard"
+        description="Cajas activas, capacidad del almacén y movimientos recientes."
+        actions={isAdmin && <NavLink to="/cajas" className="button button--primary no-underline"><i className="bi bi-plus-lg"/>Nueva caja</NavLink>}
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -169,16 +182,14 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="bg-surface rounded-2xl border border-slate-800/60 p-6 flex items-center justify-center gap-6">
-          <div style={{ width: 100, height: 100 }}>
-            {totalUbic > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
+          <div style={{ width: 100, height: 100, minWidth: 1, minHeight: 1 }}>
+            {totalUbic > 0 && chartsReady ? (
+              <PieChart width={100} height={100}>
                   <Pie data={[{ value: ocupadas }, { value: libres }]} innerRadius={35} outerRadius={50} dataKey="value" stroke="none">
                     <Cell fill={pctOcupacion >= 90 ? '#dc2626' : pctOcupacion >= 70 ? '#d97706' : '#52A27F'} />
                     <Cell fill="#2A2A30" />
                   </Pie>
-                </PieChart>
-              </ResponsiveContainer>
+              </PieChart>
             ) : (
               <div className="flex items-center justify-center w-full h-full text-slate-600">
                 <i className="bi bi-pie-chart text-3xl"></i>
@@ -199,9 +210,9 @@ export default function Dashboard() {
           <div className="p-6 border-b border-surface2/60">
             <div className="flex items-center justify-between mb-4">
               <span className="text-base font-semibold flex items-center gap-2"><i className="bi bi-box-seam text-sky-400"></i> Cajas activas</span>
-              <NavLink to="/cajas" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors no-underline">
+              {isAdmin && <NavLink to="/cajas" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors no-underline">
                 <i className="bi bi-plus-lg"></i> Agregar
-              </NavLink>
+              </NavLink>}
             </div>
             
             <div className="flex gap-2 flex-wrap mb-3">
@@ -234,7 +245,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface2/30">
-              {filtradas.slice(0, 30).map((caja, i) => (
+              {pagedBoxes.map((caja, i) => (
                 <tr key={caja.id || i} className="hover:bg-surface2/20 transition-colors">
                   <td className="px-6 py-3">
                     <div className="font-medium text-slate-200 text-base flex items-center gap-1.5">
@@ -272,12 +283,12 @@ export default function Dashboard() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {caja.estado === 'pendiente' ? (
-                      <button className="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3 py-1.5 rounded-lg transition-colors" onClick={async () => { if(confirm('¿Procesar y enviar al almacén?')){ await procesarCaja(caja.id, {id_usuario: 1}); load(); }}}>
+                    {isAdmin && caja.estado === 'pendiente' ? (
+                      <button className="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3 py-1.5 rounded-lg transition-colors" onClick={() => setPendingAction({ title: 'Procesar caja', message: 'La caja pasara al flujo de almacenamiento.', run: () => procesarCaja(caja.id, {}) })}>
                         <i className="bi bi-play-fill"></i> Procesar
                       </button>
-                    ) : caja.estado === 'en_transito' ? (
-                      <button className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors" onClick={async () => { if(confirm('¿Confirmar que fue colocada en el estante?')){ await confirmarAlmacenada(caja.id, {id_usuario: 1}); load(); }}}>
+                    ) : isAdmin && caja.estado === 'en_transito' ? (
+                      <button className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors" onClick={() => setPendingAction({ title: 'Confirmar almacenamiento', message: 'Confirma que la caja fue colocada en su ubicacion.', run: () => confirmarAlmacenada(caja.id, {}) })}>
                         <i className="bi bi-check-lg"></i> Entregar
                       </button>
                     ) : caja.estado === 'almacenada' ? (
@@ -288,8 +299,17 @@ export default function Dashboard() {
                   </td>
                 </tr>
               ))}
+              {!pagedBoxes.length && <tr><td colSpan="7" className="px-6 py-10 text-center text-slate-400">No hay cajas que coincidan con los filtros.</td></tr>}
               </tbody>
             </table>
+          </div>
+          <div className="dashboard-pagination" aria-label="Paginación de cajas activas">
+            <span>{filtradas.length ? `${(activePage - 1) * ACTIVE_BOXES_PAGE_SIZE + 1}-${Math.min(activePage * ACTIVE_BOXES_PAGE_SIZE, filtradas.length)} de ${filtradas.length}` : '0 resultados'}</span>
+            <div>
+              <button type="button" className="icon-button" aria-label="Página anterior" disabled={activePage === 1} onClick={() => setActivePage(page => page - 1)}><i className="bi bi-chevron-left"/></button>
+              <strong>Página {activePage} de {activePages}</strong>
+              <button type="button" className="icon-button" aria-label="Página siguiente" disabled={activePage === activePages} onClick={() => setActivePage(page => page + 1)}><i className="bi bi-chevron-right"/></button>
+            </div>
           </div>
         </div>
 
@@ -317,11 +337,15 @@ export default function Dashboard() {
       </div>
 
       {/* Gráfico */}
-      <div className="bg-surface rounded-2xl border border-slate-800/60 p-6 fade-in fade-d3 mb-4">
-        <div className="text-base font-semibold flex items-center gap-2 mb-4"><i className="bi bi-graph-up text-sky-400"></i> Flujo de Cajas (Últimos 7 días)</div>
-        <div style={{ height: 320, width: '100%' }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
+      <div className="dashboard-chart bg-surface rounded-2xl border border-slate-800/60 p-6 fade-in fade-d3 mb-4">
+        <div className="dashboard-chart__header">
+          <div className="text-base font-semibold flex items-center gap-2"><i className="bi bi-graph-up text-sky-400"></i> Flujo de cajas</div>
+          <div className="segmented-control" aria-label="Rango del gráfico">
+            {[7, 14, 30].map(days => <button type="button" key={days} aria-pressed={chartRange === days} onClick={() => setChartRange(days)}>{days} días</button>)}
+          </div>
+        </div>
+        <div className="dashboard-chart__canvas">
+          {chartsReady ? <ResponsiveContainer width="100%" height="100%"><LineChart data={chartData} margin={{ top: 8, right: 12, left: -12, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#2A2A30" vertical={false} />
               <XAxis dataKey="fecha" tick={{fill:'#94A3B8',fontSize:12}} axisLine={false} tickLine={false} />
               <YAxis tick={{fill:'#94A3B8',fontSize:12}} axisLine={false} tickLine={false} />
@@ -332,10 +356,13 @@ export default function Dashboard() {
               <Legend wrapperStyle={{fontSize:13, color:'#94A3B8'}} />
               <Line type="monotone" dataKey="ingresos" stroke="#8E95A5" strokeWidth={3} dot={false} name="Cajas Ingresadas" />
               <Line type="monotone" dataKey="salidas" stroke="#52A27F" strokeWidth={3} dot={false} name="Cajas Despachadas" />
-            </LineChart>
-          </ResponsiveContainer>
+          </LineChart></ResponsiveContainer> : <div className="h-full flex items-center justify-center text-slate-500" aria-label="Preparando grafico">Preparando grafico...</div>}
         </div>
       </div>
+      <Modal isOpen={Boolean(pendingAction)} onClose={() => !actionBusy && setPendingAction(null)} title={pendingAction?.title || 'Confirmar accion'}>
+        <p className="text-slate-300 mb-5">{pendingAction?.message}</p>
+        <div className="flex justify-end gap-3"><button type="button" className="button" onClick={() => setPendingAction(null)} disabled={actionBusy}>Cancelar</button><button type="button" className="button button--primary" disabled={actionBusy} onClick={async () => { setActionBusy(true); try { await pendingAction.run(); toast.success('Operacion completada.'); setPendingAction(null); await load(); } catch (error) { toast.error(error.response?.data?.error || 'No se pudo completar la operacion.'); } finally { setActionBusy(false); } }}>{actionBusy ? 'Procesando...' : 'Confirmar'}</button></div>
+      </Modal>
     </>
   );
 }
